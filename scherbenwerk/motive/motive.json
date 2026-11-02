@@ -1,0 +1,10 @@
+[
+  { "datei": "counter-strike-16.jpg", "name": "Counter-Strike 1.6" },
+  { "datei": "dota-2.jpg",            "name": "Dota 2" },
+  { "datei": "call-of-duty.jpg",      "name": "Call of Duty" },
+  { "datei": "anno-1800.jpg",         "name": "Anno 1800" },
+  { "datei": "gta-5.jpg",             "name": "GTA 5" },
+  { "datei": "trackmania.jpg",        "name": "Trackmania" },
+  { "datei": "zelda.jpg",             "name": "Zelda" },
+  { "datei": "mario-kart.jpg",        "name": "Mario Kart" }
+]

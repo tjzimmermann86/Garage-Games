@@ -18,6 +18,7 @@
 }
 body{margin:0}
 html,body{background:var(--bg);color:var(--ink)}
+[hidden]{display:none!important}
 body{font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
@@ -205,7 +206,22 @@ function motifReef(g,R){
   g.strokeStyle='rgba(220,250,255,.6)';g.lineWidth=1.2;for(let i=0;i<30;i++){g.beginPath();g.arc(R(0,MW),R(0,370),R(2,6),0,7);g.stroke();}
 }
 const MOTIFS=[{name:'Abendsee',fn:motifSee},{name:'Leuchtturm',fn:motifLight},{name:'Rosette',fn:motifRose},{name:'Ballonfest',fn:motifBalloon},{name:'Korallenriff',fn:motifReef}];
-function makeMotif(fn,seed){const c=document.createElement('canvas');c.width=MW*DPR;c.height=MH*DPR;const g=c.getContext('2d');g.scale(DPR,DPR);fn(g,mkR(seed));return c;}
+function makeMotif(m,seed){
+  const c=document.createElement('canvas');c.width=MW*DPR;c.height=MH*DPR;const g=c.getContext('2d');g.scale(DPR,DPR);
+  if(m.img){const iw=m.img.naturalWidth,ih=m.img.naturalHeight,k=Math.max(MW/iw,MH/ih);g.drawImage(m.img,(MW-iw*k)/2,(MH-ih*k)/2,iw*k,ih*k);}
+  else m.fn(g,mkR(seed));
+  return c;
+}
+/* Eigene Bilder: Liste in motive/motive.json, Dateien im Ordner motive/. Fehlende Dateien werden übersprungen. */
+let PHOTOS=[];
+async function loadPhotos(){
+  try{
+    const r=await fetch('motive/motive.json',{cache:'no-store'});if(!r.ok)return[];
+    const list=await r.json();
+    const imgs=await Promise.all(list.map(m=>new Promise(res=>{const im=new Image();im.onload=()=>res({name:m.name,img:im});im.onerror=()=>res(null);im.src='motive/'+encodeURIComponent(m.datei);})));
+    return imgs.filter(Boolean);
+  }catch(e){return[];}
+}
 
 /* ---------- shards (Voronoi) ---------- */
 function clip(poly,a,b,c){
@@ -278,20 +294,21 @@ function refill(){
 }
 
 /* ---------- game state ---------- */
-let baseSeed,motifOrder,roundIdx=0,round=ROUNDS[0],pieces=[],motif=null,motifName='';
+let baseSeed,roundMotifs=[],roundIdx=0,round=ROUNDS[0],pieces=[],motif=null,motifName='';
 let playing=false,t0=0,endSecs=0,mistakes=0,total=0,results=[];
 let drag=null,hover=null,toastMsg='',toastT=0;
 
 function newGame(){
   baseSeed=Math.floor(Math.random()*1e9);
-  motifOrder=shuffle([0,1,2,3,4],mkR(baseSeed));
+  const R0=mkR(baseSeed);
+  roundMotifs=[...shuffle(PHOTOS.slice(),R0),...shuffle(MOTIFS.slice(),R0)].slice(0,ROUNDS.length);
   total=0;results=[];
   setupRound(0);showStart();
 }
 function setupRound(i){
   roundIdx=i;round=ROUNDS[i];
   const seed=(baseSeed+i*7919)>>>0,R=mkR(seed^0x5bd1e995);
-  const m=MOTIFS[motifOrder[i]];motifName=m.name;motif=makeMotif(m.fn,seed);
+  const m=roundMotifs[i];motifName=m.name;motif=makeMotif(m,seed);
   pieces=shuffle(buildPieces(round.n,motif,R),R);
   if(round.rotate)pieces.forEach(p=>{p.rot=R.raw()<.85?1+Math.floor(R.raw()*3):0;p.ang=p.angT=p.rot*Math.PI/2;});
   refill();
@@ -520,6 +537,7 @@ function showStart(){
       <li>Mit jeder Runde kommen mehr Teile. Ab Runde 3 fehlen die Umrisse, ab Runde 4 liegen die Teile verdreht.</li>
       <li>Ein Teil an der falschen Stelle aufs Brett gelegt kostet einen Fehler.</li>
     </ul>
+    <p>${PHOTOS.length?`${PHOTOS.length} Spielmotive geladen.`:'Keine eigenen Bilder gefunden, es werden die eingebauten Motive verwendet.'}</p>
     <div class="next"><strong>Runde 1:</strong> ${ROUNDS[0].n} Teile. ${ROUNDS[0].intro}</div>
     <button class="go" type="button" id="go">Runde 1 starten</button>`,begin);
 }
@@ -551,8 +569,7 @@ function showFinal(){
 }
 document.getElementById('restart').addEventListener('click',()=>newGame());
 
-newGame();
-requestAnimationFrame(frame);
+loadPhotos().then(p=>{PHOTOS=p;newGame();requestAnimationFrame(frame);});
 })();
 </script>
 
