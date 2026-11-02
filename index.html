@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Garage Games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --sea:#5fc3b0;
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 40px}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+h1{margin:6px 0 10px;font-size:clamp(2.4rem,7vw,4rem);font-weight:800;line-height:1;letter-spacing:-.02em}
+h1 em{font-style:normal;color:var(--amber)}
+p{margin:0;color:var(--muted);line-height:1.55;max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+a.game{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:14px;background:var(--panel);border:1px solid var(--panel-edge);color:inherit;text-decoration:none;transition:border-color .15s,transform .15s}
+a.game:hover{border-color:var(--amber);transform:translateY(-2px)}
+a.game:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
+a.game h2{margin:0;font-size:1.5rem;font-weight:800}
+.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sea)}
+.soon{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:14px;border:1px dashed var(--panel-edge);color:var(--muted)}
+.soon strong{color:var(--ink);font-weight:600}
+@media (prefers-reduced-motion:reduce){a.game{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Lübtheen Garage LAN</div>
+    <h1>Garage <em>Games</em></h1>
+    <p>Die Minispiel-Sammlung für die LAN. Spiel auswählen und loslegen.</p>
+  </header>
+  <div class="grid">
+    <a class="game" href="scherbenwerk/">
+      <span class="tag">Puzzle · 5 Runden</span>
+      <h2>Scherbenwerk</h2>
+      <p>Ein Bild ist in Glasscherben zersprungen. Setz es wieder zusammen, mit jeder Runde mehr Teile.</p>
+    </a>
+    <div class="soon">
+      <span class="tag">Bald</span>
+      <strong>Weitere Minispiele</strong>
+      <span>Reaktionsduell, Turm stapeln, Montagsmaler und mehr.</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>
