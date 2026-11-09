@@ -22,6 +22,8 @@ body{padding-block:24px 32px}
 .pill{font-family:var(--mono);font-size:.75rem;letter-spacing:.06em;border:1px solid var(--panel-edge);border-radius:999px;padding:5px 10px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
 .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
 .pill.on .dot{background:var(--sea)}.pill.off .dot{background:var(--amber)}
+.pill.me{cursor:pointer;font:inherit;background:transparent;}
+.pill.me:hover{border-color:var(--amber-ink)}
 .pill.me{padding:3px 12px 3px 3px;color:var(--ink);font-family:var(--display);font-weight:600;font-size:.9rem;letter-spacing:0}
 .layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:22px;align-items:start}
 @media (max-width:760px){.layout{grid-template-columns:1fr}}
@@ -177,7 +179,7 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
     </div>
     <div class="who">
       <span class="pill" id="conn"><span class="dot"></span><span id="connText">Verbinde …</span></span>
-      <span class="pill me" id="me" hidden></span>
+      <button type="button" class="pill me" id="me" title="Avatar und Name ändern" hidden></button>
     </div>
   </div>
   <div class="layout">
@@ -265,6 +267,8 @@ function maybeLaunch(){
 
 /* ---------- Navigation ---------- */
 const nav=$('#nav');
+// Klick auf den eigenen Avatar oben rechts öffnet direkt die Avatar-Auswahl
+$('#me').addEventListener('click',()=>{show('settings');const g=$('#avGrid2'),b=$('#avBtn2');if(g&&b){g.hidden=false;b.setAttribute('aria-expanded','true');b.scrollIntoView({behavior:'smooth',block:'start'});}});
 nav.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(!b||b.disabled)return;show(b.dataset.go==='multi'&&S.code?'lobby':b.dataset.go);});
 function updateNav(){
   nav.hidden=!S.named;
