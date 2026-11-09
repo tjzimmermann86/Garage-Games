@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Startampel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
+<style>:root{--accent:#b6d65a}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Start<em>ampel</em></h1>
+      <div class="sub">Minispiel der Garage Games · 5 Runden · Fehlstart = raus</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="Reaktionsfeld"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+  <div class="keys">
+    <span><kbd>Klick</kbd> <kbd>Leertaste</kbd> reagieren</span>
+    <span>Bei „Zielscheibe“ zählt nur der Klick aufs Ziel</span>
+  </div>
+</div>
+<script src="../shared/garage.js"></script>
+<script>
+(()=>{
+const{W,H,COL,MONO}=GG;
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const AX=340,AY=120,AW=600,AH=520;
+const TYPES={
+  ampel:     {name:'Startampel',  par:650, text:'Fünf rote Lichter gehen an. Sobald alle ausgehen: klicken!'},
+  farbe:     {name:'Grünes Licht',par:650, text:'Das Feld ist dunkel. Klick, sobald es grün wird.'},
+  taeuschung:{name:'Täuschung',   par:680, text:'Das Feld blinkt in falschen Farben. Nur bei Grün klicken!'},
+  ton:       {name:'Piep',        par:650, text:'Du siehst nichts. Klick, sobald der Piep kommt.'},
+  zahl:      {name:'Zahlenblitz', par:750, text:'Zahlen blitzen auf. Klick nur bei deiner Zielzahl.'},
+  ziel:      {name:'Zielscheibe', par:1000,text:'Irgendwo taucht ein Ziel auf. Klick es so schnell wie möglich an.'},
+};
+const POOLS=[['ampel','farbe'],['farbe','ampel','ton'],['taeuschung','zahl'],['ziel','ton','taeuschung'],['zahl','ziel','gemischt']];
+const TRIES=3;
+
+let seed,R,ROUNDS=[],ri=0,tri=0,trial=null,results=[],roundTimes=[],total=0,phase='idle',out=null,lastMsg=null;
+
+function newGame(){seed=GG.newSeed();R=GG.rng(seed);ROUNDS=POOLS.map(p=>R.pick(p));ri=0;total=0;results=[];phase='idle';out=null;showStart();}
+function typeFor(){const t=ROUNDS[ri];return t==='gemischt'?R.pick(Object.keys(TYPES)):t;}
+function startRound(){ov.hide();GG.audio();tri=0;roundTimes=[];phase='play';newTrial(performance.now()+700);}
+function newTrial(at){
+  const type=typeFor(),t={type,state:'wait',start:at,goAt:0,fakes:[],digits:[],target:R.int(1,9),pos:null,misses:0,beeped:false};
+  if(type==='ampel')t.goAt=at+5*700+R.range(400,2600);
+  else t.goAt=at+R.range(1600,4600);
+  if(type==='taeuschung'){const n=R.int(1,3);for(let k=0;k<n;k++){const s=at+R.range(500,t.goAt-at-500);t.fakes.push({s,e:s+R.range(250,500),col:R.pick([COL.amber,COL.rose,COL.water,COL.violet])});}}
+  if(type==='zahl'){let x=at+300;while(x<t.goAt){let d;do{d=R.int(1,9);}while(d===t.target);t.digits.push({s:x,d});x+=R.range(450,750);}t.goAt=x;}
+  if(type==='ziel'){t.pos={x:AX+R.range(60,AW-60),y:AY+R.range(60,AH-60),r:R.range(26,40)};}
+  trial=t;lastMsg=null;
+}
+function react(p){
+  if(phase!=='play'||!trial)return;const now=performance.now(),t=trial;
+  if(t.state==='done')return;
+  if(now<t.start)return;
+  if(t.state==='wait'||now-t.goAt<100){fehlstart();return;}  // unter 100 ms ist geraten, wie in der Formel 1
+  if(t.type==='ziel'){if(!p)return;if(Math.hypot(p.x-t.pos.x,p.y-t.pos.y)>t.pos.r+6){t.misses++;GG.sfx('tick');return;}}
+  finish(now-t.goAt+t.misses*100);
+}
+function finish(ms){
+  const t=trial;t.state='done';ms=Math.round(ms);
+  const pts=Math.max(0,Math.round(TYPES[t.type].par-ms));roundTimes.push({type:t.type,ms,pts,misses:t.misses});total+=pts;
+  lastMsg={ms,pts,at:performance.now()};GG.sfx(pts>250?'ok':'pop');
+  tri++;
+  if(tri<TRIES)newTrial(performance.now()+1500);
+  else{phase='between';results.push({type:ROUNDS[ri],times:roundTimes});setTimeout(showSummary,1300);}
+}
+function fehlstart(){
+  phase='out';out={round:ri+1,type:trial.type};GG.sfx('err');trial.state='done';
+  setTimeout(showOut,1200);
+}
+cv.addEventListener('pointerdown',e=>{e.preventDefault();react(GG.local(cv,e));});
+window.addEventListener('keydown',e=>{if(e.code==='Space'||e.key==='Enter'){if(ov.open)return;e.preventDefault();if(trial&&trial.type==='ziel')return;react(null);}});
+
+function update(now){
+  const t=trial;if(!t||phase!=='play')return;
+  if(t.state==='wait'&&now>=t.goAt){t.state='go';if(t.type==='ton')GG.tone(1200,.18,'square',.12);}
+  if(t.state==='go'&&now-t.goAt>2500)finish(2500);
+}
+/* ---------- Zeichnen ---------- */
+function drawSignal(now){
+  const t=trial;GG.rr(ctx,AX,AY,AW,AH,16);ctx.fillStyle=COL.board;ctx.fill();
+  if(!t)return;
+  const pre=now<t.start,go=t.state==='go'||(t.state==='done'&&lastMsg),fail=phase==='out';
+  if(t.type==='ampel'){
+    const lit=pre?0:Math.min(5,Math.floor((now-t.start)/700)+1),off=t.state!=='wait';
+    ctx.fillStyle='#16191c';GG.rr(ctx,AX+60,AY+150,AW-120,170,14);ctx.fill();
+    for(let k=0;k<5;k++){const x=AX+120+k*90;for(const yy of[AY+200,AY+270]){const on=!off&&k<lit;ctx.save();if(on){ctx.shadowColor='#ff2a2a';ctx.shadowBlur=30;}ctx.fillStyle=on?'#ff3b30':'#3a1414';ctx.beginPath();ctx.arc(x,yy,28,0,7);ctx.fill();ctx.restore();}}
+    GG.text(ctx,off?(fail?'':'LOS!'):'Warten, bis alle Lichter ausgehen',AX+AW/2,AY+410,{size:off?56:18,weight:800,align:'center',color:off?COL.accent:COL.muted});
+  }else if(t.type==='farbe'||t.type==='taeuschung'){
+    const fake=t.state==='wait'&&t.fakes.find(f=>now>=f.s&&now<f.e);
+    GG.rr(ctx,AX+40,AY+40,AW-80,AH-80,14);ctx.fillStyle=go?'#2ea64f':fake?fake.col:'#22292e';ctx.fill();
+    GG.text(ctx,go?'JETZT!':pre?'Gleich geht’s los':'Warten …',AX+AW/2,AY+AH/2+18,{size:go?72:30,weight:800,align:'center',color:go?'#08210f':COL.muted});
+    if(t.type==='taeuschung')GG.text(ctx,'Nur bei Grün klicken',AX+AW/2,AY+AH-70,{size:15,align:'center',color:go?'#08210f':COL.muted,font:MONO});
+  }else if(t.type==='ton'){
+    const cx=AX+AW/2,cy=AY+AH/2-20;ctx.fillStyle=go?COL.accent:COL.steel;ctx.beginPath();ctx.moveTo(cx-60,cy-25);ctx.lineTo(cx-30,cy-25);ctx.lineTo(cx+10,cy-60);ctx.lineTo(cx+10,cy+60);ctx.lineTo(cx-30,cy+25);ctx.lineTo(cx-60,cy+25);ctx.fill();
+    ctx.strokeStyle=go?COL.accent:COL.edge;ctx.lineWidth=6;for(const r of[40,70]){ctx.beginPath();ctx.arc(cx+10,cy,r,-.7,.7);ctx.stroke();}
+    GG.text(ctx,go?'PIEP!':'Klick beim Piep · Ton an!',cx,AY+AH-90,{size:go?44:18,weight:800,align:'center',color:go?COL.accent:COL.muted});
+  }else if(t.type==='zahl'){
+    let d=null;if(go)d=t.target;else{for(const x of t.digits)if(now>=x.s)d=x.d;}
+    GG.text(ctx,`Klick nur bei der ${t.target}`,AX+AW/2,AY+70,{size:22,weight:600,align:'center',color:COL.muted});
+    if(d!==null&&!pre)GG.value(ctx,String(d),AX+AW/2,AY+AH/2+80,'center',go?COL.accent:COL.ink,220);
+  }else if(t.type==='ziel'){
+    if(go&&t.state!=='done'){const p=t.pos;[1,.68,.36].forEach((k,j)=>{ctx.fillStyle=j%2?'#f2f0ea':COL.rose;ctx.beginPath();ctx.arc(p.x,p.y,p.r*k,0,7);ctx.fill();});}
+    if(t.state==='wait')GG.text(ctx,pre?'Gleich geht’s los':'Gleich taucht ein Ziel auf …',AX+AW/2,AY+AH/2,{size:22,weight:600,align:'center',color:COL.muted});
+  }
+  if(fail){ctx.fillStyle='rgba(229,98,107,.25)';GG.rr(ctx,AX,AY,AW,AH,16);ctx.fill();GG.text(ctx,'FEHLSTART',AX+AW/2,AY+AH/2+24,{size:72,weight:800,align:'center',color:COL.rose});}
+  if(lastMsg&&now-lastMsg.at<1400){GG.rr(ctx,AX+AW/2-150,AY+AH-150,300,90,14);ctx.fillStyle='rgba(10,16,19,.9)';ctx.fill();GG.value(ctx,`${lastMsg.ms} ms`,AX+AW/2,AY+AH-100,'center',COL.accent,40);GG.text(ctx,`+${lastMsg.pts} Punkte`,AX+AW/2,AY+AH-74,{align:'center',color:COL.muted,font:MONO,size:14});}
+}
+function draw(dt,now){
+  update(now);GG.clear(ctx);
+  const type=trial?trial.type:(ROUNDS[ri]==='gemischt'?'ampel':ROUNDS[ri]);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length} · VERSUCH ${Math.min(tri+1,TRIES)} / ${TRIES}`,AX,44,'left',COL.accent);
+  GG.text(ctx,TYPES[type].name,AX,92,{size:34,weight:800});
+  GG.label(ctx,'PUNKTE',AX+AW,44,'right');GG.value(ctx,GG.num(total),AX+AW,92,'right',COL.ink,34);
+  drawSignal(now);
+  GG.panel(ctx,16,120,300,520);GG.label(ctx,'SO GEHT’S',36,152);
+  let y=GG.wrap(ctx,TYPES[type].text,36,180,260,21)+10;
+  y=GG.wrap(ctx,'Wer zu früh reagiert, ist raus. Je schneller du bist, desto mehr Punkte.',36,y,260,21,{color:COL.muted})+12;
+  GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'RUNDEN',36,y);y+=26;
+  ROUNDS.forEach((r,k)=>{GG.text(ctx,`${k+1}. ${r==='gemischt'?'Gemischt':TYPES[r].name}`,36,y,{size:14,color:k===ri?COL.ink:COL.muted,weight:k===ri?600:400});const res=results[k];if(res)GG.text(ctx,`${Math.round(res.times.reduce((a,b)=>a+b.ms,0)/res.times.length)} ms`,296,y,{size:14,font:MONO,align:'right',color:COL.muted});y+=24;});
+  GG.panel(ctx,964,120,300,520);GG.label(ctx,'DIESE RUNDE',984,152);
+  for(let k=0;k<TRIES;k++){const r=roundTimes[k],yy=196+k*44;GG.text(ctx,`Versuch ${k+1}`,984,yy,{color:COL.muted});GG.value(ctx,r?`${r.ms} ms`:'–',1244,yy,'right',r?COL.ink:COL.muted,22);}
+  const all=results.flatMap(r=>r.times).concat(roundTimes);
+  if(all.length){const best=Math.min(...all.map(r=>r.ms));GG.label(ctx,'BESTZEIT',984,360);GG.value(ctx,`${best} ms`,984,396,'left',COL.accent);}
+}
+GG.loop(draw);
+
+/* ---------- Karten ---------- */
+const nameOf=t=>t==='gemischt'?'Gemischt':TYPES[t].name;
+const roundText=t=>`<strong>${nameOf(t)}</strong> · ${t==='gemischt'?'Jeder Versuch hat eine zufällige Signalart.':TYPES[t].text}`;
+function showStart(){
+  ov.show(`<div class="eyebrow">Minispiel · Reaktion</div><h2>Startampel</h2>
+    <p>Klick, sobald das Signal kommt. Wer zu früh klickt, ist raus.</p>
+    <ul><li>5 Runden mit je 3 Versuchen. Punkte gibt es für jede Millisekunde unter der Zielzeit.</li>
+    <li>Reaktionen unter 100 ms gelten als geraten und zählen als Fehlstart.</li>
+    <li>Jede Runde hat eine andere Signalart: Ampel, Grünlicht, Täuschung, Piep, Zahlenblitz oder Zielscheibe.</li>
+    <li>Welche Signale drankommen, wird jedes Spiel neu gezogen.</li></ul>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
+    <button class="go" type="button">Runde 1 starten</button>`,startRound);
+}
+function showSummary(){
+  const r=results[results.length-1];
+  if(ri>=ROUNDS.length-1)return showFinal();
+  const nx=ROUNDS[ri+1];
+  ov.show(`<div class="eyebrow">Runde ${ri+1} geschafft · ${nameOf(r.type)}</div><h2>Ø ${Math.round(r.times.reduce((a,b)=>a+b.ms,0)/r.times.length)} ms</h2>
+    ${GG.rowsHtml([...r.times.map((t,k)=>[`Versuch ${k+1}${ROUNDS[ri]==='gemischt'?` · ${TYPES[t.type].name}`:''}${t.misses?` · ${t.misses}× daneben`:''}`,`${t.ms} ms · +${t.pts}`]),['Gesamt',GG.num(total),'total']])}
+    <div class="next">Runde ${ri+2} · ${roundText(nx)}</div>
+    <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{ri++;startRound();});
+}
+function showFinal(){
+  const all=results.flatMap(r=>r.times);
+  ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden ohne Fehlstart</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
+    ${GG.rowsHtml([...results.map((r,i)=>[`${i+1}. ${nameOf(r.type)}`,`Ø ${Math.round(r.times.reduce((a,b)=>a+b.ms,0)/r.times.length)} ms`]),['Bestzeit',`${Math.min(...all.map(t=>t.ms))} ms`,'total']])}
+    <button class="go" type="button">Nochmal</button>`,()=>{newGame();});
+}
+function showOut(){
+  ov.show(`<div class="eyebrow">Fehlstart in Runde ${out.round} · ${TYPES[out.type].name}</div><h2>Raus!</h2><div class="big">${GG.num(total)}</div>
+    <p>Du hast vor dem Signal reagiert. Deine Punkte bis hierhin zählen.</p>
+    <button class="go" type="button">Nochmal</button>`,()=>{newGame();});
+}
+document.getElementById('restart').addEventListener('click',newGame);
+newGame();
+})();
+</script>
+</body>
+</html>

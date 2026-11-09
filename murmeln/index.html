@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Murmelglas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
+<style>
+:root{--accent:#5fc3b0}
+.guess{position:absolute;left:75.6%;top:56%;width:21.4%;display:flex;flex-direction:column;gap:.6vw;z-index:2}
+.guess label{font-family:var(--mono);font-size:clamp(9px,.95vw,12px);letter-spacing:.08em;color:var(--muted)}
+.guess .row{display:flex;gap:.5vw}
+.guess input{flex:1;min-width:0;background:var(--board);border:1px solid var(--lead);border-radius:8px;color:var(--ink);font:600 clamp(14px,2.2vw,28px) var(--mono);padding:.4em .5em;font-variant-numeric:tabular-nums}
+.guess button{appearance:none;border:0;border-radius:8px;background:var(--accent);color:#06221c;font:700 clamp(12px,1.3vw,16px) var(--display);padding:0 .9em;cursor:pointer}
+.guess button:disabled{opacity:.4;cursor:default}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Murmel<em>glas</em></h1>
+      <div class="sub">Minispiel der Garage Games · 5 Runden</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="Glas mit Murmeln"></canvas>
+    <form class="guess" id="guess" autocomplete="off">
+      <label for="tipp">DEIN TIPP</label>
+      <div class="row"><input id="tipp" type="number" inputmode="numeric" min="0" max="9999" placeholder="?"><button id="send" type="submit">Abgeben</button></div>
+    </form>
+    <div class="overlay" id="ov"></div>
+  </div>
+  <div class="keys">
+    <span><kbd>Zahl</kbd> <kbd>Enter</kbd> Tipp abgeben</span>
+    <span>Je näher dein Tipp, desto mehr Punkte</span>
+  </div>
+</div>
+<script src="../shared/garage.js"></script>
+<script>
+(()=>{
+const{W,H,COL,MONO,DISPLAY,DPR}=GG;
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const form=document.getElementById('guess'),input=document.getElementById('tipp'),sendBtn=document.getElementById('send');
+const CX=640,YT=150,YB=650;
+
+const JARS={
+  glas:    {name:'Einmachglas',in:'im Einmachglas',hw:t=>t<.06?150:(t>.93?185*Math.sqrt(Math.max(0,1-((t-.93)/.07)**2))+20:185)},
+  vase:    {name:'Bonbonvase',in:'in der Bonbonvase', hw:t=>t<.05?95:85+135*Math.sin(Math.PI*(.12+.82*t))},
+  flasche: {name:'Flasche',in:'in der Flasche',    hw:t=>t<.28?62:(t<.42?62+113*Math.sin((t-.28)/.14*Math.PI/2):(t>.95?175-60*((t-.95)/.05)**2:175))},
+  kanister:{name:'Kanister',in:'im Kanister',   hw:t=>t<.04?120:(t>.96?212-40*((t-.96)/.04)**2:212)},
+};
+const ITEMS={
+  murmel:{name:'Murmeln',draw:drawMarble},
+  mutter:{name:'Muttern',draw:drawNut},
+  korken:{name:'Kronkorken',draw:drawCap},
+  kugel: {name:'Stahlkugeln',draw:drawBall},
+};
+const POOLS=[
+  [{min:18,max:38, cover:0,time:20}],
+  [{min:40,max:80, cover:0,time:20},{min:35,max:70,cover:10,time:20}],
+  [{min:70,max:140,cover:0,time:20,mixed:true},{min:60,max:120,cover:8,time:20}],
+  [{min:110,max:200,cover:8,time:20},{min:100,max:180,cover:0,time:10,mixed:true}],
+  [{min:160,max:300,cover:6,time:20,mixed:true},{min:150,max:260,cover:5,time:15},{min:200,max:320,cover:0,time:12}],
+];
+
+let seed,ROUNDS=[],ri=0,round,jarImg=null,actual=0,playing=false,t0=0,guessVal=null,revealAt=0,total=0,results=[];
+
+/* ---------- Glas füllen: Teile fallen von oben und rutschen nach unten ---------- */
+function fillJar(r){
+  const R=GG.rng(seed+ri*104729),jar=JARS[r.jar],hw=y=>jar.hw((y-YT)/(YB-YT));
+  const target=R.int(r.min,r.max);
+  let A=0;for(let y=YT;y<YB;y+=2)A+=2*hw(y)*2;
+  const fill=R.range(.5,.85),rad=Math.sqrt(fill*A*.68/(target*Math.PI));
+  const items=[],cell=rad*2.6,hash=new Map(),key=(x,y)=>`${Math.floor(x/cell)},${Math.floor(y/cell)}`;
+  const inside=(x,y,ri)=>{if(y+ri>YB||y-ri<YT)return false;for(const yy of[y-ri*.7,y,y+ri*.7])if(Math.abs(x-CX)+ri>hw(yy))return false;return true;};
+  const free=(x,y,ri)=>{const gx=Math.floor(x/cell),gy=Math.floor(y/cell);for(let a=-1;a<=1;a++)for(let b=-1;b<=1;b++){const l=hash.get(`${gx+a},${gy+b}`);if(l)for(const o of l)if(Math.hypot(o.x-x,o.y-y)<o.r+ri-.4)return false;}return true;};
+  const ok=(x,y,ri)=>inside(x,y,ri)&&free(x,y,ri);
+  let maxHW=0;for(let y=YT;y<YB;y+=4)maxHW=Math.max(maxHW,hw(y));
+  for(let n=0;n<target;n++){
+    const ri=r.mixed?rad*R.range(.7,1.3):rad*R.range(.93,1.07);
+    let best=null;
+    for(let c=0;c<7;c++){
+      const step=ri*.3;
+      let x=CX+R.range(-1,1)*(maxHW-ri),y=YT+ri+2;
+      while(y<YB&&!inside(x,y,ri))y+=step;
+      if(!ok(x,y,ri))continue;
+      for(let it=0;it<60;it++){
+        while(ok(x,y+step,ri))y+=step;
+        let moved=false;
+        for(const dx of R()<.5?[-1,1]:[1,-1]){const nx=x+dx*ri*.35;if(ok(nx,y+step*.6,ri)){x=nx;y+=step*.6;moved=true;break;}}
+        if(!moved)break;
+      }
+      if(!best||y>best.y)best={x,y};
+    }
+    if(!best)break;
+    const it={x:best.x,y:best.y,r:ri,col:R.int(0,99),rot:R.range(0,Math.PI*2)};
+    items.push(it);const k=key(it.x,it.y);if(!hash.has(k))hash.set(k,[]);hash.get(k).push(it);
+  }
+  // Bild vorrendern
+  const c=document.createElement('canvas');c.width=W*DPR;c.height=H*DPR;const g=c.getContext('2d');g.scale(DPR,DPR);
+  const shape=()=>{g.beginPath();g.moveTo(CX-hw(YT),YT);for(let y=YT;y<=YB;y+=3)g.lineTo(CX-hw(y),y);for(let y=YB;y>=YT;y-=3)g.lineTo(CX+hw(y),y);g.closePath();};
+  shape();g.fillStyle='rgba(160,210,220,.07)';g.fill();
+  g.save();shape();g.clip();items.sort((a,b)=>a.y-b.y).forEach(it=>ITEMS[r.item].draw(g,it));g.restore();
+  // Glas
+  shape();g.lineWidth=7;g.strokeStyle='rgba(200,230,240,.35)';g.stroke();g.lineWidth=2;g.strokeStyle='rgba(235,250,255,.55)';g.stroke();
+  const lg=g.createLinearGradient(CX-220,0,CX+220,0);lg.addColorStop(0,'rgba(255,255,255,0)');lg.addColorStop(.18,'rgba(255,255,255,.16)');lg.addColorStop(.26,'rgba(255,255,255,0)');lg.addColorStop(.8,'rgba(255,255,255,0)');lg.addColorStop(.86,'rgba(255,255,255,.08)');lg.addColorStop(1,'rgba(255,255,255,0)');
+  g.save();shape();g.clip();g.fillStyle=lg;g.fillRect(CX-230,YT,460,YB-YT);g.restore();
+  const lw=hw(YT)+14;GG.rr(g,CX-lw,YT-34,lw*2,30,6);g.fillStyle=r.jar==='kanister'?'#c2401f':'#9aa9ad';g.fill();g.fillStyle='rgba(0,0,0,.2)';for(let x=CX-lw+8;x<CX+lw-4;x+=10)g.fillRect(x,YT-30,3,22);
+  return{img:c,count:items.length};
+}
+const MCOLS=['#e94b3c','#2f7bd6','#f7d046','#1fa384','#7b3fa0','#f28c28','#e2587e','#5dc2e6'];
+function drawMarble(g,it){const c=MCOLS[it.col%MCOLS.length],gr=g.createRadialGradient(it.x-it.r*.35,it.y-it.r*.35,it.r*.1,it.x,it.y,it.r);gr.addColorStop(0,'#fff');gr.addColorStop(.25,c);gr.addColorStop(1,'#111');g.fillStyle=gr;g.beginPath();g.arc(it.x,it.y,it.r,0,7);g.fill();g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=it.r*.18;g.beginPath();g.arc(it.x,it.y,it.r*.55,it.rot,it.rot+2);g.stroke();}
+function drawNut(g,it){g.save();g.translate(it.x,it.y);g.rotate(it.rot);g.beginPath();for(let k=0;k<6;k++){const a=k*Math.PI/3;g[k?'lineTo':'moveTo'](Math.cos(a)*it.r,Math.sin(a)*it.r);}g.closePath();const gr=g.createLinearGradient(-it.r,-it.r,it.r,it.r);gr.addColorStop(0,'#dfe6e8');gr.addColorStop(1,it.col%3?'#6d7a80':'#b08a3c');g.fillStyle=gr;g.fill();g.strokeStyle='#3b464b';g.lineWidth=1;g.stroke();g.fillStyle='#1b2226';g.beginPath();g.arc(0,0,it.r*.45,0,7);g.fill();g.restore();}
+function drawCap(g,it){const c=['#c93b3b','#2f6db5','#e8b33a','#3a9a5b','#eaeaea'][it.col%5];g.save();g.translate(it.x,it.y);g.rotate(it.rot);g.beginPath();for(let k=0;k<42;k++){const a=k/42*Math.PI*2,rr=k%2?it.r:it.r*.86;g.lineTo(Math.cos(a)*rr,Math.sin(a)*rr);}g.closePath();g.fillStyle='#b8c2c6';g.fill();g.fillStyle=c;g.beginPath();g.arc(0,0,it.r*.72,0,7);g.fill();g.fillStyle='rgba(255,255,255,.7)';g.fillRect(-it.r*.4,-it.r*.12,it.r*.8,it.r*.24);g.restore();}
+function drawBall(g,it){const gr=g.createRadialGradient(it.x-it.r*.4,it.y-it.r*.4,it.r*.05,it.x,it.y,it.r);gr.addColorStop(0,'#ffffff');gr.addColorStop(.35,'#b9c4c8');gr.addColorStop(1,'#2c363a');g.fillStyle=gr;g.beginPath();g.arc(it.x,it.y,it.r,0,7);g.fill();}
+
+/* ---------- Ablauf ---------- */
+function newGame(){
+  seed=GG.newSeed();const R=GG.rng(seed^0x9e3779b9);
+  const jars=R.shuffle(Object.keys(JARS)),items=R.shuffle(Object.keys(ITEMS));
+  ROUNDS=POOLS.map((p,i)=>({...R.pick(p),jar:jars[i%jars.length],item:items[(i+1)%items.length]}));
+  total=0;results=[];setupRound(0);showStart();
+}
+function setupRound(i){ri=i;round=ROUNDS[i];const f=fillJar(round);jarImg=f.img;actual=f.count;playing=false;guessVal=null;revealAt=0;input.value='';setForm(false);}
+function setForm(on){input.disabled=!on;sendBtn.disabled=!on;if(on)setTimeout(()=>input.focus({preventScroll:true}),30);}
+function begin(){ov.hide();playing=true;t0=performance.now();setForm(true);}
+const elapsed=()=>(performance.now()-t0)/1000;
+function submit(v){
+  if(!playing)return;playing=false;setForm(false);
+  guessVal=Number.isFinite(v)?Math.max(0,Math.round(v)):null;revealAt=performance.now();
+  const err=guessVal===null?1:Math.abs(guessVal-actual)/actual;
+  const pts=guessVal===null?0:(err<=.02?150:Math.max(0,Math.round(120*(1-err/.4))));
+  total+=pts;results.push({jar:JARS[round.jar].name,item:ITEMS[round.item].name,actual,guess:guessVal,err,pts});
+  GG.sfx(pts>=100?'win':pts>0?'ok':'err');
+  setTimeout(showSummary,2600);
+}
+form.addEventListener('submit',e=>{e.preventDefault();const v=parseInt(input.value,10);if(!Number.isFinite(v)){GG.toast('Bitte eine Zahl eingeben');return;}submit(v);});
+
+/* ---------- Zeichnen ---------- */
+function drawCloth(now){
+  ctx.save();ctx.translate(CX,YT-40);
+  ctx.beginPath();ctx.moveTo(-250,0);ctx.quadraticCurveTo(0,-30,250,0);ctx.lineTo(240,YB-YT+60);
+  for(let k=0;k<=10;k++)ctx.lineTo(240-k*48,YB-YT+60+(k%2?14:0));
+  ctx.closePath();ctx.clip();
+  ctx.fillStyle='#b8323c';ctx.fillRect(-260,-40,520,YB-YT+130);
+  ctx.fillStyle='rgba(255,255,255,.18)';
+  for(let y=-40;y<YB-YT+90;y+=36)for(let x=-260;x<260;x+=36)if(((x+y)/36|0)%2===0)ctx.fillRect(x,y,36,36);
+  ctx.fillStyle='rgba(0,0,0,.18)';for(let x=-220;x<240;x+=90)ctx.fillRect(x,-40,14,YB-YT+130);
+  ctx.restore();
+}
+function draw(dt,now){
+  GG.clear(ctx);
+  ctx.fillStyle='#2a1f17';ctx.fillRect(320,YB+6,640,60);ctx.fillStyle='#3a2b1f';ctx.fillRect(320,YB+6,640,10);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length}`,340,44,'left',COL.accent);
+  GG.text(ctx,`${ITEMS[round.item].name} ${JARS[round.jar].in}`,340,82,{size:30,weight:800});
+  const tl=playing?Math.max(0,round.time-elapsed()):0;
+  GG.label(ctx,'ZEIT',940,44,'right');GG.value(ctx,playing?`${Math.ceil(tl)} s`:'–',940,82,'right',tl<5&&playing?COL.rose:COL.ink,34);
+  if(playing&&tl<=0)submit(parseInt(input.value,10));
+
+  const covered=round.cover&&(playing?elapsed()>round.cover:!revealAt);
+  if(jarImg){ctx.drawImage(jarImg,0,0,W,H);}
+  if(covered)drawCloth(now);
+  if(playing&&round.cover&&!covered){const left=round.cover-elapsed();GG.rr(ctx,CX-70,YB-50,140,34,17);ctx.fillStyle='rgba(10,16,19,.85)';ctx.fill();GG.text(ctx,`noch ${Math.ceil(left)} s`,CX,YB-27,{font:MONO,weight:600,align:'center',color:left<3?COL.rose:COL.ink});}
+  if(revealAt){
+    const k=Math.min(1,(now-revealAt)/900),shown=Math.round(actual*k);
+    GG.rr(ctx,CX-170,250,340,150,14);ctx.fillStyle='rgba(10,16,19,.9)';ctx.fill();ctx.strokeStyle=COL.accent;ctx.stroke();
+    GG.label(ctx,'IM GLAS',CX,282,'center');GG.value(ctx,String(shown),CX,338,'center',COL.accent,52);
+    const r=results[results.length-1];
+    GG.text(ctx,r.guess===null?'Kein Tipp abgegeben':`Dein Tipp: ${r.guess} · ${(r.err*100).toLocaleString('de-DE',{maximumFractionDigits:1})} % daneben`,CX,378,{align:'center',color:COL.muted});
+  }
+
+  GG.panel(ctx,16,100,300,600);
+  GG.label(ctx,'SO GEHT’S',36,132);
+  let y=GG.wrap(ctx,'Schätz, wie viele Teile im Glas sind, und gib deinen Tipp rechts ein.',36,160,260,21)+8;
+  y=GG.wrap(ctx,'Volltreffer (bis 2 % daneben) gibt 150 Punkte. Ab 40 % daneben gibt es nichts mehr.',36,y,260,21)+12;
+  GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'DIESE RUNDE',36,y);y+=28;
+  [['Glas',JARS[round.jar].name],['Inhalt',ITEMS[round.item].name],['Größen',round.mixed?'gemischt':'gleich'],['Sichtbar',round.cover?`${round.cover} s`:'ganze Zeit'],['Zeit für Tipp',`${round.time} s`]].forEach(([a,b])=>{GG.text(ctx,a,36,y,{color:COL.muted});GG.text(ctx,b,296,y,{font:MONO,weight:600,align:'right',size:14});y+=26;});
+
+  GG.panel(ctx,964,100,300,600);
+  GG.label(ctx,'PUNKTE',984,132);GG.value(ctx,GG.num(total),984,168);
+  GG.label(ctx,'BISHERIGE RUNDEN',984,212);
+  results.forEach((r,k)=>{const yy=240+k*26;GG.text(ctx,`${k+1}. ${r.actual} · Tipp ${r.guess??'–'}`,984,yy,{size:14,color:COL.muted});GG.text(ctx,`+${r.pts}`,1244,yy,{size:14,font:MONO,weight:600,align:'right'});});
+  if(playing){const f=Math.max(0,tl/round.time);GG.rr(ctx,984,372,260,8,4);ctx.fillStyle=COL.board;ctx.fill();GG.rr(ctx,984,372,260*f,8,4);ctx.fillStyle=tl<5?COL.rose:COL.accent;ctx.fill();}
+  GG.drawToast(ctx,CX,YT+40,dt);
+}
+GG.loop(draw);
+
+/* ---------- Karten ---------- */
+const roundText=r=>`<strong>${ITEMS[r.item].name} ${JARS[r.jar].in}</strong> · ${r.cover?`nur ${r.cover} Sekunden sichtbar, `:''}${r.time} Sekunden für deinen Tipp.${r.mixed?' Die Teile sind verschieden groß.':''}`;
+function showStart(){
+  ov.show(`<div class="eyebrow">Minispiel · Schätzen</div><h2>Murmelglas</h2>
+    <p>Wie viele Teile sind im Glas? Wer am nächsten dran liegt, bekommt die meisten Punkte.</p>
+    <ul><li>Volltreffer bis 2 % daneben: 150 Punkte. Danach gibt es weniger, ab 40 % daneben nichts mehr.</li>
+    <li>Mit jeder Runde wird das Glas voller. Später ist es nur kurz zu sehen, dann kommt ein Tuch darüber.</li>
+    <li>Glas, Inhalt und Füllhöhe wechseln bei jedem Spiel.</li></ul>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
+    <button class="go" type="button">Runde 1 starten</button>`,begin);
+}
+function showSummary(){
+  const r=results[results.length-1];
+  if(ri>=ROUNDS.length-1)return showFinal();
+  const nx=ROUNDS[ri+1];
+  ov.show(`<div class="eyebrow">Runde ${ri+1} · ${r.item}</div><h2>${r.actual} im Glas</h2>
+    ${GG.rowsHtml([['Dein Tipp',r.guess??'–'],['Abweichung',r.guess===null?'–':`${(r.err*100).toLocaleString('de-DE',{maximumFractionDigits:1})} %`],['Runde',`+${r.pts}`,'total'],['Gesamt',GG.num(total)]])}
+    <div class="next">Runde ${ri+2} · ${roundText(nx)}</div>
+    <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{setupRound(ri+1);begin();});
+}
+function showFinal(){
+  ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden geschafft</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
+    ${GG.rowsHtml(results.map((r,i)=>[`${i+1}. ${r.actual} ${r.item} · Tipp ${r.guess??'–'}`,`+${r.pts}`]))}
+    <button class="go" type="button">Nochmal mit neuen Gläsern</button>`,newGame);
+}
+document.getElementById('restart').addEventListener('click',newGame);
+newGame();
+})();
+</script>
+</body>
+</html>

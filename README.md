@@ -8,6 +8,13 @@ Minispiel-Sammlung für die **Lübtheen Garage LAN**.
 |---|---|---|
 | **Scherbenwerk** – Glasscherben-Puzzle | [`scherbenwerk/`](scherbenwerk/) | Prototyp (Einzelspieler) |
 | **Rohrleitung** – Rohre drehen, Wasser verteilen | [`rohrleitung/`](rohrleitung/) | Prototyp (Einzelspieler) |
+| **Laser & Spiegel** – Spiegel klappen, Kristalle treffen | [`laser/`](laser/) | Prototyp (Einzelspieler) |
+| **Murmelglas** – Anzahl schätzen | [`murmeln/`](murmeln/) | Prototyp (Einzelspieler) |
+| **Farbfolge** – Simon Says mit Zusatzregeln | [`farbfolge/`](farbfolge/) | Prototyp (Einzelspieler) |
+| **Merkbild** – Bild merken, Fragen beantworten | [`merkbild/`](merkbild/) | Prototyp (Einzelspieler) |
+| **Startampel** – Reaktionstest, Fehlstart = raus | [`startampel/`](startampel/) | Prototyp (Einzelspieler) |
+| **Turmbau** – Blöcke stapeln | [`turmbau/`](turmbau/) | Prototyp (Einzelspieler) |
+| **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
 
 ### Scherbenwerk
 
@@ -51,11 +58,41 @@ Die Pumpe in der Mitte läuft, aber die Rohre sind verdreht. Ziel: Wasser zu jed
 
 **Starten:** `rohrleitung/index.html` im Browser öffnen.
 
+### Laser & Spiegel
+
+Ein Klick klappt einen Spiegel von / nach \. Ziel: Jeder Kristall wird von einem Laserstrahl getroffen. 5 Runden von 6 × 5 bis 10 × 9, mit Attrappen-Spiegeln, Betonblöcken und in manchen Varianten zwei oder drei Lasern. 3 Varianten pro Runde (ab Runde 2), jedes Feld wird neu erzeugt und ist immer lösbar.
+
+### Murmelglas
+
+Schätzen, wie viele Teile im Glas sind. Volltreffer (bis 2 % daneben) gibt 150 Punkte, ab 40 % daneben 0. Gläser (Einmachglas, Bonbonvase, Flasche, Kanister), Inhalte (Murmeln, Muttern, Kronkorken, Stahlkugeln) und Füllhöhe wechseln. Später ist das Glas nur wenige Sekunden zu sehen, dann kommt ein Tuch darüber.
+
+### Farbfolge
+
+Simon Says mit 4 Feldern. Ab Stufe 5, 9, 13 und 17 kommt je eine Zusatzregel dazu (Tempo, Sechs Felder, Nur Ton, Rückwärts, Mischen), in jedem Spiel in anderer Reihenfolge. Ein Fehler oder 6 Sekunden Pause = raus. Rekord wird im Browser gespeichert.
+
+### Merkbild
+
+Ein Bild ist 3–5 Sekunden zu sehen, danach kommen 2–5 Fragen (Anzahl, Farbe, Position, war etwas da?). Drei Szenen (Straße, Hafen, Werkstatt) mit zufällig verteilten Objekten. 25 Punkte pro richtiger Antwort, 10 Bonus unter 4 Sekunden.
+
+### Startampel
+
+5 Runden mit je 3 Versuchen. Signalarten: Startampel, Grünes Licht, Täuschung, Piep, Zahlenblitz, Zielscheibe und Gemischt, pro Runde zufällig aus einem Pool. Zu früh geklickt oder unter 100 ms = Fehlstart = raus.
+
+### Turmbau
+
+Blöcke hängen am Kran und werden mit Klick/Leertaste fallen gelassen. Überstehendes wird abgeschnitten, genau getroffen gibt „Perfekt“ (3 in Folge machen den Block breiter). Alle 6 Etagen wechselt der Kranmodus (Laufkatze, Pendel, Kranfahrt), später kommt Wind. Reihenfolge und Material wechseln pro Spiel.
+
+### Schubsarena
+
+Gegen 3–6 Bots auf einer schrumpfenden Plattform. Rollen mit WASD/Pfeiltasten, Rammstoß mit der Leertaste. Arenen: Scheibe, Quadrat, Sechseck, Ring mit Loch, teils mit Glatteis, Prellböcken oder schweren Gegnern. Nach 75 Sekunden verschwindet die Plattform ganz. Platzpunkte 10/6/4/3/2/1.
+
+## Technik
+
+Die neuen Spiele nutzen gemeinsame Bausteine aus [`shared/`](shared/) (`garage.css` für die Optik, `garage.js` für Canvas, Zufall, Sound und Startkarten). Scherbenwerk und Rohrleitung sind noch eigenständige Dateien.
+
 ## Ideen für weitere Minispiele
 
-- Laser & Spiegel, Schiebepuzzle-Rennen
-- Fehlersuche, Merk-dir-das-Bild, Schätzen, Simon Says
-- Reaktionsduell, Turm stapeln, Tipprennen, Arena-Schubsen
+- Schiebepuzzle-Rennen, Fehlersuche, Tipprennen
 - Team: Blind lotsen, Montagsmaler, Bombe entschärfen
 - Party: Freunde-Quiz, Bluff-Runde
 

@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Schubsarena</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
+<style>:root{--accent:#f0b24a}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Schubs<em>arena</em></h1>
+      <div class="sub">Minispiel der Garage Games · 5 Runden · letzter auf der Plattform gewinnt</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="Arena"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+  <div class="keys">
+    <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> oder <kbd>Pfeiltasten</kbd> rollen</span>
+    <span><kbd>Leertaste</kbd> Rammstoß</span>
+    <span>Am Handy: Finger halten zum Rollen, doppelt tippen zum Rammen</span>
+  </div>
+</div>
+<script src="../shared/garage.js"></script>
+<script>
+(()=>{
+const{W,H,COL,MONO}=GG;
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const CX=640,CY=405,R0=275,BR=18;
+const SHAPES={circle:'Runde Scheibe',square:'Quadrat',hex:'Sechseck',ring:'Ring mit Loch'};
+const POOLS=[
+  [{shape:'circle',bots:3,rate:5},{shape:'square',bots:3,rate:5}],
+  [{shape:'hex',bots:4,rate:5.5},{shape:'circle',bots:4,rate:5.5,bumpers:3}],
+  [{shape:'ring',bots:4,rate:5},{shape:'square',bots:4,rate:6,ice:true}],
+  [{shape:'circle',bots:5,rate:6,ice:true},{shape:'hex',bots:5,rate:6,bumpers:4},{shape:'ring',bots:5,rate:5.5,bumpers:2}],
+  [{shape:'square',bots:5,rate:6.5,ice:true,bumpers:3},{shape:'ring',bots:5,rate:6,ice:true},{shape:'hex',bots:6,rate:6.5,heavy:true}],
+];
+const AGGR=[.7,.8,.88,.94,1];
+const BOTS=[['Kolben',COL.rose],['Zündi',COL.sea],['Turbo',COL.water],['Mutter',COL.violet],['Ventil',COL.lime],['Kurbel',COL.steel]];
+const PLACE_PTS=[10,6,4,3,2,1,1];
+
+let seed,ROUNDS=[],ri=0,round,balls=[],bumpers=[],t=0,radius=R0,hole=0,state='idle',placements=[],total=0,results=[],keys={},pointer=null,lastTap=0,speed=1;
+
+/* ---------- Form der Plattform ---------- */
+function edge(x,y){ // Abstand zum Rand, positiv = auf der Plattform
+  const dx=x-CX,dy=y-CY,d=Math.hypot(dx,dy);
+  if(round.shape==='circle')return radius-d;
+  if(round.shape==='square')return radius*.88-Math.max(Math.abs(dx),Math.abs(dy));
+  if(round.shape==='hex'){let m=0;for(let k=0;k<3;k++){const a=k*Math.PI/3;m=Math.max(m,Math.abs(dx*Math.cos(a)+dy*Math.sin(a)));}return radius*.93-m;}
+  return Math.min(radius-d,d-hole);
+}
+function inward(x,y){const e=.5,gx=edge(x+e,y)-edge(x-e,y),gy=edge(x,y+e)-edge(x,y-e),l=Math.hypot(gx,gy)||1;return[gx/l,gy/l];}
+function shapePath(r){
+  ctx.beginPath();
+  if(round.shape==='circle'||round.shape==='ring'){ctx.arc(CX,CY,r,0,7);if(round.shape==='ring'){ctx.moveTo(CX+hole,CY);ctx.arc(CX,CY,hole,0,7,true);}}
+  else if(round.shape==='square'){const s=r*.88;ctx.rect(CX-s,CY-s,2*s,2*s);}
+  else{const a=r*.93/Math.cos(Math.PI/6);for(let k=0;k<6;k++){const ang=Math.PI/6+k*Math.PI/3;ctx[k?'lineTo':'moveTo'](CX+Math.cos(ang)*a,CY+Math.sin(ang)*a);}ctx.closePath();}
+}
+
+/* ---------- Ablauf ---------- */
+function newGame(){seed=GG.newSeed();const R=GG.rng(seed);ROUNDS=POOLS.map(p=>R.pick(p));total=0;results=[];setupRound(0);showStart();}
+function setupRound(i){
+  ri=i;round=ROUNDS[i];const R=GG.rng(seed+i*7907);
+  radius=R0;hole=round.shape==='ring'?70:0;t=0;placements=[];speed=1;state='idle';
+  const n=round.bots+1,startR=round.shape==='ring'?170:150,off=R.range(0,Math.PI*2);
+  const names=R.shuffle(BOTS.slice());
+  balls=[];for(let k=0;k<n;k++){const a=off+k*2*Math.PI/n;balls.push({x:CX+Math.cos(a)*startR,y:CY+Math.sin(a)*startR,vx:0,vy:0,m:k&&round.heavy?1.35:1,
+    name:k?names[k-1][0]:'Du',col:k?names[k-1][1]:COL.accent,player:k===0,alive:true,fall:0,cd:R.range(.5,1.5),wander:R.range(0,6.28),dash:0,R:GG.rng(seed+i*13+k)});}
+  bumpers=[];const nb=round.bumpers||0;for(let k=0;k<nb;k++){const a=off+Math.PI/nb+k*2*Math.PI/nb;bumpers.push({x:CX+Math.cos(a)*(round.shape==='ring'?120:95),y:CY+Math.sin(a)*(round.shape==='ring'?120:95),r:22,hit:0});}
+}
+function begin(){ov.hide();state='countdown';t=-3;}
+function aliveBalls(){return balls.filter(b=>b.alive);}
+function eliminate(b){b.alive=false;placements.unshift(b);GG.sfx(b.player?'err':'pop');
+  if(b.player){const place=aliveBalls().length+1;GG.toast(`Runtergefallen – Platz ${place}`,COL.rose);speed=3;}
+  if(aliveBalls().length<=1)endRound();}
+function endRound(){
+  if(state==='end')return;state='end';
+  aliveBalls().forEach(b=>placements.unshift(b));
+  const place=placements.findIndex(b=>b.player)+1,pts=PLACE_PTS[place-1]||1;total+=pts;
+  results.push({shape:SHAPES[round.shape],place,n:balls.length,pts,winner:placements[0].name});
+  if(place===1)GG.sfx('win');
+  setTimeout(showSummary,1500);
+}
+function dash(b,dx,dy){if(b.cd>0||!b.alive||b.fall)return;const l=Math.hypot(dx,dy);if(l<.01)return;b.vx+=dx/l*430;b.vy+=dy/l*430;b.cd=2.2;b.dash=.25;if(b.player)GG.sfx('tick');}
+
+/* ---------- Steuerung ---------- */
+const KEYMAP={ArrowUp:'u',KeyW:'u',ArrowDown:'d',KeyS:'d',ArrowLeft:'l',KeyA:'l',ArrowRight:'r',KeyD:'r'};
+window.addEventListener('keydown',e=>{if(KEYMAP[e.code]){keys[KEYMAP[e.code]]=true;e.preventDefault();}if(e.code==='Space'&&!ov.open){e.preventDefault();const p=balls[0],[ix,iy]=inputDir();dash(p,ix||p.vx,iy||p.vy);}});
+window.addEventListener('keyup',e=>{if(KEYMAP[e.code])keys[KEYMAP[e.code]]=false;});
+cv.addEventListener('pointerdown',e=>{e.preventDefault();pointer=GG.local(cv,e);const now=performance.now();if(now-lastTap<300){const p=balls[0];dash(p,pointer.x-p.x,pointer.y-p.y);}lastTap=now;});
+cv.addEventListener('pointermove',e=>{if(pointer)pointer=GG.local(cv,e);});
+['pointerup','pointercancel','pointerleave'].forEach(n=>cv.addEventListener(n,()=>pointer=null));
+function inputDir(){
+  let x=(keys.r?1:0)-(keys.l?1:0),y=(keys.d?1:0)-(keys.u?1:0);
+  if(pointer&&!x&&!y){const p=balls[0];x=pointer.x-p.x;y=pointer.y-p.y;if(Math.hypot(x,y)<10)x=y=0;}
+  const l=Math.hypot(x,y);return l?[x/l,y/l]:[0,0];
+}
+
+/* ---------- Physik ---------- */
+function step(dt){
+  t+=dt;
+  const sd=t>75;   // Entscheidung: danach schrumpft die Plattform bis auf null
+  if(t>4)radius=Math.max(sd?0:(hole?hole+46:52),R0-(t-4)*round.rate*(t>70?3:1));
+  if(sd&&round.shape==='ring')hole=Math.min(radius,70+(t-75)*12);
+  if(t>75&&t-dt<=75)GG.toast('Entscheidung! Die Plattform verschwindet',COL.rose);
+  const fr=round.ice?.55:2.3,acc=1100;
+  for(const b of balls){
+    if(!b.alive)continue;
+    if(b.fall){b.fall+=dt;if(b.fall>.55)eliminate(b);continue;}
+    b.cd=Math.max(0,b.cd-dt);b.dash=Math.max(0,b.dash-dt);
+    let ax=0,ay=0;
+    if(b.player){[ax,ay]=inputDir();}
+    else{
+      const R=b.R,others=balls.filter(o=>o!==b&&o.alive&&!o.fall);
+      let tx=CX,ty=CY;
+      if(others.length){let best=null,bd=1e9;for(const o of others){const d=Math.hypot(o.x-b.x,o.y-b.y)-(o.player?40:0);if(d<bd){bd=d;best=o;}}
+        const[ix,iy]=inward(best.x,best.y);tx=best.x-ix*30;ty=best.y-iy*30;   // von der Innenseite anschieben
+        if(bd<95&&b.cd===0&&R()<.03*AGGR[ri]*3)dash(b,best.x-b.x,best.y-b.y);}
+      b.wander+=R.range(-1,1)*dt*3;
+      let dx=tx-b.x+Math.cos(b.wander)*25,dy=ty-b.y+Math.sin(b.wander)*25;const l=Math.hypot(dx,dy)||1;ax=dx/l;ay=dy/l;
+      const e=edge(b.x,b.y),[nx,ny]=inward(b.x,b.y),vOut=-(b.vx*nx+b.vy*ny),danger=(80-e)/80+vOut/400;
+      if(danger>0){ax+=nx*danger*2.2;ay+=ny*danger*2.2;}
+      const al=Math.hypot(ax,ay)||1;ax=ax/al*AGGR[ri];ay=ay/al*AGGR[ri];
+    }
+    b.vx+=ax*acc*dt/b.m;b.vy+=ay*acc*dt/b.m;
+    const damp=Math.exp(-fr*dt);b.vx*=damp;b.vy*=damp;
+    const sp=Math.hypot(b.vx,b.vy),max=b.dash?720:330;if(sp>max){b.vx*=max/sp;b.vy*=max/sp;}
+    b.x+=b.vx*dt;b.y+=b.vy*dt;
+  }
+  const live=balls.filter(b=>b.alive&&!b.fall);
+  for(let i=0;i<live.length;i++)for(let j=i+1;j<live.length;j++){
+    const a=live[i],c=live[j],dx=c.x-a.x,dy=c.y-a.y,d=Math.hypot(dx,dy);
+    if(d<2*BR&&d>0){const nx=dx/d,ny=dy/d,ovl=2*BR-d;a.x-=nx*ovl/2;a.y-=ny*ovl/2;c.x+=nx*ovl/2;c.y+=ny*ovl/2;
+      const vrel=(c.vx-a.vx)*nx+(c.vy-a.vy)*ny;
+      if(vrel<0){const j2=-(1.9)*vrel/(1/a.m+1/c.m)+40;a.vx-=j2*nx/a.m;a.vy-=j2*ny/a.m;c.vx+=j2*nx/c.m;c.vy+=j2*ny/c.m;if(-vrel>180)GG.tone(160+Math.random()*60,.06,'triangle',.06);}}
+  }
+  for(const bp of bumpers){if(edge(bp.x,bp.y)<bp.r)continue;bp.hit=Math.max(0,bp.hit-dt);
+    for(const b of live){const dx=b.x-bp.x,dy=b.y-bp.y,d=Math.hypot(dx,dy);if(d<BR+bp.r&&d>0){const nx=dx/d,ny=dy/d;b.x=bp.x+nx*(BR+bp.r);b.y=bp.y+ny*(BR+bp.r);const vn=b.vx*nx+b.vy*ny;if(vn<0){b.vx-=2.3*vn*nx;b.vy-=2.3*vn*ny;b.vx+=nx*120;b.vy+=ny*120;bp.hit=.2;}}}}
+  for(const b of live)if(edge(b.x,b.y)<0)b.fall=.0001;
+}
+
+/* ---------- Zeichnen ---------- */
+function draw(dt,now){
+  if(state==='countdown'){t+=dt;if(t>=0){state='play';t=0;}}
+  else if(state==='play'||state==='end'){const n=speed>1?6:2;for(let k=0;k<n;k++)step(dt/2);}
+  GG.clear(ctx);
+  ctx.fillStyle='#07090b';ctx.fillRect(330,96,620,620);
+  const g=ctx.createRadialGradient(CX,CY,50,CX,CY,420);g.addColorStop(0,'#141b20');g.addColorStop(1,'#07090b');ctx.fillStyle=g;ctx.fillRect(330,96,620,620);
+  // Plattform
+  ctx.save();shapePath(radius);ctx.fillStyle='#2b363d';ctx.fill('evenodd');ctx.clip('evenodd');
+  ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;for(let x=CX-R0;x<CX+R0;x+=30){ctx.beginPath();ctx.moveTo(x,CY-R0);ctx.lineTo(x,CY+R0);ctx.stroke();ctx.beginPath();ctx.moveTo(CX-R0,x-CX+CY);ctx.lineTo(CX+R0,x-CX+CY);ctx.stroke();}
+  if(round.ice){ctx.fillStyle='rgba(159,214,255,.12)';ctx.fill();}
+  ctx.restore();
+  const warn=t>3&&state==='play';
+  ctx.save();shapePath(radius);ctx.lineWidth=8;ctx.strokeStyle=COL.amber;ctx.setLineDash([14,14]);ctx.lineDashOffset=-now/40;ctx.globalAlpha=warn?.9:.5;ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  for(const bp of bumpers){if(edge(bp.x,bp.y)<bp.r)continue;ctx.fillStyle=bp.hit?'#fff':COL.rose;ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r,0,7);ctx.fill();ctx.fillStyle='#4a1a1e';ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r*.55,0,7);ctx.fill();}
+  for(const b of balls){
+    if(!b.alive&&!b.fall)continue;if(!b.alive)continue;
+    const s=b.fall?Math.max(0,1-b.fall/.55):1;
+    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(b.x+4,b.y+6,BR*s,BR*s*.8,0,0,7);ctx.fill();
+    const gr=ctx.createRadialGradient(b.x-6*s,b.y-6*s,2,b.x,b.y,BR*s*b.m);gr.addColorStop(0,'#fff');gr.addColorStop(.3,b.col);gr.addColorStop(1,'#111');
+    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(b.x,b.y,BR*s*Math.sqrt(b.m),0,7);ctx.fill();
+    if(b.dash){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,BR+5,0,7);ctx.stroke();}
+    if(b.player){ctx.strokeStyle=COL.accent;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(b.x,b.y,BR+7,0,7);ctx.stroke();}
+    GG.text(ctx,b.name,b.x,b.y-BR-10,{size:12,weight:600,align:'center',font:MONO,color:b.player?COL.accent:COL.ink});
+  }
+  if(state==='countdown')GG.value(ctx,String(Math.ceil(-t)),CX,CY+30,'center',COL.accent,110);
+  // Kopf und Seiten
+  ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,96);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length}`,340,40,'left',COL.accent);
+  GG.text(ctx,SHAPES[round.shape],340,78,{size:32,weight:800});
+  GG.label(ctx,'ÜBRIG',940,40,'right');GG.value(ctx,`${aliveBalls().length} / ${balls.length}`,940,78,'right',COL.ink,32);
+  GG.panel(ctx,16,100,300,600);GG.label(ctx,'SO GEHT’S',36,132);
+  let y=GG.wrap(ctx,'Schubs die anderen Kugeln von der Plattform und bleib selbst drauf. Der Rand rückt nach und nach ein.',36,160,260,21)+8;
+  y=GG.wrap(ctx,'Mit der Leertaste machst du einen Rammstoß. Danach braucht er gut 2 Sekunden zum Aufladen.',36,y,260,21)+12;
+  GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'DIESE RUNDE',36,y);y+=28;
+  [['Plattform',SHAPES[round.shape]],['Gegner',String(round.bots)],['Boden',round.ice?'Glatteis':'griffig'],['Prellböcke',String(round.bumpers||0)],['Gegner',round.heavy?'schwer':'normal']].forEach(([a,b],k)=>{if(k===4&&!round.heavy)return;GG.text(ctx,a,36,y,{color:COL.muted});GG.text(ctx,b,296,y,{font:MONO,weight:600,align:'right',size:14});y+=26;});
+  GG.panel(ctx,964,100,300,600);
+  GG.label(ctx,'PUNKTE',984,132);GG.value(ctx,GG.num(total),984,168);
+  const p=balls[0];GG.label(ctx,'RAMMSTOSS',984,212);GG.rr(ctx,984,224,260,8,4);ctx.fillStyle=COL.board;ctx.fill();GG.rr(ctx,984,224,260*(1-p.cd/2.2),8,4);ctx.fillStyle=p.cd?COL.steel:COL.accent;ctx.fill();
+  GG.label(ctx,'AUSGESCHIEDEN',984,276);
+  placements.slice().reverse().forEach((b,k)=>{GG.text(ctx,`${balls.length-k}. ${b.name}`,984,304+k*24,{size:14,color:b.player?COL.accent:COL.muted});});
+  GG.wrap(ctx,'Platzpunkte: 1. Platz 10, 2. Platz 6, 3. Platz 4, danach weniger.',984,650,260,20,{color:COL.muted,size:14});
+  GG.drawToast(ctx,CX,140,dt);
+}
+GG.loop(draw);
+
+/* ---------- Karten ---------- */
+const roundText=r=>`<strong>${SHAPES[r.shape]}</strong> · ${r.bots} Gegner${r.ice?', Glatteis':''}${r.bumpers?`, ${r.bumpers} Prellböcke`:''}${r.heavy?', schwere Gegner':''}.`;
+function showStart(){
+  ov.show(`<div class="eyebrow">Minispiel · Action</div><h2>Schubsarena</h2>
+    <p>Kleine Kugeln auf einer schrumpfenden Plattform. Wer als Letzter oben bleibt, gewinnt.</p>
+    <ul><li>Rollen mit WASD oder Pfeiltasten, Rammstoß mit der Leertaste.</li>
+    <li>Platz 1 bringt 10 Punkte, Platz 2 bringt 6 und Platz 3 bringt 4.</li>
+    <li>Jede Runde zieht eine andere Arena: Formen, Glatteis, Prellböcke oder schwere Gegner.</li></ul>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
+    <button class="go" type="button">Runde 1 starten</button>`,begin);
+}
+function showSummary(){
+  const r=results[results.length-1];
+  if(ri>=ROUNDS.length-1)return showFinal();
+  const nx=ROUNDS[ri+1];
+  ov.show(`<div class="eyebrow">Runde ${ri+1} · ${r.shape}</div><h2>${r.place===1?'Gewonnen!':`Platz ${r.place} von ${r.n}`}</h2>
+    ${GG.rowsHtml([['Sieger',r.winner],['Runde',`+${r.pts}`,'total'],['Gesamt',GG.num(total)]])}
+    <div class="next">Runde ${ri+2} · ${roundText(nx)}</div>
+    <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{setupRound(ri+1);begin();});
+}
+function showFinal(){
+  ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden gespielt</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
+    ${GG.rowsHtml(results.map((r,i)=>[`${i+1}. ${r.shape} · Platz ${r.place}/${r.n}`,`+${r.pts}`]))}
+    <button class="go" type="button">Nochmal</button>`,newGame);
+}
+document.getElementById('restart').addEventListener('click',newGame);
+newGame();
+})();
+</script>
+</body>
+</html>

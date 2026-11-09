@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Merkbild</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
+<style>:root{--accent:#4aa8ec}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Merk<em>bild</em></h1>
+      <div class="sub">Minispiel der Garage Games · 5 Runden</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="Bild und Fragen"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+  <div class="keys">
+    <span>Bild genau anschauen, es verschwindet nach wenigen Sekunden</span>
+    <span><kbd>Klick</kbd> oder <kbd>1</kbd>–<kbd>4</kbd> Antwort wählen</span>
+  </div>
+</div>
+<script src="../shared/garage.js"></script>
+<script>
+(()=>{
+const{W,H,COL,MONO,DISPLAY}=GG;
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const SX=200,SY=110,SW=880,SH=495;
+
+const C={rot:'#d83b3b',blau:'#2f6fd0',gelb:'#f2c230',grün:'#2f9a4f',weiß:'#f2f0ea',schwarz:'#222428',grau:'#8b9196',orange:'#ee8a2a',braun:'#8a5a2b'};
+const ADJ={rot:'rote',blau:'blaue',gelb:'gelbe',grün:'grüne',weiß:'weiße',schwarz:'schwarze',grau:'graue',orange:'orange',braun:'braune'};
+
+/* ---------- Zeichenfunktionen (x,y = Ankerpunkt, s = Größe) ---------- */
+const D={
+  vogel(g,x,y,s,c){g.fillStyle=c;g.beginPath();g.ellipse(x,y,s*.5,s*.3,0,0,7);g.fill();g.beginPath();g.arc(x+s*.45,y-s*.2,s*.2,0,7);g.fill();g.fillStyle='#f0a020';g.beginPath();g.moveTo(x+s*.62,y-s*.22);g.lineTo(x+s*.85,y-s*.15);g.lineTo(x+s*.62,y-s*.1);g.fill();g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.moveTo(x-s*.2,y-s*.05);g.lineTo(x+s*.15,y-s*.05);g.lineTo(x-s*.1,y-s*.55);g.fill();g.fillStyle=c;g.beginPath();g.moveTo(x-s*.45,y);g.lineTo(x-s*.8,y-s*.2);g.lineTo(x-s*.75,y+s*.15);g.fill();},
+  wolke(g,x,y,s,c){g.fillStyle=c;[[0,0,.5],[-.45,.12,.35],[.45,.12,.38],[.15,-.2,.38]].forEach(([a,b,r])=>{g.beginPath();g.arc(x+a*s,y+b*s,r*s,0,7);g.fill();});},
+  auto(g,x,y,s,c){const w=s*1.6,h=s*.42;GG.rr(g,x-w/2,y-h-s*.12,w,h,s*.1);g.fillStyle=c;g.fill();g.beginPath();g.moveTo(x-w*.3,y-h-s*.1);g.lineTo(x-w*.18,y-h-s*.45);g.lineTo(x+w*.2,y-h-s*.45);g.lineTo(x+w*.32,y-h-s*.1);g.fill();g.fillStyle='#bfe0f2';g.fillRect(x-w*.15,y-h-s*.4,w*.15,s*.26);g.fillRect(x+w*.03,y-h-s*.4,w*.15,s*.26);g.fillStyle='#111';[-.3,.3].forEach(k=>{g.beginPath();g.arc(x+k*w,y-s*.13,s*.17,0,7);g.fill();});g.fillStyle='#aaa';[-.3,.3].forEach(k=>{g.beginPath();g.arc(x+k*w,y-s*.13,s*.07,0,7);g.fill();});},
+  baum(g,x,y,s,c){g.fillStyle='#6b4423';g.fillRect(x-s*.08,y-s*.7,s*.16,s*.7);g.fillStyle=c;[[0,-.95,.42],[-.25,-.72,.3],[.25,-.72,.3]].forEach(([a,b,r])=>{g.beginPath();g.arc(x+a*s,y+b*s,r*s,0,7);g.fill();});},
+  haus(g,x,y,s,c){const w=s*.9,h=s*.7;g.fillStyle=c;g.fillRect(x-w/2,y-h,w,h);g.fillStyle='#5a2a24';g.beginPath();g.moveTo(x-w*.6,y-h);g.lineTo(x,y-h-s*.45);g.lineTo(x+w*.6,y-h);g.fill();g.fillStyle='#4a3a2a';g.fillRect(x-s*.08,y-s*.28,s*.16,s*.28);g.fillStyle='#bfe0f2';g.fillRect(x-w*.38,y-h*.8,s*.18,s*.16);g.fillRect(x+w*.38-s*.18,y-h*.8,s*.18,s*.16);g.strokeStyle='rgba(0,0,0,.25)';g.strokeRect(x-w/2,y-h,w,h);},
+  person(g,x,y,s,c){g.fillStyle='#2b2f3a';g.fillRect(x-s*.18,y-s*.5,s*.14,s*.5);g.fillRect(x+s*.04,y-s*.5,s*.14,s*.5);g.fillStyle=c;GG.rr(g,x-s*.25,y-s*1.05,s*.5,s*.58,s*.1);g.fill();g.fillStyle='#e8b98f';g.beginPath();g.arc(x,y-s*1.22,s*.17,0,7);g.fill();},
+  boot(g,x,y,s,c){g.fillStyle=c;g.beginPath();g.moveTo(x-s*.8,y-s*.35);g.lineTo(x+s*.8,y-s*.35);g.lineTo(x+s*.55,y);g.lineTo(x-s*.55,y);g.fill();g.fillStyle='#f2f0ea';g.fillRect(x-s*.25,y-s*.65,s*.45,s*.3);g.fillStyle='#bfe0f2';g.fillRect(x-s*.18,y-s*.58,s*.12,s*.12);g.fillRect(x+s*.02,y-s*.58,s*.12,s*.12);},
+  fisch(g,x,y,s,c){g.fillStyle=c;g.beginPath();g.ellipse(x,y,s*.5,s*.28,-.3,0,7);g.fill();g.beginPath();g.moveTo(x-s*.4,y+s*.1);g.lineTo(x-s*.8,y-s*.15);g.lineTo(x-s*.72,y+s*.38);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(x+s*.25,y-s*.1,s*.07,0,7);g.fill();},
+  fass(g,x,y,s,c){GG.rr(g,x-s*.42,y-s*1.1,s*.84,s*1.1,s*.2);g.fillStyle=c;g.fill();g.fillStyle='rgba(0,0,0,.3)';g.fillRect(x-s*.42,y-s*.85,s*.84,s*.08);g.fillRect(x-s*.42,y-s*.33,s*.84,s*.08);},
+  kiste(g,x,y,s,c){g.fillStyle=c;g.fillRect(x-s*.5,y-s,s,s);g.strokeStyle='rgba(0,0,0,.35)';g.lineWidth=2;g.strokeRect(x-s*.5,y-s,s,s);g.beginPath();g.moveTo(x-s*.5,y-s);g.lineTo(x+s*.5,y);g.moveTo(x+s*.5,y-s);g.lineTo(x-s*.5,y);g.stroke();},
+  reifen(g,x,y,s,c){g.fillStyle=c;g.beginPath();g.arc(x,y-s*.5,s*.5,0,7);g.fill();g.fillStyle='#9aa1a6';g.beginPath();g.arc(x,y-s*.5,s*.24,0,7);g.fill();g.fillStyle='#555';g.beginPath();g.arc(x,y-s*.5,s*.08,0,7);g.fill();},
+  kanister(g,x,y,s,c){GG.rr(g,x-s*.38,y-s,s*.76,s,s*.08);g.fillStyle=c;g.fill();g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x-s*.25,y-s*1.12,s*.32,s*.14);g.fillStyle='rgba(255,255,255,.25)';g.beginPath();g.moveTo(x-s*.3,y-s*.8);g.lineTo(x+s*.3,y-s*.2);g.lineWidth=3;g.strokeStyle='rgba(0,0,0,.2)';g.stroke();},
+  lampe(g,x,y,s,c){g.strokeStyle='#222';g.lineWidth=2;g.beginPath();g.moveTo(x,SY);g.lineTo(x,y-s*.4);g.stroke();g.fillStyle=c;g.beginPath();g.moveTo(x-s*.5,y);g.lineTo(x+s*.5,y);g.lineTo(x+s*.18,y-s*.4);g.lineTo(x-s*.18,y-s*.4);g.fill();const lg=g.createLinearGradient(0,y,0,y+s*1.4);lg.addColorStop(0,'rgba(255,240,180,.22)');lg.addColorStop(1,'rgba(255,240,180,0)');g.fillStyle=lg;g.beginPath();g.moveTo(x-s*.5,y);g.lineTo(x+s*.5,y);g.lineTo(x+s*1.1,y+s*1.4);g.lineTo(x-s*1.1,y+s*1.4);g.fill();},
+  werkzeugkiste(g,x,y,s,c){g.fillStyle=c;g.fillRect(x-s*.6,y-s*.5,s*1.2,s*.5);g.fillStyle='rgba(0,0,0,.25)';g.fillRect(x-s*.6,y-s*.32,s*1.2,s*.05);g.strokeStyle='#333';g.lineWidth=3;g.beginPath();g.moveTo(x-s*.25,y-s*.5);g.lineTo(x-s*.25,y-s*.7);g.lineTo(x+s*.25,y-s*.7);g.lineTo(x+s*.25,y-s*.5);g.stroke();},
+  uhr(g,x,y,s,c){g.fillStyle=c;g.beginPath();g.arc(x,y,s*.5,0,7);g.fill();g.fillStyle='#f6f3ea';g.beginPath();g.arc(x,y,s*.4,0,7);g.fill();g.strokeStyle='#222';g.lineWidth=2;g.beginPath();g.moveTo(x,y);g.lineTo(x,y-s*.3);g.moveTo(x,y);g.lineTo(x+s*.22,y+s*.05);g.stroke();},
+};
+/* Typen: Name, Grammatik, Farben, Zone (relativ zum Bild: x0,x1,y0,y1 für den Ankerpunkt), Größe, Box (Breite/Höhe relativ zu s), Anker unten (b) oder Mitte (c) */
+const T=(sg,pl,art,indef,colors,zone,s,bw,bh,anchor,draw)=>({sg,pl,art,indef,colors,zone,s,bw,bh,anchor,draw});
+const THEMES={
+  strasse:{name:'Straße',types:{
+    vogel: T('Vogel','Vögel','der','ein',['schwarz','rot','blau','gelb'],[.04,.96,.08,.38],28,1.7,.9,'c',D.vogel),
+    wolke: T('Wolke','Wolken','die','eine',['weiß','grau'],[.06,.94,.08,.28],52,1.8,1,'c',D.wolke),
+    haus:  T('Haus','Häuser','das','ein',['rot','blau','gelb','weiß'],[.08,.92,.56,.56],100,1.1,1.2,'b',D.haus),
+    baum:  T('Baum','Bäume','der','ein',['grün','orange'],[.05,.95,.6,.6],80,.9,1.4,'b',D.baum),
+    person:T('Person','Personen','die','eine',['rot','blau','grün','gelb'],[.05,.95,.66,.66],40,.6,1.45,'b',D.person),
+    auto:  T('Auto','Autos','das','ein',['rot','blau','gelb','grün','weiß','schwarz'],[.08,.92,.8,.92],62,1.65,.9,'b',D.auto)},
+    bg(g){let gr=g.createLinearGradient(0,SY,0,SY+SH*.56);gr.addColorStop(0,'#7fbbe6');gr.addColorStop(1,'#cfe8f5');g.fillStyle=gr;g.fillRect(SX,SY,SW,SH*.56);g.fillStyle='#8ab65a';g.fillRect(SX,SY+SH*.56,SW,SH*.04);g.fillStyle='#c9c3b6';g.fillRect(SX,SY+SH*.6,SW,SH*.07);g.fillStyle='#4a4f55';g.fillRect(SX,SY+SH*.67,SW,SH*.27);g.fillStyle='#f2f0ea';for(let x=SX+20;x<SX+SW;x+=80)g.fillRect(x,SY+SH*.8,40,5);g.fillStyle='#8ab65a';g.fillRect(SX,SY+SH*.94,SW,SH*.06);}},
+  hafen:{name:'Hafen',types:{
+    moewe: T('Möwe','Möwen','die','eine',['weiß','grau'],[.04,.96,.08,.36],28,1.7,.9,'c',D.vogel),
+    wolke: T('Wolke','Wolken','die','eine',['weiß','grau'],[.06,.94,.08,.28],52,1.8,1,'c',D.wolke),
+    boot:  T('Boot','Boote','das','ein',['rot','blau','gelb','weiß','grün'],[.08,.92,.56,.74],70,1.65,.75,'b',D.boot),
+    fisch: T('Fisch','Fische','der','ein',['orange','blau','gelb'],[.05,.95,.5,.74],30,1.6,.9,'c',D.fisch),
+    fass:  T('Fass','Fässer','das','ein',['rot','blau','gelb','grün'],[.05,.95,.95,.97],40,.9,1.15,'b',D.fass),
+    kiste: T('Kiste','Kisten','die','eine',['braun','blau','rot'],[.05,.95,.95,.97],42,1.05,1.05,'b',D.kiste)},
+    bg(g){let gr=g.createLinearGradient(0,SY,0,SY+SH*.45);gr.addColorStop(0,'#f2b880');gr.addColorStop(1,'#f7dcb4');g.fillStyle=gr;g.fillRect(SX,SY,SW,SH*.45);gr=g.createLinearGradient(0,SY+SH*.45,0,SY+SH*.8);gr.addColorStop(0,'#2a7aa8');gr.addColorStop(1,'#14476a');g.fillStyle=gr;g.fillRect(SX,SY+SH*.45,SW,SH*.35);g.strokeStyle='rgba(255,255,255,.25)';for(let k=0;k<30;k++){const x=SX+((k*137)%SW),y=SY+SH*(.48+((k*53)%30)/100);g.beginPath();g.moveTo(x,y);g.lineTo(x+30,y);g.stroke();}g.fillStyle='#8a6a48';g.fillRect(SX,SY+SH*.8,SW,SH*.2);g.fillStyle='rgba(0,0,0,.18)';for(let x=SX;x<SX+SW;x+=44)g.fillRect(x,SY+SH*.8,3,SH*.2);}},
+  werkstatt:{name:'Werkstatt',types:{
+    lampe: T('Lampe','Lampen','die','eine',['gelb','weiß','rot'],[.08,.92,.14,.14],40,1.1,.45,'b',D.lampe),
+    uhr:   T('Uhr','Uhren','die','eine',['schwarz','rot','blau'],[.06,.94,.3,.32],38,1.05,1.05,'c',D.uhr),
+    werkzeugkiste:T('Werkzeugkiste','Werkzeugkisten','die','eine',['rot','blau','gelb'],[.06,.94,.52,.52],50,1.25,.75,'b',D.werkzeugkiste),
+    reifen:T('Reifen','Reifen','der','ein',['schwarz'],[.05,.95,.78,.96],44,1.05,1.05,'b',D.reifen),
+    kanister:T('Kanister','Kanister','der','ein',['rot','gelb','grün','blau'],[.05,.95,.8,.96],40,.85,1.2,'b',D.kanister),
+    auto:  T('Auto','Autos','das','ein',['rot','blau','gelb','grün','weiß','schwarz'],[.12,.88,.86,.96],80,1.65,.9,'b',D.auto)},
+    bg(g){g.fillStyle='#59646b';g.fillRect(SX,SY,SW,SH*.7);g.fillStyle='rgba(255,255,255,.04)';for(let y=SY;y<SY+SH*.7;y+=28)g.fillRect(SX,y,SW,1);g.fillStyle='#6d5038';g.fillRect(SX,SY+SH*.52,SW,8);g.fillStyle='#3a3f44';g.fillRect(SX,SY+SH*.7,SW,SH*.3);g.fillStyle='#f2c230';for(let x=SX;x<SX+SW;x+=60)g.fillRect(x,SY+SH*.7,30,6);g.fillStyle='#2c3034';g.fillRect(SX,SY,SW,10);}},
+};
+const POOLS=[
+  [{objects:7, types:3,questions:2,view:5}],
+  [{objects:9, types:4,questions:3,view:5}],
+  [{objects:11,types:4,questions:3,view:5},{objects:10,types:5,questions:3,view:4}],
+  [{objects:13,types:5,questions:4,view:5},{objects:12,types:5,questions:4,view:4}],
+  [{objects:16,types:5,questions:4,view:5},{objects:14,types:6,questions:5,view:5},{objects:13,types:5,questions:4,view:3}],
+];
+
+let seed,ROUNDS=[],ri=0,round,scene=[],theme,qs=[],qi=0,phase='idle',phaseAt=0,choice=-1,total=0,results=[],roundPts=0,correctN=0,hover=-1;
+
+/* ---------- Szene und Fragen erzeugen ---------- */
+function buildScene(R){
+  theme=THEMES[round.theme];const keys=R.shuffle(Object.keys(theme.types)).slice(0,round.types);
+  const objs=[],boxes=[];
+  // jede Sorte mindestens einmal, Rest zufällig verteilt
+  const list=[...keys];while(list.length<round.objects)list.push(R.pick(keys));
+  for(const k of list){
+    const t=theme.types[k];
+    for(let a=0;a<120;a++){
+      const s=t.s*R.range(.85,1.1),x=SX+SW*R.range(t.zone[0],t.zone[1]),y=SY+SH*R.range(t.zone[2],t.zone[3]);
+      const w=s*t.bw,h=s*t.bh,bx=x-w/2,by=t.anchor==='b'?y-h:y-h/2,box=[bx-4,by-4,bx+w+4,by+h+4];
+      if(boxes.some(o=>box[0]<o[2]&&box[2]>o[0]&&box[1]<o[3]&&box[3]>o[1]))continue;
+      boxes.push(box);objs.push({k,x,y,s,color:R.pick(t.colors)});break;
+    }
+  }
+  scene=objs.sort((a,b)=>a.y-b.y);
+  return keys;
+}
+function numOptions(ans,R){const set=new Set([ans]);let d=1;while(set.size<4){const c=ans+(R()<.5?-d:d);if(c>=0)set.add(c);if(R()<.5)d++;if(d>6)set.add(set.size+ans+7);}return R.shuffle([...set]).map(String);}
+function makeQuestions(keys,R){
+  const types=theme.types,count=k=>scene.filter(o=>o.k===k).length,allKeys=Object.keys(types);
+  const gens=[
+    ()=>{const k=R.pick(keys),n=count(k);return{q:`Wie viele ${types[k].pl} waren zu sehen?`,opts:numOptions(n,R),ans:String(n)};},
+    ()=>{const cand=keys.filter(k=>types[k].colors.length>1);if(!cand.length)return null;const k=R.pick(cand),col=R.pick(scene.filter(o=>o.k===k)).color,n=scene.filter(o=>o.k===k&&o.color===col).length;return{q:`Wie viele ${ADJ[col]} ${types[k].pl} waren zu sehen?`,opts:numOptions(n,R),ans:String(n)};},
+    ()=>{const cand=keys.filter(k=>count(k)===1&&types[k].colors.length>1);if(!cand.length)return null;const k=R.pick(cand),o=scene.find(o=>o.k===k);const pool=R.shuffle(Object.keys(C).filter(c=>c!==o.color));const opts=R.shuffle([o.color,...types[k].colors.filter(c=>c!==o.color),...pool].filter((v,i,a)=>a.indexOf(v)===i).slice(0,4));return{q:`Welche Farbe hatte ${types[k].art} ${types[k].sg}?`,opts:opts.map(c=>c[0].toUpperCase()+c.slice(1)),ans:o.color[0].toUpperCase()+o.color.slice(1),swatch:opts};},
+    ()=>{const absent=allKeys.filter(k=>!keys.includes(k)),usePresent=!absent.length||R()<.5,k=usePresent?R.pick(keys):R.pick(absent);return{q:`War ${types[k].indef} ${types[k].sg} zu sehen?`,opts:['Ja','Nein'],ans:usePresent?'Ja':'Nein'};},
+    ()=>{const counts=keys.map(k=>[k,count(k)]).sort((a,b)=>b[1]-a[1]);if(counts.length<2||counts[0][1]===counts[1][1])return null;return{q:'Wovon gab es am meisten?',opts:R.shuffle(counts.slice(0,4).map(c=>types[c[0]].pl)),ans:types[counts[0][0]].pl};},
+    ()=>{const cand=keys.filter(k=>count(k)===1);if(!cand.length)return null;const k=R.pick(cand),o=scene.find(o=>o.k===k),rel=(o.x-SX)/SW,ans=rel<1/3?'Links':rel<2/3?'In der Mitte':'Rechts';return{q:`Wo war ${types[k].art} ${types[k].sg}?`,opts:['Links','In der Mitte','Rechts'],ans};},
+  ];
+  const out=[],used=new Set();let guard=0;
+  while(out.length<round.questions&&guard++<200){const gi=R.int(0,gens.length-1);if(used.has(gi)&&guard<60)continue;const q=gens[gi]();if(!q||out.some(o=>o.q===q.q))continue;used.add(gi);out.push(q);}
+  return out;
+}
+
+function newGame(){
+  seed=GG.newSeed();const R=GG.rng(seed^0x1b873593);const th=R.shuffle(Object.keys(THEMES));
+  ROUNDS=POOLS.map((p,i)=>({...R.pick(p),theme:th[i%th.length]}));total=0;results=[];setupRound(0);showStart();
+}
+function setupRound(i){ri=i;round=ROUNDS[i];const R=GG.rng(seed+i*31337);const keys=buildScene(R);qs=makeQuestions(keys,R);qi=0;phase='idle';roundPts=0;correctN=0;}
+function begin(){ov.hide();phase='count';phaseAt=performance.now();}
+function answer(k){
+  if(phase!=='ask'||k<0||k>=qs[qi].opts.length)return;
+  const q=qs[qi],ok=q.opts[k]===q.ans,fast=(performance.now()-phaseAt)<4000;
+  choice=k;phase='feedback';phaseAt=performance.now();
+  if(ok){correctN++;roundPts+=25+(fast?10:0);GG.sfx('ok');}else GG.sfx('err');
+}
+function update(now){
+  const el=(now-phaseAt)/1000;
+  if(phase==='count'&&el>=3){phase='show';phaseAt=now;}
+  else if(phase==='show'&&el>=round.view){phase='ask';phaseAt=now;choice=-1;}
+  else if(phase==='feedback'&&el>=1.1){qi++;if(qi>=qs.length){phase='done';total+=roundPts;results.push({theme:theme.name,correct:correctN,n:qs.length,pts:roundPts,view:round.view});setTimeout(showSummary,300);}else{phase='ask';phaseAt=now;choice=-1;}}
+}
+
+/* ---------- Eingabe ---------- */
+function btnRects(n){const out=[],bw=n===2?400:(n===3?270:420),bh=74,gap=16;
+  if(n<=3){const totalW=n*bw+(n-1)*gap;for(let k=0;k<n;k++)out.push([SX+(SW-totalW)/2+k*(bw+gap),SY+300,bw,bh]);}
+  else for(let k=0;k<4;k++)out.push([SX+(SW-2*bw-gap)/2+(k%2)*(bw+gap),SY+250+Math.floor(k/2)*(bh+gap),bw,bh]);
+  return out;}
+function btnAt(p){if(phase!=='ask')return -1;return btnRects(qs[qi].opts.length).findIndex(([x,y,w,h])=>p.x>=x&&p.x<=x+w&&p.y>=y&&p.y<=y+h);}
+cv.addEventListener('pointerdown',e=>answer(btnAt(GG.local(cv,e))));
+cv.addEventListener('pointermove',e=>{hover=btnAt(GG.local(cv,e));cv.style.cursor=hover>=0?'pointer':'default';});
+window.addEventListener('keydown',e=>{const k=parseInt(e.key,10);if(k>=1&&k<=4)answer(k-1);});
+
+/* ---------- Zeichnen ---------- */
+function drawScene(){ctx.save();ctx.beginPath();ctx.rect(SX,SY,SW,SH);ctx.clip();theme.bg(ctx);for(const o of scene)theme.types[o.k].draw(ctx,o.x,o.y,o.s,C[o.color]);ctx.restore();}
+function draw(dt,now){
+  update(now);GG.clear(ctx);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length}`,SX,44,'left',COL.accent);
+  GG.text(ctx,theme?theme.name:'',SX,82,{size:34,weight:800});
+  GG.label(ctx,'PUNKTE',SX+SW,44,'right');GG.value(ctx,GG.num(total+roundPts),SX+SW,82,'right',COL.ink,34);
+  GG.rr(ctx,SX-8,SY-8,SW+16,SH+16,14);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();
+  const el=(now-phaseAt)/1000;
+  if(phase==='show'){
+    drawScene();const f=Math.max(0,1-el/round.view);
+    GG.rr(ctx,SX,SY+SH+22,SW,8,4);ctx.fillStyle=COL.board;ctx.fill();GG.rr(ctx,SX,SY+SH+22,SW*f,8,4);ctx.fillStyle=f<.3?COL.rose:COL.accent;ctx.fill();
+    GG.text(ctx,`Bild verschwindet in ${Math.ceil(round.view-el)} s`,SX+SW/2,SY+SH+58,{align:'center',color:COL.muted,font:MONO,size:14});
+  }else if(phase==='count'){
+    ctx.fillStyle=COL.board;ctx.fillRect(SX,SY,SW,SH);
+    GG.text(ctx,'Gleich kommt das Bild',SX+SW/2,SY+180,{size:22,weight:600,align:'center',color:COL.muted});
+    GG.value(ctx,String(Math.max(1,3-Math.floor(el))),SX+SW/2,SY+290,'center',COL.accent,96);
+    GG.text(ctx,`${round.view} Sekunden sichtbar · danach ${qs.length} Fragen`,SX+SW/2,SY+360,{align:'center',color:COL.muted,font:MONO,size:14});
+  }else if(phase==='ask'||phase==='feedback'||phase==='done'){
+    ctx.fillStyle=COL.board;ctx.fillRect(SX,SY,SW,SH);const q=qs[Math.min(qi,qs.length-1)];
+    GG.label(ctx,`FRAGE ${Math.min(qi+1,qs.length)} / ${qs.length}`,SX+SW/2,SY+70,'center',COL.accent);
+    GG.text(ctx,q.q,SX+SW/2,SY+150,{size:34,weight:800,align:'center'});
+    btnRects(q.opts.length).forEach(([x,y,w,h],k)=>{
+      const isAns=q.opts[k]===q.ans,fb=phase!=='ask';
+      GG.rr(ctx,x,y,w,h,12);ctx.fillStyle=fb&&isAns?COL.sea:fb&&k===choice?COL.rose:k===hover?COL.lead:COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();
+      if(q.swatch){ctx.fillStyle=C[q.swatch[k]];ctx.beginPath();ctx.arc(x+44,y+h/2,14,0,7);ctx.fill();ctx.strokeStyle='rgba(0,0,0,.4)';ctx.stroke();}
+      GG.text(ctx,String(k+1),x+18,y+h/2+5,{font:MONO,size:13,color:fb&&(isAns||k===choice)?'#111':COL.muted});
+      GG.text(ctx,q.opts[k],x+w/2+(q.swatch?14:0),y+h/2+9,{size:24,weight:600,align:'center',color:fb&&(isAns||k===choice)?'#111':COL.ink});
+    });
+    if(phase==='ask'){const f=Math.max(0,1-el/4);GG.rr(ctx,SX+SW/2-120,SY+SH-40,240,6,3);ctx.fillStyle=COL.panel;ctx.fill();GG.rr(ctx,SX+SW/2-120,SY+SH-40,240*f,6,3);ctx.fillStyle=COL.amber;ctx.fill();GG.text(ctx,f>0?'Schnell-Bonus +10':'',SX+SW/2,SY+SH-52,{align:'center',size:12,font:MONO,color:COL.muted});}
+  }else{ctx.fillStyle=COL.board;ctx.fillRect(SX,SY,SW,SH);}
+  GG.drawToast(ctx,SX+SW/2,SY+SH-30,dt);
+}
+GG.loop(draw);
+
+/* ---------- Karten ---------- */
+const roundText=r=>`<strong>${THEMES[r.theme].name}</strong> · ${r.view} Sekunden Zeit zum Einprägen, dann ${r.questions} Fragen.`;
+function showStart(){
+  ov.show(`<div class="eyebrow">Minispiel · Gedächtnis</div><h2>Merkbild</h2>
+    <p>Ein Bild ist nur ein paar Sekunden zu sehen. Danach kommen Fragen dazu.</p>
+    <ul><li>Gefragt wird nach Anzahl, Farben, Position und ob etwas da war.</li>
+    <li>Richtige Antwort: 25 Punkte, unter 4 Sekunden geantwortet: 10 Bonus.</li>
+    <li>Mit jeder Runde wird das Bild voller. Szenen und Fragen sind bei jedem Spiel neu.</li></ul>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
+    <button class="go" type="button">Runde 1 starten</button>`,begin);
+}
+function showSummary(){
+  const r=results[results.length-1];
+  if(ri>=ROUNDS.length-1)return showFinal();
+  const nx=ROUNDS[ri+1];
+  ov.show(`<div class="eyebrow">Runde ${ri+1} · ${r.theme}</div><h2>${r.correct} von ${r.n} richtig</h2>
+    ${GG.rowsHtml([['Runde',`+${r.pts}`,'total'],['Gesamt',GG.num(total)]])}
+    <div class="next">Runde ${ri+2} · ${roundText(nx)}</div>
+    <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{setupRound(ri+1);begin();});
+}
+function showFinal(){
+  ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden geschafft</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
+    ${GG.rowsHtml(results.map((r,i)=>[`${i+1}. ${r.theme} · ${r.correct}/${r.n} richtig`,`+${r.pts}`]))}
+    <button class="go" type="button">Nochmal mit neuen Bildern</button>`,newGame);
+}
+document.getElementById('restart').addEventListener('click',newGame);
+newGame();
+})();
+</script>
+</body>
+</html>

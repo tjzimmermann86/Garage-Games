@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farbfolge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
+<style>:root{--accent:#a98bf0}</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Farb<em>folge</em></h1>
+      <div class="sub">Minispiel der Garage Games · bis zum ersten Fehler</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+  <div class="stage">
+    <canvas id="cv" aria-label="Farbfelder"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+  <div class="keys">
+    <span><kbd>Klick</kbd> oder <kbd>1</kbd>–<kbd>6</kbd> Feld drücken</span>
+    <span>Ton an! Ab einer Stufe hilft nur noch das Gehör</span>
+  </div>
+</div>
+<script src="../shared/garage.js"></script>
+<script>
+(()=>{
+const{W,H,COL,MONO}=GG;
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const CX=640,CY=410,RO=260,RI=96;
+const PADS=[
+  {name:'Rot',  col:COL.rose,  freq:330},{name:'Gelb',col:COL.amber,freq:392},
+  {name:'Grün', col:COL.sea,   freq:494},{name:'Blau',col:COL.water,freq:587},
+  {name:'Lila', col:COL.violet,freq:659},{name:'Hellgrün',col:COL.lime,freq:784},
+];
+const TWISTS={
+  tempo:      {name:'Tempo',     text:'Die Folge wird deutlich schneller abgespielt.'},
+  sechs:      {name:'Sechs Felder',text:'Zwei neue Felder kommen dazu.'},
+  nurton:     {name:'Nur Ton',   text:'Beim Vorspielen leuchtet nichts mehr. Hör genau hin!'},
+  rueckwaerts:{name:'Rückwärts', text:'Gib die Folge ab jetzt rückwärts ein.'},
+  mischen:    {name:'Mischen',   text:'Nach dem Vorspielen tauschen die Felder ihre Plätze.'},
+};
+const MILESTONES=[5,9,13,17];
+
+let seed,R,twistOrder=[],active=new Set(),nPads=4,slots=[0,1,2,3],seq=[],phase='idle',showI=0,inputI=0,nextAt=0,stepMs=600;
+let lit=-1,litUntil=0,lastInput=0,score=0,best=0,failInfo=null,flashMsg='',rot=0,rotTarget=0;
+try{best=parseInt(localStorage.getItem('farbfolge-best')||'0',10)||0;}catch(e){}
+
+function newGame(){
+  seed=GG.newSeed();R=GG.rng(seed);
+  twistOrder=R.shuffle(Object.keys(TWISTS)).slice(0,MILESTONES.length);
+  active=new Set();nPads=4;slots=[0,1,2,3];seq=[];score=0;phase='idle';failInfo=null;stepMs=600;rot=rotTarget=0;
+  showStart();
+}
+function begin(){ov.hide();GG.audio();nextLevel();}
+function nextLevel(){
+  const lvl=seq.length+1,mi=MILESTONES.indexOf(lvl);
+  if(mi>=0){const t=twistOrder[mi];active.add(t);flashMsg=`Neu: ${TWISTS[t].name}`;GG.toast(`${TWISTS[t].name}: ${TWISTS[t].text}`);
+    if(t==='sechs'){nPads=6;slots=[...slots,4,5];}
+    if(t==='tempo')stepMs*=.65;}
+  stepMs=Math.max(220,stepMs*.97);
+  seq.push(R.int(0,nPads-1));
+  phase='show';showI=0;nextAt=performance.now()+(mi>=0?1600:700);
+}
+function press(id,now,fromPlayer){
+  lit=id;litUntil=now+(fromPlayer?220:stepMs*.62);GG.tone(PADS[id].freq,(fromPlayer?.22:stepMs*.62/1000),'triangle',.12);
+}
+function expected(){return active.has('rueckwaerts')?seq[seq.length-1-inputI]:seq[inputI];}
+function playerInput(id){
+  if(phase!=='input')return;const now=performance.now();lastInput=now;
+  if(id!==expected()){fail(id,'falsches Feld');return;}
+  press(id,now,true);inputI++;
+  if(inputI>=seq.length){phase='wait';score+=seq.length*10+active.size*5;GG.sfx('ok');setTimeout(nextLevel,650);}
+}
+function fail(id,why){
+  phase='over';failInfo={want:expected(),got:id,why,level:seq.length};GG.sfx('err');
+  if(score>best){best=score;try{localStorage.setItem('farbfolge-best',String(best));}catch(e){}}
+  setTimeout(showOver,1600);
+}
+
+/* ---------- Eingabe ---------- */
+function slotAt(p){
+  const dx=p.x-CX,dy=p.y-CY,d=Math.hypot(dx,dy);if(d<RI||d>RO+10)return -1;
+  let a=Math.atan2(dy,dx)+Math.PI/2-rot;a=((a%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  return Math.floor(a/(2*Math.PI/nPads));
+}
+cv.addEventListener('pointerdown',e=>{const s=slotAt(GG.local(cv,e));if(s>=0&&!(phase==='input'&&Math.abs(rot-rotTarget)>.05))playerInput(slots[s]);});
+window.addEventListener('keydown',e=>{const k=parseInt(e.key,10);if(k>=1&&k<=nPads)playerInput(slots[k-1]);});
+
+/* ---------- Zeichnen ---------- */
+function update(now){
+  if(phase==='show'&&now>=nextAt){
+    if(showI<seq.length){const id=seq[showI];if(active.has('nurton')){GG.tone(PADS[id].freq,stepMs*.62/1000,'triangle',.12);}else press(id,now,false);showI++;nextAt=now+stepMs;}
+    else{
+      phase='input';inputI=0;lastInput=now;
+      if(active.has('mischen')){const ids=slots.slice();do{R.shuffle(slots);}while(slots.every((v,k)=>v===ids[k]));rotTarget=rot;}
+    }
+  }
+  if(phase==='input'&&now-lastInput>6000)fail(-1,'zu lange gezögert');
+  rot+=(rotTarget-rot)*.15;
+}
+function wedge(k,inner,outer){const a0=k*2*Math.PI/nPads-Math.PI/2+rot+.04,a1=(k+1)*2*Math.PI/nPads-Math.PI/2+rot-.04;ctx.beginPath();ctx.arc(CX,CY,outer,a0,a1);ctx.arc(CX,CY,inner,a1,a0,true);ctx.closePath();return(a0+a1)/2;}
+function draw(dt,now){
+  update(now);
+  GG.clear(ctx);
+  ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(CX,CY,RO+24,0,7);ctx.fill();
+  for(let k=0;k<nPads;k++){
+    const id=slots[k],on=lit===id&&now<litUntil,isFail=phase==='over'&&failInfo&&failInfo.want===id&&Math.floor(now/250)%2===0;
+    const mid=wedge(k,RI,RO);
+    ctx.save();if(on||isFail){ctx.shadowColor=PADS[id].col;ctx.shadowBlur=40;}
+    ctx.globalAlpha=on||isFail?1:.32;ctx.fillStyle=PADS[id].col;ctx.fill();ctx.restore();
+    if(on){wedge(k,RI,RO);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();}
+    const lx=CX+Math.cos(mid)*(RO-34),ly=CY+Math.sin(mid)*(RO-34);
+    GG.text(ctx,String(k+1),lx,ly+6,{font:MONO,weight:600,size:16,align:'center',color:on?'#111':COL.ink});
+  }
+  ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(CX,CY,RI-10,0,7);ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();
+  GG.label(ctx,'STUFE',CX,CY-26,'center');GG.value(ctx,String(Math.max(1,seq.length)),CX,CY+14,'center',COL.ink,40);
+  const status=phase==='show'?'Zuhören':phase==='input'?(active.has('rueckwaerts')?'Rückwärts!':active.has('mischen')?'Gemischt!':'Du bist dran'):phase==='over'?'Ausgeschieden':phase==='wait'?'Richtig!':'';
+  GG.text(ctx,status,CX,CY+40,{size:14,weight:600,align:'center',color:phase==='over'?COL.rose:COL.accent});
+
+  GG.label(ctx,'FARBFOLGE',340,44,'left',COL.accent);
+  GG.text(ctx,`Folge mit ${seq.length} ${seq.length===1?'Ton':'Tönen'}`,340,82,{size:30,weight:800});
+  if(phase==='input'){const left=Math.max(0,6-(now-lastInput)/1000);GG.label(ctx,'NÄCHSTER DRUCK',940,44,'right');GG.value(ctx,`${left.toFixed(1)} s`,940,82,'right',left<2?COL.rose:COL.ink,30);}
+
+  GG.panel(ctx,16,100,300,600);GG.label(ctx,'SO GEHT’S',36,132);
+  let y=GG.wrap(ctx,'Merk dir die Folge aus Farben und Tönen und drück sie danach in derselben Reihenfolge nach.',36,160,260,21)+8;
+  y=GG.wrap(ctx,'Jede Stufe hängt einen Ton an. Ein falsches Feld oder mehr als 6 Sekunden Pause, und du bist raus.',36,y,260,21)+12;
+  GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'ZUSATZREGELN',36,y);y+=26;
+  MILESTONES.forEach((m,k)=>{const t=twistOrder[k],on=active.has(t);
+    GG.text(ctx,`ab Stufe ${m}`,36,y,{size:14,color:COL.muted});GG.text(ctx,on?TWISTS[t].name:'?',296,y,{size:14,font:MONO,weight:600,align:'right',color:on?COL.accent:COL.muted});y+=24;});
+  GG.panel(ctx,964,100,300,600);
+  GG.label(ctx,'PUNKTE',984,132);GG.value(ctx,GG.num(score),984,168);
+  GG.label(ctx,'DEIN REKORD',984,212);GG.value(ctx,GG.num(best),984,248);
+  GG.wrap(ctx,'Punkte pro geschaffter Stufe: Länge × 10, plus 5 für jede aktive Zusatzregel.',984,620,260,21,{color:COL.muted,size:14});
+  GG.drawToast(ctx,CX,668,dt);
+}
+GG.loop(draw);
+
+function showStart(){
+  ov.show(`<div class="eyebrow">Minispiel · Gedächtnis</div><h2>Farbfolge</h2>
+    <p>Eine Folge aus Farben und Tönen wird immer länger. Wer sich vertut, scheidet aus.</p>
+    <ul><li>Klick die Felder oder drück die Tasten 1 bis 6.</li>
+    <li>Ab Stufe 5, 9, 13 und 17 kommt jeweils eine Zusatzregel dazu, zum Beispiel Rückwärts, Mischen oder Nur Ton.</li>
+    <li>Welche Regel wann kommt, wird jedes Spiel neu gemischt.</li></ul>
+    <div class="next">Mach den Ton an. Die Folge startet direkt nach dem Klick.</div>
+    <button class="go" type="button">Los geht’s</button>`,begin);
+}
+function showOver(){
+  const f=failInfo;
+  ov.show(`<div class="eyebrow">Ausgeschieden · ${f.why}</div><h2>Stufe ${f.level}</h2><div class="big">${GG.num(score)}</div>
+    ${GG.rowsHtml([['Geschaffte Stufen',String(f.level-1)],['Richtig wäre',PADS[f.want].name],['Aktive Zusatzregeln',[...active].map(t=>TWISTS[t].name).join(', ')||'keine'],['Dein Rekord',GG.num(best),'total']])}
+    <button class="go" type="button">Nochmal</button>`,()=>{newGame();begin();});
+}
+document.getElementById('restart').addEventListener('click',newGame);
+newGame();
+})();
+</script>
+</body>
+</html>
