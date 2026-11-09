@@ -72,7 +72,6 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
     <span><kbd>Klick</kbd> <kbd>Mausrad</kbd> Rohr drehen</span>
     <span><kbd>Rechtsklick</kbd> andersrum drehen</span>
     <span><kbd>F</kbd> <kbd>Mittelklick</kbd> <kbd>lange drücken</kbd> Rohr festschrauben</span>
-    <span><kbd>Leertaste</kbd> Wasser marsch (ab Runde 4)</span>
   </div>
 </div>
 
@@ -88,25 +87,25 @@ const DPR=Math.min(2,window.devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;
 /* Jede Runde hat mehrere Varianten (Form, Größe, Pumpen). Pro Spiel wird je Runde eine gezogen. */
 const ROUND_POOLS=[
   {leaks:true, hidden:false,intro:'Wasser und Lecks werden live angezeigt.',variants:[
-    {name:'Gartenschlauch',w:5,h:5,shape:'rect',   pumps:'center'},
-    {name:'Regenrinne',    w:7,h:4,shape:'rect',   pumps:'left'},
-    {name:'Ölwanne',       w:6,h:5,shape:'corners',pumps:'center'}]},
-  {leaks:true, hidden:false,intro:'Größeres Netz, Anzeige wie bisher.',variants:[
-    {name:'Waschanlage',   w:6,h:6,shape:'rect',   pumps:'center'},
-    {name:'Tankstelle',    w:8,h:5,shape:'rect',   pumps:'two'},
-    {name:'Werkbank',      w:7,h:6,shape:'blocks', pumps:'center',blocks:4}]},
+    {name:'Gartenschlauch',w:4,h:4,shape:'rect',   pumps:'center'},
+    {name:'Regenrinne',    w:5,h:3,shape:'rect',   pumps:'left'},
+    {name:'Ölwanne',       w:5,h:4,shape:'corners',pumps:'center'}]},
+  {leaks:true, hidden:false,intro:'Etwas größeres Netz, Anzeige wie bisher.',variants:[
+    {name:'Waschanlage',   w:5,h:5,shape:'rect',   pumps:'center'},
+    {name:'Tankstelle',    w:6,h:4,shape:'rect',   pumps:'two'},
+    {name:'Werkbank',      w:6,h:5,shape:'blocks', pumps:'center',blocks:2}]},
+  {leaks:true, hidden:false,intro:'Größeres Netz, die Leck-Anzeige hilft noch.',variants:[
+    {name:'Kühler',        w:6,h:6,shape:'rect',   pumps:'center'},
+    {name:'Bremsleitung',  w:7,h:5,shape:'rect',   pumps:'two'},
+    {name:'Hebebühne',     w:6,h:6,shape:'blocks', pumps:'center',blocks:3}]},
   {leaks:false,hidden:false,intro:'Ab jetzt keine Leck-Markierung mehr. Das Wasser siehst du noch.',variants:[
+    {name:'Hydraulik',     w:6,h:6,shape:'rect',   pumps:'center'},
+    {name:'Auspuffstrang', w:8,h:5,shape:'rect',   pumps:'left'},
+    {name:'Motorblock',    w:7,h:6,shape:'corners',pumps:'center'}]},
+  {leaks:false,hidden:false,intro:'Finale: großes Netz ohne Leck-Markierung.',variants:[
     {name:'Kühlkreislauf', w:7,h:7,shape:'rect',   pumps:'center'},
-    {name:'Auspuffstrang', w:9,h:5,shape:'rect',   pumps:'left'},
+    {name:'Stadtnetz',     w:9,h:5,shape:'rect',   pumps:'two'},
     {name:'Ringleitung',   w:7,h:7,shape:'hole',   pumps:'top'}]},
-  {leaks:false,hidden:true, intro:'Neu: Das Wasser bleibt unsichtbar. Mit „Wasser marsch“ (Leertaste) prüfst du dein Netz. Jeder Fehlversuch kostet einen Fehler.',variants:[
-    {name:'Hydraulik',     w:7,h:7,shape:'rect',   pumps:'center'},
-    {name:'Bremsleitung',  w:8,h:6,shape:'rect',   pumps:'two'},
-    {name:'Hebebühne',     w:8,h:7,shape:'blocks', pumps:'center',blocks:6}]},
-  {leaks:false,hidden:true, intro:'Finale: großes Netz, Wasser nur auf Knopfdruck.',variants:[
-    {name:'Hauptleitung',  w:8,h:8,shape:'rect',   pumps:'center'},
-    {name:'Stadtnetz',     w:10,h:6,shape:'rect',  pumps:'two'},
-    {name:'Kreuzung',      w:9,h:9,shape:'corners2',pumps:'center'}]},
 ];
 const SHAPE_TXT={rect:'',corners:'Die Ecken fehlen.',corners2:'Ein Netz in Kreuzform.',hole:'In der Mitte ist ein Loch.',blocks:'Betonblöcke sperren einzelne Felder.'};
 const PUMP_TXT={center:'',left:'Die Pumpe sitzt am Rand.',top:'Die Pumpe sitzt am Rand.',two:'Zwei Pumpen speisen das Netz.'};
@@ -440,7 +439,7 @@ function showStart(){
     <ul>
       <li>Klick dreht ein Rohr rechtsrum, Rechtsklick linksrum.</li>
       <li>Rohre, die sicher richtig liegen, kannst du mit F oder Mittelklick festschrauben (am Handy: lange drücken).</li>
-      <li>Mit jeder Runde wird das Netz größer. Ab Runde 3 fehlt die Leck-Anzeige, ab Runde 4 siehst du das Wasser nur noch, wenn du „Wasser marsch“ drückst.</li>
+      <li>Mit jeder Runde wird das Netz größer. Ab Runde 4 fehlt die Leck-Anzeige, das Wasser siehst du aber immer.</li>
       <li>Jedes Spiel zieht pro Runde eine andere Variante: neue Formen, Betonblöcke, Pumpen am Rand oder zwei Pumpen.</li>
     </ul>
     <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>

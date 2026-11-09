@@ -44,14 +44,14 @@ Die Pumpe in der Mitte läuft, aber die Rohre sind verdreht. Ziel: Wasser zu jed
 
   | Runde | Hilfe | Varianten (eine wird pro Spiel gezogen) |
   |---|---|---|
-  | 1 | Wasser + Lecks live | Gartenschlauch 5 × 5 · Regenrinne 7 × 4, Pumpe am Rand · Ölwanne 6 × 5 ohne Ecken |
-  | 2 | Wasser + Lecks live | Waschanlage 6 × 6 · Tankstelle 8 × 5, zwei Pumpen · Werkbank 7 × 6 mit Betonblöcken |
-  | 3 | nur Wasser live | Kühlkreislauf 7 × 7 · Auspuffstrang 9 × 5, Pumpe am Rand · Ringleitung 7 × 7 mit Loch |
-  | 4 | Wasser auf Knopfdruck | Hydraulik 7 × 7 · Bremsleitung 8 × 6, zwei Pumpen · Hebebühne 8 × 7 mit Betonblöcken |
-  | 5 | Wasser auf Knopfdruck | Hauptleitung 8 × 8 · Stadtnetz 10 × 6, zwei Pumpen · Kreuzung 9 × 9 in Kreuzform |
+  | 1 | Wasser + Lecks live | Gartenschlauch 4 × 4 · Regenrinne 5 × 3, Pumpe am Rand · Ölwanne 5 × 4 ohne Ecken |
+  | 2 | Wasser + Lecks live | Waschanlage 5 × 5 · Tankstelle 6 × 4, zwei Pumpen · Werkbank 6 × 5 mit Betonblöcken |
+  | 3 | Wasser + Lecks live | Kühler 6 × 6 · Bremsleitung 7 × 5, zwei Pumpen · Hebebühne 6 × 6 mit Betonblöcken |
+  | 4 | nur Wasser live | Hydraulik 6 × 6 · Auspuffstrang 8 × 5, Pumpe am Rand · Motorblock 7 × 6 ohne Ecken |
+  | 5 | nur Wasser live | Kühlkreislauf 7 × 7 · Stadtnetz 9 × 5, zwei Pumpen · Ringleitung 7 × 7 mit Loch |
 
-- Steuerung: Klick oder Mausrad dreht ein Rohr, Rechtsklick andersrum. `F`, Mittelklick oder langes Drücken schraubt ein Rohr fest. Ab Runde 4 prüft „Wasser marsch“ (`Leertaste`) das Netz.
-- Punkte: 4 pro Rohr, −25 pro Fehlversuch bei „Wasser marsch“, Zeitbonus unter der Zielzeit. Gesamt-Zielzeit etwa 11 Minuten, ähnlich wie Scherbenwerk.
+- Steuerung: Klick oder Mausrad dreht ein Rohr, Rechtsklick andersrum. `F`, Mittelklick oder langes Drücken schraubt ein Rohr fest.
+- Punkte: 4 pro Rohr, Zeitbonus unter der Zielzeit. Gesamt-Zielzeit etwa 6 Minuten.
 
 **Starten:** `rohrleitung/index.html` im Browser öffnen.
 
