@@ -94,6 +94,15 @@ input[type=range]{width:100%;accent-color:var(--amber-ink)}
 /* Avatar */
 .avbtn{appearance:none;border:3px solid var(--amber);border-radius:50%;padding:0;background:none;cursor:pointer;width:84px;height:84px;display:grid;place-items:center;flex:none;position:relative}
 .avbtn::after{content:"ändern";position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font:600 .62rem var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:#2a1d05;border-radius:999px;padding:2px 7px}
+/* Avatar-Auswahl mit Kopfbedeckungen */
+.avpick{display:flex;flex-direction:column;gap:10px}
+.hats{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.hats button{appearance:none;display:flex;gap:10px;align-items:center;text-align:left;background:var(--board);border:2px solid var(--lead);border-radius:12px;padding:6px 10px;color:var(--ink);font:inherit;cursor:pointer}
+.hats button span{display:flex;flex-direction:column;gap:2px;min-width:0}
+.hats button small{font-size:.75rem;color:var(--muted);line-height:1.3}
+.hats button[aria-pressed="true"]{border-color:var(--amber)}
+.hats button.locked{cursor:default;opacity:.7;border-style:dashed}
+.hats button.locked svg{filter:grayscale(1);opacity:.7}
 .avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;max-width:520px}
 .avgrid button{appearance:none;border:2px solid transparent;border-radius:50%;padding:2px;background:none;cursor:pointer;display:grid;place-items:center}
 .avgrid button[aria-pressed="true"]{border-color:var(--amber-ink)}
@@ -165,12 +174,14 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
 <script src="shared/lobby-core.js"></script>
 <script src="shared/net.js"></script>
 <script src="shared/avatars.js"></script>
+<script src="shared/progress.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const{GAMES,MODES,SCORING}=LobbyCore,gameName=id=>(GAMES.find(g=>g.id===id)||{}).name||id;
 const Net=GGNet,me=Net.me,av=(id,size=40)=>Avatars.svg(id??0,size);
 if(me.avatar==null)me.avatar=Math.floor(Math.random()*Avatars.count);
+{const a=Avatars.split(me.avatar);if(!GGProgress.unlocked(a.hat))me.avatar=a.face;}   // gesperrte Kopfbedeckung wieder abnehmen
 
 const S={
   code:Net.ss.get('gg-room'),room:null,online:[],rooms:[],invites:[],screen:'menu',invited:{},
@@ -193,13 +204,19 @@ async function poll(){
   if(S.code){
     if(!r.room){setRoom(null);toast('Das Spiel gibt es nicht mehr.');if(S.screen==='lobby')show('menu');}
     else if(r.room.kicked){setRoom(null);toast('Du wurdest aus dem Spiel entfernt.');if(S.screen==='lobby')show('menu');}
-    else{S.room=r.room;maybeLaunch();}
+    else{S.room=r.room;maybeLaunch();countTournament(r.room);}
   }
   renderInvites();updateNav();refresh();
 }
 /* Startet der Gastgeber ein Spiel, zählt bei allen ein Countdown runter, dann öffnet sich das Minispiel */
 function gameUrl(r){return`${r.current.game}/?seed=${r.current.seed}&raum=${r.code}&r=${r.current.idx}`;}
 function needsToPlay(r){return r&&r.status==='running'&&r.current&&r.results[r.current.idx]&&r.results[r.current.idx][me.pid]===undefined;}
+function countTournament(room){
+  if(room.status!=='final'||!room.results.length||!room.players.some(p=>p.pid===me.pid))return;
+  const st=LobbyCore.standings(room),mine=st.find(x=>x.pid===me.pid);if(!mine)return;
+  const fresh=GGProgress.recordTournament(`${room.code}:${room.created}:${room.results.length}:${room.playlist.join(',')}`,mine.place);
+  if(fresh.length)toast(`Freigespielt: ${fresh.map(h=>Avatars.hatName(h)).join(', ')}! Unter Einstellungen → Avatar.`);
+}
 function maybeLaunch(){
   const r=S.room;if(!needsToPlay(r))return;
   const c=r.current;if(String(c.seed)===String(S.lastSeed))return;
@@ -268,12 +285,23 @@ function refresh(){
   if(el('onlineCount'))el('onlineCount').textContent=String(S.online.length);
   if(S.screen==='lobby'&&S.room)lobbyLive();
 }
-function avatarPicker(id){return`<div class="avgrid" id="${id}" role="group" aria-label="Avatar wählen" hidden>${Array.from({length:Avatars.count},(_,k)=>`<button type="button" data-av="${k}" aria-pressed="${k===me.avatar}">${av(k,48)}</button>`).join('')}</div>`;}
+function pickerInner(){
+  const{face,hat}=Avatars.split(me.avatar),st=GGProgress.status(),open=st.filter(x=>x.open).length;
+  const faces=Array.from({length:Avatars.count},(_,k)=>k);
+  const card=h=>{const u=st.find(x=>x.hat===h),lock=h&&!u.open;
+    return`<button type="button" class="hat${lock?' locked':''}" data-hat="${h}" aria-pressed="${h===hat}"${lock?' disabled':''}>${av(Avatars.make(face,h),44)}
+      <span><strong>${Avatars.hatName(h)}</strong>${lock?`<small>${esc(u.text)} · ${u.have}/${u.need}</small>`:h?'<small>freigespielt</small>':'<small>keine</small>'}</span></button>`;};
+  return`<div class="label">Gesicht</div><div class="avgrid">${faces.map(k=>`<button type="button" data-face="${k}" aria-pressed="${k===face}" aria-label="${Avatars.female(k)?'Frau':'Mann'} ${k+1}">${av(Avatars.make(k,hat),48)}</button>`).join('')}</div>
+    <div class="label">Kopfbedeckung · ${open} von ${Avatars.hats} freigespielt</div><div class="hats">${Array.from({length:Avatars.hats+1},(_,h)=>card(h)).join('')}</div>`;
+}
+function avatarPicker(id){return`<div class="avpick" id="${id}" role="group" aria-label="Avatar wählen" hidden>${pickerInner()}</div>`;}
 function bindPicker(btnId,gridId,onPick){
   const b=$('#'+btnId),g=$('#'+gridId);
   b.addEventListener('click',()=>{g.hidden=!g.hidden;b.setAttribute('aria-expanded',String(!g.hidden));});
-  g.addEventListener('click',e=>{const x=e.target.closest('[data-av]');if(!x)return;me.avatar=+x.dataset.av;b.innerHTML=av(me.avatar,72);
-    g.querySelectorAll('[data-av]').forEach(y=>y.setAttribute('aria-pressed',String(+y.dataset.av===me.avatar)));g.hidden=true;onPick&&onPick();});
+  g.addEventListener('click',e=>{
+    const f=e.target.closest('[data-face]'),h=e.target.closest('[data-hat]');if(!f&&!(h&&!h.disabled))return;
+    const cur=Avatars.split(me.avatar);me.avatar=Avatars.make(f?+f.dataset.face:cur.face,h?+h.dataset.hat:cur.hat);
+    b.innerHTML=av(me.avatar,72);g.innerHTML=pickerInner();updateNav();onPick&&onPick();});
 }
 
 function vName(){

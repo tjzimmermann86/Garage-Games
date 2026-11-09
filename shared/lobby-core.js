@@ -27,7 +27,7 @@
   const clean=(s,max=20)=>String(s||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,max);
   const now=()=>Date.now();
   const err=msg=>({error:msg});
-  const avatarOf=a=>Math.max(0,Math.min(99,parseInt(a,10)||0));
+  const avatarOf=a=>Math.max(0,Math.min(9999,parseInt(a,10)||0));   // Gesicht + 100 × Kopfbedeckung
 
   async function getOnline(s){return (await s.get('online'))||{};}
   async function touch(s,pid,name,avatar,room){

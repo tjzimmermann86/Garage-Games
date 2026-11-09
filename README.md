@@ -6,11 +6,28 @@ Minispiel-Sammlung für die **Lübtheen Garage LAN**.
 
 Die Startseite ist das Spielmenü:
 
-- **Start:** Name und Avatar wählen (16 Gesichter über den runden Avatar-Knopf). Jeder Name ist nur einmal vergeben, ein belegter Name wird sofort angezeigt. War man vorher in einem Turnier (z. B. nach einem Absturz), erscheint **„Wieder beitreten“**.
+- **Start:** Name und Avatar wählen (20 Gesichter, 10 Männer und 10 Frauen, über den runden Avatar-Knopf). Jeder Name ist nur einmal vergeben, ein belegter Name wird sofort angezeigt. War man vorher in einem Turnier (z. B. nach einem Absturz), erscheint **„Wieder beitreten“**.
 - **Spiel erstellen:** Name des Spiels, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl.
 - **Spiel beitreten:** Liste der offenen Spiele oder Beitritt mit 4-stelligem Code. Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
 - **Einstellungen:** Hell (Pastell, Standard) oder Dunkel, Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
 - **Spiel beenden:** verlässt den Warteraum, stoppt die Musik und schließt das Fenster, wenn der Browser es erlaubt.
+
+### Kopfbedeckungen freispielen
+
+Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und dann in der Avatar-Auswahl aufsetzen:
+
+| Kopfbedeckung | So bekommt man sie |
+|---|---|
+| Mütze | Ein Minispiel zu Ende spielen |
+| Basecap | 5 Minispiele zu Ende spielen |
+| Stirnband | 3 verschiedene Minispiele spielen |
+| Kopfhörer | Alle 6 Minispiele spielen |
+| Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
+| Partyhut | 15 Minispiele zu Ende spielen |
+| Zylinder | Im Turnier aufs Siegerpodest kommen |
+| Krone | Ein Turnier gewinnen |
+
+Der Fortschritt wird pro Rechner im Browser gespeichert (`shared/progress.js`).
 
 ### Turnier im Warteraum
 

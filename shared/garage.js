@@ -105,7 +105,11 @@ window.GG=(()=>{
   const room=qp.get('raum')&&qp.get('r')!==null?{code:qp.get('raum').toUpperCase().slice(0,4),idx:parseInt(qp.get('r'),10)}:null;
   let reported=false;
   function report(score){
-    if(!room||reported||!window.GGNet)return;reported=true;
+    if(room&&reported)return;if(room)reported=true;   // ohne Turnier zählt jede gespielte Partie
+    // Fortschritt zählt auch ohne Turnier; neue Kopfbedeckungen kurz anzeigen
+    if(window.GGProgress){const id=(location.pathname.match(/\/([a-z]+)\/(?:index\.html)?$/)||[])[1];const fresh=GGProgress.recordGame(id);
+      if(fresh.length&&window.Avatars)setTimeout(()=>{notice(`Freigespielt: ${fresh.map(h=>Avatars.hatName(h)).join(', ')}! Im Menü unter Einstellungen → Avatar.`);setTimeout(()=>{const d=document.getElementById('ggNotice');if(d)d.remove();},6000);},300);}
+    if(!room||!window.GGNet)return;
     GGNet.call({action:'result',code:room.code,idx:room.idx,score:Math.max(0,Math.round(score||0))});
   }
   const backToLobby=()=>{location.href='../';};
