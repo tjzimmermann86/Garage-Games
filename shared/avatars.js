@@ -154,7 +154,7 @@
       <clipPath id="ggc${k}"><circle cx="32" cy="32" r="32"/></clipPath><g clip-path="url(#ggc${k})">
       <circle cx="32" cy="32" r="32" fill="${bg}"/>
       <g transform="translate(32 41) scale(.86) translate(-32 -41)">
-        ${backHair(style,hair)}
+        ${cut?`<g clip-path="url(#gga${k})">${backHair(style,hair)}</g>`:backHair(style,hair)}
         ${shirtSvg(sh,bg,k)}
         <rect x="27" y="46" width="10" height="7" rx="3" fill="${SKIN[skin]}"/><rect x="27" y="46" width="10" height="3" fill="rgba(0,0,0,.12)"/>
         <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}
