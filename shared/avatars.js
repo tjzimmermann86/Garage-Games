@@ -5,38 +5,43 @@
   const HAIR=['#2b1d14','#6b4423','#c98b3a','#1b1b1b','#9aa1a6','#c0392b'];
   // Hintergrund, Haut, Frisur, Haarfarbe, Augen, Mund, Extra (Nr. 0–9 und 20–24 Männer, 10–19 und 25–29 Frauen)
   const FACES=[
-    ['#ffcf7a',0,'short',0,'dot','smile','none'],
-    ['#ffa3ab',1,'curly',0,'happy','grin','none'],
-    ['#8fdcc8',2,'buzz',3,'glasses','smile','beard'],
-    ['#9fcdf6',4,'side',2,'wink','tongue','freckles'],
-    ['#c9b8ff',0,'mohawk',5,'sun','flat','none'],
-    ['#cde98e',3,'bald',3,'dot','grin','beard'],
-    ['#f7b98a',1,'side',1,'sleepy','o','mustache'],
-    ['#b8c2cc',2,'short',4,'happy','smile','mustache'],
-    ['#a7e3f0',4,'curly',2,'glasses','grin','freckles'],
-    ['#e7c6f5',3,'buzz',0,'dot','smile','none'],
-    ['#ffb5c9',0,'long',2,'lash','smile','earring'],
-    ['#9fcdf6',1,'ponytail',0,'lashhappy','grin','none'],
-    ['#cde98e',3,'afro',3,'lash','smile','earring'],
-    ['#c9b8ff',4,'bob',1,'glasses','smile','blush'],
-    ['#ffcf7a',2,'braids',3,'lashhappy','tongue','none'],
-    ['#8fdcc8',0,'bun',1,'lash','o','freckles'],
-    ['#ffa3ab',4,'long',5,'lashwink','grin','none'],
-    ['#b8c2cc',1,'bob',3,'sun','smile','earring'],
-    ['#f7b98a',3,'ponytail',2,'lash','smile','blush'],
-    ['#a7e3f0',2,'bun',0,'glasses','grin','earring'],
-    ['#f7d6a0',2,'spiky',0,'dot','grin','none'],
-    ['#bfe3c9',1,'curly',3,'sun','smile','beard'],
-    ['#d6c8ff',4,'side',3,'glasses','o','none'],
-    ['#ffc9b0',3,'short',1,'happy','smile','mustache'],
-    ['#c4e3f7',0,'spiky',5,'wink','grin','freckles'],
-    ['#ffd1e8',2,'wavy',1,'lash','smile','earring'],
-    ['#d9f0b5',0,'pixie',2,'lashhappy','grin','freckles'],
-    ['#ffe2a8',3,'wavy',3,'lashwink','tongue','earring'],
-    ['#c8d7ff',1,'pixie',0,'glasses','smile','blush'],
-    ['#bfeee4',4,'afro',1,'lash','grin','none'],
+    ['#f6c6cf',0,'short',0,'dot','smile','none'],
+    ['#bfe5c8',1,'curly',0,'happy','grin','none'],
+    ['#bcdcf3',2,'buzz',3,'glasses','smile','beard'],
+    ['#d9c9f0',4,'side',2,'wink','tongue','freckles'],
+    ['#f9e3a3',0,'mohawk',5,'sun','flat','none'],
+    ['#fbcfae',3,'bald',3,'dot','grin','beard'],
+    ['#eadcc6',1,'side',1,'sleepy','o','mustache'],
+    ['#d3e6b0',2,'short',4,'happy','smile','mustache'],
+    ['#eaa9b8',4,'curly',2,'glasses','grin','freckles'],
+    ['#a9d3b5',3,'buzz',0,'dot','smile','none'],
+    ['#9cc7ea',0,'long',2,'lash','smile','earring'],
+    ['#c4ade8',1,'ponytail',0,'lashhappy','grin','none'],
+    ['#f6c6cf',3,'afro',3,'lash','smile','earring'],
+    ['#bfe5c8',4,'bob',1,'glasses','smile','blush'],
+    ['#bcdcf3',2,'braids',3,'lashhappy','tongue','none'],
+    ['#d9c9f0',0,'bun',1,'lash','o','freckles'],
+    ['#f9e3a3',4,'long',5,'lashwink','grin','none'],
+    ['#fbcfae',1,'bob',3,'sun','smile','earring'],
+    ['#eadcc6',3,'ponytail',2,'lash','smile','blush'],
+    ['#d3e6b0',2,'bun',0,'glasses','grin','earring'],
+    ['#eaa9b8',2,'spiky',0,'dot','grin','none'],
+    ['#a9d3b5',1,'curly',3,'sun','smile','beard'],
+    ['#9cc7ea',4,'side',3,'glasses','o','none'],
+    ['#c4ade8',3,'short',1,'happy','smile','mustache'],
+    ['#f6c6cf',0,'spiky',5,'wink','grin','freckles'],
+    ['#bfe5c8',2,'wavy',1,'lash','smile','earring'],
+    ['#bcdcf3',0,'pixie',2,'lashhappy','grin','freckles'],
+    ['#d9c9f0',3,'wavy',3,'lashwink','tongue','earring'],
+    ['#f9e3a3',1,'pixie',0,'glasses','smile','blush'],
+    ['#fbcfae',4,'afro',1,'lash','grin','none'],
   ];
-  const BGS=['#ffcf7a','#ffa3ab','#8fdcc8','#9fcdf6','#c9b8ff','#cde98e','#f7b98a','#b8c2cc','#ffb5c9','#a7e3f0','#e7c6f5','#283047'];
+  const BGS=['#f6c6cf','#bfe5c8','#bcdcf3','#d9c9f0','#f9e3a3','#fbcfae','#eadcc6','#d3e6b0','#eaa9b8','#a9d3b5','#9cc7ea','#c4ade8'];   // Puderrosa, Mint, Himmelblau, Lavendel, Vanille, Apricot, Creme, Pistazie, Altrosa, Salbei, Bleu, Flieder
+  // T-Shirts: 0 = passend zum Hintergrund, 1–8 frei wählbar, 9–10 freispielbar
+  const SHIRTS=[null,
+    {name:'Rosa',c:'#e08aa0'},{name:'Mint',c:'#7cc79a'},{name:'Himmelblau',c:'#7fb2e0'},{name:'Lavendel',c:'#a98ad8'},
+    {name:'Vanille',c:'#e8c55e'},{name:'Apricot',c:'#ef9f72'},{name:'Creme',c:'#d8c6a8'},{name:'Dunkel',c:'#3b3346'},
+    {name:'Trikot',c:'#2f6db5',pattern:'jersey'},{name:'Ringelshirt',c:'#3b3346',pattern:'stripes'}];
   const isFem=f=>(f>=10&&f<20)||f>=25;
   const HATS=[
     null,
@@ -122,10 +127,24 @@
   }
   // Farbe aufhellen (+) oder abdunkeln (−), für das T-Shirt passend zum Hintergrund
   function shade(hex,amt){const n=parseInt(hex.slice(1),16),f=c=>Math.round(amt<0?c*(1+amt):c+(255-c)*amt);return`rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`;}
+  function shirtSvg(sh,bg,k){
+    const S=SHIRTS[sh],c=S?S.c:shade(bg,-.32),body='M-2 76Q0 52 32 51Q64 52 66 76Z';
+    let out=`<path d="${body}" fill="${c}"/>`;
+    if(S&&S.pattern){
+      out+=`<clipPath id="ggs${k}"><path d="${body}"/></clipPath><g clip-path="url(#ggs${k})">`;
+      if(S.pattern==='stripes')out+=[54,59,64,69].map(y=>`<rect x="-4" y="${y}" width="72" height="2.6" fill="#fff"/>`).join('');
+      if(S.pattern==='jersey')out+=`<rect x="8" y="48" width="3" height="30" fill="#fff"/><rect x="53" y="48" width="3" height="30" fill="#fff"/><text x="32" y="69" text-anchor="middle" font-family="Arial,sans-serif" font-weight="700" font-size="10" fill="#f9e3a3">1</text>`;
+      out+='</g>';
+    }
+    return out+`<path d="M25.5 51.5L32 58L38.5 51.5" fill="none" stroke="${S&&S.pattern==='jersey'?'#fff':shade(S?S.c:bg,-.5)}" stroke-width="1.6" stroke-linejoin="round"/>`;
+  }
   let uid=0;
-  const split=id=>{id=Math.max(0,id|0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%10%HATS.length,bg:Math.floor(id/1000)%(BGS.length+1)};};
-  function svg(id,size=48){
-    const{face,hat:h,bg:b}=split(id),[faceBg,skin,style,hc,ey,mo,ex]=FACES[face],bg=b?BGS[b-1]:faceBg,hair=HAIR[hc],fem=isFem(face),k=++uid;
+  const split=id=>{id=Math.max(0,Math.floor(+id)||0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%10%HATS.length,bg:Math.floor(id/1000)%100%(BGS.length+1),shirt:Math.floor(id/100000)%100%SHIRTS.length};};
+  function svg(id,size=48,opts={}){
+    const{face,hat:h,bg:b,shirt:sh}=split(id),[faceBg,skin,style,hc,ey0,mo0,ex]=FACES[face],bg=b?BGS[b-1]:faceBg,hair=HAIR[hc],fem=isFem(face),k=++uid;
+    // Ausdruck: 'win' = breites Grinsen (Platz 1), 'happy' = Lächeln (Platz 2 und 3)
+    const keepEyes=['glasses','sun'].includes(ey0);
+    const ey=opts.mood==='win'&&!keepEyes?(fem?'lashhappy':'happy'):ey0,mo=opts.mood==='win'?'grin':opts.mood==='happy'&&mo0!=='grin'?'smile':mo0;
     // Mit Kopfbedeckung bleibt von der Frisur nur, was unter der Krempe hervorschaut
     const front=frontHair(style,hair);
     const cut={1:28,2:28.5,5:29,7:24,8:26.5}[h];   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
@@ -136,10 +155,10 @@
       <circle cx="32" cy="32" r="32" fill="${bg}"/>
       <g transform="translate(32 41) scale(.86) translate(-32 -41)">
         ${backHair(style,hair)}
-        <path d="M-2 76Q0 52 32 51Q64 52 66 76Z" fill="${shade(bg,-.32)}"/><path d="M25.5 51.5L32 58L38.5 51.5" fill="none" stroke="${shade(bg,-.5)}" stroke-width="1.6" stroke-linejoin="round"/>
+        ${shirtSvg(sh,bg,k)}
         <rect x="27" y="46" width="10" height="7" rx="3" fill="${SKIN[skin]}"/><rect x="27" y="46" width="10" height="3" fill="rgba(0,0,0,.12)"/>
         <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}
       </g></g></svg>`;
   }
-  root.Avatars={count:FACES.length,hats:HATS.length-1,backgrounds:BGS,faceBg:f=>FACES[f][0],hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat=0,bg=0)=>face+100*hat+1000*bg,svg,female:isFem};
+  root.Avatars={unlockName:x=>typeof x==='object'?(SHIRTS[x.shirt]||{}).name+' (Shirt)':(HATS[x]||{}).name,shirts:SHIRTS.length-1,shirtName:i=>SHIRTS[i]?SHIRTS[i].name:'Passend',shirtColor:i=>SHIRTS[i]?SHIRTS[i].c:null,count:FACES.length,hats:HATS.length-1,backgrounds:BGS,faceBg:f=>FACES[f][0],hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat=0,bg=0,shirt=0)=>face+100*hat+1000*bg+100000*shirt,svg,female:isFem};
 })(window);

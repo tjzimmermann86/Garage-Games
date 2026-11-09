@@ -31,7 +31,7 @@ nav.menu{display:flex;flex-direction:column;gap:10px;background:var(--panel);bor
 nav.menu button{appearance:none;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);font:700 1.15rem var(--display);padding:14px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
 nav.menu button small{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em}
 nav.menu button:hover{background:var(--plate)}
-nav.menu button[aria-current="true"]{background:var(--board);border-color:var(--lead);box-shadow:inset 3px 0 0 var(--amber)}
+nav.menu button[aria-current="true"]{background:var(--board);border-color:var(--lead);box-shadow:inset 3px 0 0 var(--amber-ink)}
 nav.menu button:disabled{opacity:.4;cursor:default}
 nav.menu .spacer{flex:1}
 nav.menu button.quit{color:var(--rose-ink);border-color:color-mix(in srgb,var(--rose) 45%,transparent)}
@@ -60,7 +60,7 @@ input.code{font:600 1.4rem var(--mono);letter-spacing:.3em;text-transform:upperc
 .seg label{padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:600;position:relative;text-align:center;display:flex;align-items:center;justify-content:center}
 .seg label+label{border-left:1px solid var(--lead)}
 .seg input{position:absolute;opacity:0;pointer-events:none}
-.seg label:has(input:checked){background:var(--board);color:var(--ink);box-shadow:inset 0 -3px 0 var(--amber)}
+.seg label:has(input:checked){background:var(--board);color:var(--ink);box-shadow:inset 0 -3px 0 var(--amber-ink)}
 .seg label:has(input:focus-visible){outline:3px solid var(--sea);outline-offset:-3px}
 .seg label:has(input:disabled){cursor:default}
 .games{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
@@ -99,7 +99,7 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .hint code{font-family:var(--mono);font-size:.85em;color:var(--ink)}
 .hint.bad{color:var(--rose-ink)}.hint.good{color:var(--sea-ink)}
 /* Avatar */
-.avbtn{appearance:none;border:3px solid var(--amber);border-radius:50%;padding:0;background:none;cursor:pointer;width:84px;height:84px;display:grid;place-items:center;flex:none;position:relative}
+.avbtn{appearance:none;border:3px solid var(--amber-ink);border-radius:50%;padding:0;background:none;cursor:pointer;width:84px;height:84px;display:grid;place-items:center;flex:none;position:relative}
 .avbtn::after{content:"ändern";position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);font:600 .62rem var(--mono);letter-spacing:.08em;text-transform:uppercase;background:var(--amber);color:#2a1d05;border-radius:999px;padding:2px 7px}
 /* Avatar-Auswahl mit Kopfbedeckungen */
 .avpick{display:flex;flex-direction:column;gap:10px}
@@ -107,9 +107,11 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .hats button{appearance:none;display:flex;gap:10px;align-items:center;text-align:left;background:var(--board);border:2px solid var(--lead);border-radius:12px;padding:6px 10px;color:var(--ink);font:inherit;cursor:pointer}
 .hats button span{display:flex;flex-direction:column;gap:2px;min-width:0}
 .hats button small{font-size:.75rem;color:var(--muted);line-height:1.3}
-.hats button[aria-pressed="true"]{border-color:var(--amber)}
+.hats button[aria-pressed="true"]{border-color:var(--amber-ink)}
 .hats button.locked{cursor:default;opacity:.7;border-style:dashed}
 .hats button.locked svg{filter:grayscale(1);opacity:.7}
+.ring{display:inline-grid;flex:none;border-radius:50%;box-shadow:0 0 0 2px var(--panel),0 0 0 5px var(--rc)}
+.pod .ring{box-shadow:0 0 0 3px var(--panel),0 0 0 7px var(--rc)}
 .bgrow{display:flex;flex-wrap:wrap;gap:8px}
 .bgsw{appearance:none;width:36px;height:36px;border-radius:50%;border:3px solid var(--panel);background:var(--c);box-shadow:0 0 0 1px var(--lead);cursor:pointer;padding:0}
 .bgsw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--amber-ink)}
@@ -190,9 +192,13 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
 (()=>{
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const{GAMES,MODES,SCORING}=LobbyCore,gameName=id=>(GAMES.find(g=>g.id===id)||{}).name||id;
-const Net=GGNet,me=Net.me,av=(id,size=40)=>Avatars.svg(id??0,size);
+const Net=GGNet,me=Net.me;
+/* Ring zeigt den Status: grün = bereit/fertig, blau = spielt gerade, Gold/Silber/Bronze = Plätze bei der Siegerehrung */
+const RING={ready:'var(--sea-ink)',play:'var(--water-ink)',gold:'#d4a017',silver:'#a9b1ba',bronze:'#c27c48'};
+const av=(id,size=40,ring,mood)=>{const svg=Avatars.svg(id??0,size,{mood});return ring?`<span class="ring" style="--rc:${RING[ring]}">${svg}</span>`:svg;};
+const medal=pl=>['gold','silver','bronze'][pl-1];
 if(me.avatar==null)me.avatar=Math.floor(Math.random()*Avatars.count);
-{const a=Avatars.split(me.avatar);if(!GGProgress.unlocked(a.hat))me.avatar=Avatars.make(a.face,0,a.bg);}   // gesperrte Kopfbedeckung wieder abnehmen
+{const a=Avatars.split(me.avatar);me.avatar=Avatars.make(a.face,GGProgress.unlocked(a.hat)?a.hat:0,a.bg,GGProgress.shirtUnlocked(a.shirt)?a.shirt:0);}   // gesperrte Kopfbedeckung wieder abnehmen
 
 const S={
   code:Net.ss.get('gg-room'),room:null,online:[],rooms:[],invites:[],screen:'menu',invited:{},
@@ -226,7 +232,7 @@ function countTournament(room){
   if(room.status!=='final'||!room.results.length||!room.players.some(p=>p.pid===me.pid))return;
   const st=LobbyCore.standings(room),mine=st.find(x=>x.pid===me.pid);if(!mine)return;
   const fresh=GGProgress.recordTournament(`${room.code}:${room.created}:${room.results.length}:${room.playlist.join(',')}`,mine.place);
-  if(fresh.length)toast(`Freigespielt: ${fresh.map(h=>Avatars.hatName(h)).join(', ')}! Unter Einstellungen → Avatar.`);
+  if(fresh.length)toast(`Freigespielt: ${fresh.map(Avatars.unlockName).join(', ')}! Unter Einstellungen → Avatar.`);
 }
 function maybeLaunch(){
   const r=S.room;if(!needsToPlay(r))return;
@@ -297,14 +303,16 @@ function refresh(){
   if(S.screen==='lobby'&&S.room)lobbyLive();
 }
 function pickerInner(){
-  const{face,hat,bg}=Avatars.split(me.avatar),st=GGProgress.status(),open=st.filter(x=>x.open).length;
+  const{face,hat,bg,shirt}=Avatars.split(me.avatar),st=GGProgress.status(),open=st.filter(x=>x.open).length,sst=GGProgress.shirtStatus();
   const faces=Array.from({length:Avatars.count},(_,k)=>k);
   const card=h=>{const u=st.find(x=>x.hat===h),lock=h&&!u.open;
-    return`<button type="button" class="hat${lock?' locked':''}" data-hat="${h}" aria-pressed="${h===hat}"${lock?' disabled':''}>${av(Avatars.make(face,h,bg),44)}
+    return`<button type="button" class="hat${lock?' locked':''}" data-hat="${h}" aria-pressed="${h===hat}"${lock?' disabled':''}>${av(Avatars.make(face,h,bg,shirt),44)}
       <span><strong>${Avatars.hatName(h)}</strong>${lock?`<small>${esc(u.text)} · ${u.have}/${u.need}</small>`:h?'<small>freigespielt</small>':'<small>keine</small>'}</span></button>`;};
   const bgs=Avatars.backgrounds;
-  return`<div class="label">Gesicht · ${Avatars.count} Charaktere</div><div class="avgrid">${faces.map(k=>`<button type="button" data-face="${k}" aria-pressed="${k===face}" aria-label="${Avatars.female(k)?'Frau':'Mann'} ${k+1}">${av(Avatars.make(k,hat,bg),48)}</button>`).join('')}</div>
+  return`<div class="label">Gesicht · ${Avatars.count} Charaktere</div><div class="avgrid">${faces.map(k=>`<button type="button" data-face="${k}" aria-pressed="${k===face}" aria-label="${Avatars.female(k)?'Frau':'Mann'} ${k+1}">${av(Avatars.make(k,hat,bg,shirt),48)}</button>`).join('')}</div>
     <div class="label">Hintergrund</div><div class="bgrow"><button type="button" class="bgsw auto" data-bg="0" aria-pressed="${bg===0}" title="Passend zum Gesicht" style="--c:${Avatars.faceBg(face)}"><span>passend</span></button>${bgs.map((c,i)=>`<button type="button" class="bgsw" data-bg="${i+1}" aria-pressed="${bg===i+1}" aria-label="Hintergrund ${i+1}" style="--c:${c}"></button>`).join('')}</div>
+    <div class="label">T-Shirt</div><div class="bgrow"><button type="button" class="bgsw auto" data-shirt="0" aria-pressed="${shirt===0}" style="--c:${Avatars.backgrounds[0]}"><span>passend</span></button>${Array.from({length:8},(_,i)=>i+1).map(i=>`<button type="button" class="bgsw" data-shirt="${i}" aria-pressed="${shirt===i}" aria-label="T-Shirt ${Avatars.shirtName(i)}" title="${Avatars.shirtName(i)}" style="--c:${Avatars.shirtColor(i)}"></button>`).join('')}</div>
+    <div class="hats">${sst.map(u=>`<button type="button" class="hat${u.open?'':' locked'}" data-shirt="${u.shirt}" aria-pressed="${shirt===u.shirt}"${u.open?'':' disabled'}>${av(Avatars.make(face,hat,bg,u.shirt),44)}<span><strong>${Avatars.shirtName(u.shirt)}</strong><small>${u.open?'freigespielt':`${esc(u.text)} · ${u.have}/${u.need}`}</small></span></button>`).join('')}</div>
     <div class="label">Kopfbedeckung · ${open} von ${Avatars.hats} freigespielt</div><div class="hats">${Array.from({length:Avatars.hats+1},(_,h)=>card(h)).join('')}</div>`;
 }
 function avatarPicker(id){return`<div class="avpick" id="${id}" role="group" aria-label="Avatar wählen" hidden>${pickerInner()}</div>`;}
@@ -312,8 +320,8 @@ function bindPicker(btnId,gridId,onPick){
   const b=$('#'+btnId),g=$('#'+gridId);
   b.addEventListener('click',()=>{g.hidden=!g.hidden;b.setAttribute('aria-expanded',String(!g.hidden));});
   g.addEventListener('click',e=>{
-    const f=e.target.closest('[data-face]'),h=e.target.closest('[data-hat]'),c=e.target.closest('[data-bg]');if(!f&&!c&&!(h&&!h.disabled))return;
-    const cur=Avatars.split(me.avatar);me.avatar=Avatars.make(f?+f.dataset.face:cur.face,h?+h.dataset.hat:cur.hat,c?+c.dataset.bg:cur.bg);
+    const f=e.target.closest('[data-face]'),h=e.target.closest('[data-hat]'),c=e.target.closest('[data-bg]'),t=e.target.closest('[data-shirt]');if(!f&&!c&&!(h&&!h.disabled)&&!(t&&!t.disabled))return;
+    const cur=Avatars.split(me.avatar);me.avatar=Avatars.make(f?+f.dataset.face:cur.face,h?+h.dataset.hat:cur.hat,c?+c.dataset.bg:cur.bg,t?+t.dataset.shirt:cur.shirt);
     b.innerHTML=av(me.avatar,72);g.innerHTML=pickerInner();updateNav();onPick&&onPick();});
 }
 
@@ -378,18 +386,21 @@ function vLobby(){
 function playersHtml(r){
   const isHost=r.host===me.pid,st=r.status==='lobby'||r.status==='voting'?null:LobbyCore.standings(r),pts=st?Object.fromEntries(st.map(x=>[x.pid,x.total])):{};
   return r.players.map(p=>{
-    let tag='';
+    let tag='',ring=null;
+    if(r.status==='lobby'&&p.ready)ring='ready';
+    if(r.status==='voting'&&Object.values(r.votes[p.pid]||{}).reduce((a,b)=>a+b,0)>=r.count)ring='ready';
+    if(r.status==='running'&&r.current)ring=r.results[r.current.idx]&&r.results[r.current.idx][p.pid]!==undefined?'ready':'play';
     if(r.status==='lobby')tag=`<span class="tag ${p.ready?'ok':''}">${p.ready?'Bereit':'Wartet'}</span>`;
     else if(r.status==='voting'){const used=Object.values(r.votes[p.pid]||{}).reduce((a,b)=>a+b,0);tag=`<span class="tag ${used>=r.count?'ok':''}">${used>=r.count?'Abgestimmt':`${used}/${r.count} Stimmen`}</span>`;}
     else if(r.status==='running'&&r.current){const done=r.results[r.current.idx]&&r.results[r.current.idx][p.pid]!==undefined;tag=`<span class="tag ${done?'ok':'run'}">${done?'Fertig':'Spielt'}</span>`;}
     if(st)tag+=`<span class="meta">${GG.num(pts[p.pid]||0)} P.</span>`;
-    return`<div class="item">${av(p.avatar,40)}<div class="grow"><strong>${esc(p.name)}${p.pid===me.pid?' (du)':''}</strong>${p.pid===r.host?'<small style="color:var(--amber-ink)">Gastgeber</small>':''}</div>${tag}
+    return`<div class="item">${av(p.avatar,40,ring)}<div class="grow"><strong>${esc(p.name)}${p.pid===me.pid?' (du)':''}</strong>${p.pid===r.host?'<small style="color:var(--amber-ink)">Gastgeber</small>':''}</div>${tag}
       ${isHost&&p.pid!==me.pid&&r.status==='lobby'?`<button class="btn danger small" type="button" data-kick="${esc(p.pid)}">Entfernen</button>`:''}</div>`;}).join('');
 }
 function standingsHtml(r){
   const st=LobbyCore.standings(r),n=r.results.length;if(!n)return`<div class="empty">Noch kein Spiel gespielt.</div>`;
   return`<div class="tablewrap"><table class="stand"><thead><tr><th>Platz</th><th>Spieler</th>${r.results.map((_,i)=>`<th title="${esc(gameName(r.playlist[i]))}">${esc(gameName(r.playlist[i]).slice(0,10))}</th>`).join('')}<th>Gesamt</th></tr></thead>
-  <tbody>${st.map(x=>`<tr><td>${x.place}.</td><td><span class="pl">${av(x.avatar,28)}${esc(x.name)}</span></td>${x.per.map(c=>`<td>${c?(r.scoring==='place'?`${c.pts}<small>${GG.num(c.score)}</small>`:GG.num(c.score)):'–'}</td>`).join('')}<td class="tot">${GG.num(x.total)}</td></tr>`).join('')}</tbody></table></div>
+  <tbody>${st.map(x=>`<tr><td>${x.place}.</td><td><span class="pl">${av(x.avatar,28,r.status==='final'?medal(x.place):null)}${esc(x.name)}</span></td>${x.per.map(c=>`<td>${c?(r.scoring==='place'?`${c.pts}<small>${GG.num(c.score)}</small>`:GG.num(c.score)):'–'}</td>`).join('')}<td class="tot">${GG.num(x.total)}</td></tr>`).join('')}</tbody></table></div>
   <p class="hint">${r.scoring==='place'?'Platzwertung: pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz. Klein darunter die Punkte im Spiel.':'Punkte addieren: Die Punkte aller Spiele werden zusammengezählt.'}</p>`;
 }
 function playlistHtml(r){
@@ -444,7 +455,7 @@ function renderVotes(){
 }
 function podiumHtml(r,isHost){
   const st=LobbyCore.standings(r),top=[st[1],st[0],st[2]];
-  const pod=(x,cls)=>x?`<div class="pod ${cls}">${av(x.avatar,cls==='p1'?88:68)}<strong>${esc(x.name)}</strong><span class="pts">${GG.num(x.total)} Punkte</span><div class="step">${x.place}</div></div>`:'<div></div>';
+  const pod=(x,cls)=>x?`<div class="pod ${cls}">${av(x.avatar,cls==='p1'?88:68,medal(x.place),x.place===1?'win':'happy')}<strong>${esc(x.name)}</strong><span class="pts">${GG.num(x.total)} Punkte</span><div class="step">${x.place}</div></div>`:'<div></div>';
   const rest=st.slice(3);
   return`<section class="box" style="align-items:stretch"><div class="label" style="text-align:center">Siegerehrung · ${esc(r.title)}</div><h2 style="text-align:center">${st[0]?`${esc(st[0].name)} gewinnt!`:'Turnier beendet'}</h2>
     <div class="podium">${pod(top[0],'p2')}${pod(top[1],'p1')}${pod(top[2],'p3')}</div>

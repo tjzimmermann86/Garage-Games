@@ -6,9 +6,9 @@ window.GG=(()=>{
   document.documentElement.dataset.theme=THEME;
   const css=getComputedStyle(document.documentElement),C=k=>css.getPropertyValue(k).trim();
   const COL={};
-  ['bg','panel','board','lead','ink','muted','amber','rose','sea','water','violet','lime','steel','plate','accent'].forEach(k=>COL[k]=C('--'+k));
+  ['bg','panel','board','lead','ink','muted','amber','rose','sea','water','violet','lime','apricot','steel','plate','accent'].forEach(k=>COL[k]=C('--'+k));
   COL.edge=C('--panel-edge');COL.steelDark=C('--steel-dark');
-  ['amber','rose','sea','water','violet','lime','accent'].forEach(k=>COL[k+'Ink']=C(`--${k}-ink`));
+  ['amber','rose','sea','water','violet','lime','apricot','accent'].forEach(k=>COL[k+'Ink']=C(`--${k}-ink`));
   if(!COL.accentInk||COL.accentInk.startsWith('var('))COL.accentInk=COL.amberInk;
   if(COL.accent.startsWith('var('))COL.accent=C(COL.accent.slice(4,-1))||COL.amber;
   const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
@@ -108,7 +108,7 @@ window.GG=(()=>{
     if(room&&reported)return;if(room)reported=true;   // ohne Turnier zählt jede gespielte Partie
     // Fortschritt zählt auch ohne Turnier; neue Kopfbedeckungen kurz anzeigen
     if(window.GGProgress){const id=(location.pathname.match(/\/([a-z]+)\/(?:index\.html)?$/)||[])[1];const fresh=GGProgress.recordGame(id);
-      if(fresh.length&&window.Avatars)setTimeout(()=>{notice(`Freigespielt: ${fresh.map(h=>Avatars.hatName(h)).join(', ')}! Im Menü unter Einstellungen → Avatar.`);setTimeout(()=>{const d=document.getElementById('ggNotice');if(d)d.remove();},6000);},300);}
+      if(fresh.length&&window.Avatars)setTimeout(()=>{notice(`Freigespielt: ${fresh.map(Avatars.unlockName).join(', ')}! Im Menü unter Einstellungen → Avatar.`);setTimeout(()=>{const d=document.getElementById('ggNotice');if(d)d.remove();},6000);},300);}
     if(!room||!window.GGNet)return;
     GGNet.call({action:'result',code:room.code,idx:room.idx,score:Math.max(0,Math.round(score||0))});
   }

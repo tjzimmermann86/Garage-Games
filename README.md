@@ -29,6 +29,14 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 
 Der Fortschritt wird pro Rechner im Browser gespeichert (`shared/progress.js`).
 
+### T-Shirts
+
+Das T-Shirt passt sich standardmäßig dem Hintergrund an. Acht Farben sind frei wählbar, zwei Shirts lassen sich freispielen: **Trikot** (ein Turnier gewinnen) und **Ringelshirt** (3 Turniere bis zur Siegerehrung spielen).
+
+### Status-Ringe und Siegerpodest
+
+Im Warteraum bekommt der Avatar einen grünen Ring, wenn der Spieler bereit ist, abgestimmt hat oder sein Ergebnis gemeldet hat, und einen blauen, solange er noch spielt. Bei der Siegerehrung tragen die Plätze 1–3 Gold, Silber und Bronze; Platz 1 grinst, Platz 2 und 3 lächeln.
+
 ### Turnier im Warteraum
 
 Der Gastgeber stellt ein:
