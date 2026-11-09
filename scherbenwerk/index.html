@@ -3,19 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Scherbenwerk</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
 <style>
 /* Layout: one workbench stage – shard trays left and right, leaded-glass board in the middle, HUD drawn on the canvas */
-:root{
-  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --board:#0a1013; --lead:#33424a;
-  --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --rose:#e5626b; --sea:#5fc3b0;
-  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
-  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
-  color-scheme:dark;
-}
+:root{--accent:var(--amber);--accent-ink:var(--amber-ink)}
+
 body{margin:0}
 html,body{background:var(--bg);color:var(--ink)}
 [hidden]{display:none!important}
@@ -23,22 +20,22 @@ body{font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
 h1{font-size:1.7rem;font-weight:800;margin:0;letter-spacing:-.015em;text-wrap:balance}
-h1 em{font-style:normal;color:var(--amber)}
+h1 em{font-style:normal;color:var(--amber-ink)}
 .sub{color:var(--muted);font-size:.92rem}
-.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px rgba(0,0,0,.35)}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px var(--shadow)}
 canvas{display:block;width:100%;height:100%;touch-action:none}
-.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:rgba(10,15,18,.72);backdrop-filter:blur(5px);overflow:auto;padding:12px}
-.card{width:min(460px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:var(--scrim);backdrop-filter:blur(5px);overflow:auto;padding:12px}
+.card{width:min(460px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px var(--shadow)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber-ink)}
 .card h2{margin:0;font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
 .card p{margin:0;color:var(--muted);line-height:1.5}
 .card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;line-height:1.45}
 .rows{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-variant-numeric:tabular-nums}
 .rows span:nth-child(even){font-family:var(--mono);text-align:right}
 .rows .total{border-top:1px solid var(--lead);padding-top:8px;font-weight:600;color:var(--ink)}
-.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--amber-ink);font-variant-numeric:tabular-nums}
 .next{background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:.95rem;line-height:1.4}
-button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
+button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#2a1d05;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
 button.go:hover{filter:brightness(1.08)}
 button.go:focus-visible,button.ghost:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
 button.ghost,a.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
@@ -83,6 +80,7 @@ const SNAP=26,GAP=5,TPAD=12,TFOOT=38;
 const css=getComputedStyle(document.documentElement);
 const C=k=>css.getPropertyValue(k).trim();
 const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea')};
+COL.amberInk=C('--amber-ink');COL.roseInk=C('--rose-ink');COL.seaInk=C('--sea-ink');COL.waterInk=C('--water-ink');
 const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
 
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
@@ -514,7 +512,7 @@ function drawPiece(pc,isDrag){
   const sx=pc.shake>0?Math.sin(pc.shake*40)*5*pc.shake:0;
   ctx.save();ctx.translate(pc.x+sx,pc.y);ctx.rotate(pc.ang);ctx.scale(s,s);ctx.globalAlpha=al;
   if(isDrag){ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetY=10;}
-  else if(pc.state==='tray'){ctx.shadowColor='rgba(0,0,0,.35)';ctx.shadowBlur=6;ctx.shadowOffsetY=2;}
+  else if(pc.state==='tray'){ctx.shadowColor='var(--shadow)';ctx.shadowBlur=6;ctx.shadowOffsetY=2;}
   ctx.drawImage(pc.sp,-pc.ox,-pc.oy,pc.sw,pc.sh);
   ctx.shadowColor='transparent';
   if(isDrag&&nearTarget(pc)){path(ctx,pc.rel);ctx.strokeStyle=COL.amber;ctx.lineWidth=3;ctx.stroke();}
@@ -539,11 +537,11 @@ function draw(){
   });
 
   // board
-  ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;
+  ctx.save();ctx.shadowColor='var(--shadow)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;
   ctx.fillStyle=COL.board;ctx.fillRect(BOARD.x,BOARD.y,BOARD.w,BOARD.h);ctx.restore();
   ctx.strokeStyle=COL.lead;ctx.lineWidth=6;ctx.strokeRect(BOARD.x-3,BOARD.y-3,BOARD.w+6,BOARD.h+6);
   if(round.outlines){
-    ctx.save();ctx.translate(BOARD.x,BOARD.y);ctx.strokeStyle='rgba(240,178,74,.38)';ctx.lineWidth=1.2;ctx.setLineDash([5,4]);
+    ctx.save();ctx.translate(BOARD.x,BOARD.y);ctx.strokeStyle=GG.dark?'rgba(240,178,74,.38)':'rgba(143,84,0,.38)';ctx.lineWidth=1.2;ctx.setLineDash([5,4]);
     pieces.forEach(p=>{if(p.state!=='placed'){path(ctx,p.poly);ctx.stroke();}});ctx.restore();
   }else{
     ctx.fillStyle='rgba(255,255,255,.03)';
@@ -558,12 +556,12 @@ function draw(){
   if(pvLeft>0){ctx.drawImage(motif,px,py,pw,ph);}
   else{ctx.fillStyle=COL.board;ctx.fillRect(px,py,pw,ph);ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('VORLAGE WEG',px+pw/2,py+ph/2-10);}
   ctx.strokeStyle=COL.lead;ctx.lineWidth=3;ctx.strokeRect(px-1.5,py-1.5,pw+3,ph+3);
-  if(pvLeft>0&&pvLeft<Infinity){ctx.fillStyle=pvLeft<6?COL.rose:'rgba(10,16,19,.85)';ctx.fillRect(px+pw-52,py,52,22);ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${Math.ceil(pvLeft)} s`,px+pw-26,py+11);}
-  ctx.fillStyle='rgba(10,16,19,.78)';ctx.fillRect(px,py+ph-20,64,20);
+  if(pvLeft>0&&pvLeft<Infinity){ctx.fillStyle=pvLeft<6?COL.rose:COL.panel;ctx.fillRect(px+pw-52,py,52,22);ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${Math.ceil(pvLeft)} s`,px+pw-26,py+11);}
+  ctx.fillStyle=COL.panel;ctx.fillRect(px,py+ph-20,64,20);
   ctx.font=`600 11px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('VORLAGE',px+8,py+ph-10);
 
   const tx=px+pw+24;
-  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.amber;ctx.textBaseline='alphabetic';
+  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.amberInk;ctx.textBaseline='alphabetic';
   ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,tx,46);
   ctx.font=`800 34px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(motifName,tx,86);
   ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;
@@ -581,9 +579,9 @@ function draw(){
   if(placedN){rr(BOARD.x,by,BOARD.w*placedN/pieces.length,8,4);ctx.fillStyle=COL.amber;ctx.fill();}
   ctx.font=`500 14px ${MONO}`;ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.fillStyle=COL.ink;
   ctx.fillText(`${placedN} / ${pieces.length} gelegt`,BOARD.x,by+34);
-  ctx.textAlign='right';ctx.fillStyle=hidden?COL.sea:COL.muted;
+  ctx.textAlign='right';ctx.fillStyle=hidden?COL.seaInk:COL.muted;
   ctx.fillText(hidden?`Stapel: ${hidden} Teile`:'Stapel leer',BOARD.x+BOARD.w,by+34);
-  ctx.textAlign='left';ctx.fillStyle=COL.muted;let mx=BOARD.x+ctx.measureText(`${placedN} / ${pieces.length} gelegt`).width;const ptxt=` · ${total.toLocaleString('de-DE')} Pkt · `;ctx.fillText(ptxt,mx,by+34);mx+=ctx.measureText(ptxt).width;ctx.fillStyle=mistakes?COL.rose:COL.muted;ctx.fillText(`${mistakes} Fehler`,mx,by+34);
+  ctx.textAlign='left';ctx.fillStyle=COL.muted;let mx=BOARD.x+ctx.measureText(`${placedN} / ${pieces.length} gelegt`).width;const ptxt=` · ${total.toLocaleString('de-DE')} Pkt · `;ctx.fillText(ptxt,mx,by+34);mx+=ctx.measureText(ptxt).width;ctx.fillStyle=mistakes?COL.roseInk:COL.muted;ctx.fillText(`${mistakes} Fehler`,mx,by+34);
   if(hidden){
     const ix=BOARD.x+BOARD.w-ctx.measureText(`Stapel: ${hidden} Teile`).width-30,iy=by+28;
     ctx.fillStyle=COL.sea;for(let k=2;k>=0;k--){ctx.globalAlpha=1-k*.3;ctx.beginPath();ctx.moveTo(ix-9+k*3,iy-k*3+4);ctx.lineTo(ix+2+k*3,iy-k*3-6);ctx.lineTo(ix+10+k*3,iy-k*3+2);ctx.lineTo(ix+k*3,iy-k*3+7);ctx.closePath();ctx.fill();}
@@ -595,7 +593,7 @@ function draw(){
   if(toastT>0){
     ctx.globalAlpha=Math.min(1,toastT*2);ctx.font=`600 16px ${DISPLAY}`;ctx.textAlign='center';
     const w=ctx.measureText(toastMsg).width+36,cx=BOARD.x+BOARD.w/2,cy=BOARD.y+28;
-    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle='rgba(10,16,19,.9)';ctx.fill();ctx.strokeStyle=COL.amber;ctx.lineWidth=1;ctx.stroke();
+    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.amber;ctx.lineWidth=1;ctx.stroke();
     ctx.fillStyle=COL.ink;ctx.textBaseline='middle';ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;
   }
 }

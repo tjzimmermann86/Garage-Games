@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Farbfolge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/garage.css">
-<style>:root{--accent:#a98bf0}</style>
+<style>:root{--accent:var(--violet);--accent-ink:var(--violet-ink)}</style>
 </head>
 <body>
 <div class="wrap">
@@ -119,7 +120,7 @@ function draw(dt,now){
     const id=slots[k],on=lit===id&&now<litUntil,isFail=phase==='over'&&failInfo&&failInfo.want===id&&Math.floor(now/250)%2===0;
     const mid=wedge(k,RI,RO);
     ctx.save();if(on||isFail){ctx.shadowColor=PADS[id].col;ctx.shadowBlur=40;}
-    ctx.globalAlpha=on||isFail?1:.32;ctx.fillStyle=PADS[id].col;ctx.fill();ctx.restore();
+    ctx.globalAlpha=on||isFail?1:(GG.dark?.32:.5);ctx.fillStyle=PADS[id].col;ctx.fill();ctx.restore();
     if(on){wedge(k,RI,RO);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();}
     const lx=CX+Math.cos(mid)*(RO-34),ly=CY+Math.sin(mid)*(RO-34);
     GG.text(ctx,String(k+1),lx,ly+6,{font:MONO,weight:600,size:16,align:'center',color:on?'#111':COL.ink});
@@ -127,18 +128,18 @@ function draw(dt,now){
   ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(CX,CY,RI-10,0,7);ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();
   GG.label(ctx,'STUFE',CX,CY-26,'center');GG.value(ctx,String(Math.max(1,seq.length)),CX,CY+14,'center',COL.ink,40);
   const status=phase==='show'?'Zuhören':phase==='input'?(active.has('rueckwaerts')?'Rückwärts!':active.has('mischen')?'Gemischt!':'Du bist dran'):phase==='over'?'Ausgeschieden':phase==='wait'?'Richtig!':'';
-  GG.text(ctx,status,CX,CY+40,{size:14,weight:600,align:'center',color:phase==='over'?COL.rose:COL.accent});
+  GG.text(ctx,status,CX,CY+40,{size:14,weight:600,align:'center',color:phase==='over'?COL.roseInk:COL.accentInk});
 
-  GG.label(ctx,'FARBFOLGE',340,44,'left',COL.accent);
+  GG.label(ctx,'FARBFOLGE',340,44,'left',COL.accentInk);
   GG.text(ctx,`Folge mit ${seq.length} ${seq.length===1?'Ton':'Tönen'}`,340,82,{size:30,weight:800});
-  if(phase==='input'){const left=Math.max(0,6-(now-lastInput)/1000);GG.label(ctx,'NÄCHSTER DRUCK',940,44,'right');GG.value(ctx,`${left.toFixed(1)} s`,940,82,'right',left<2?COL.rose:COL.ink,30);}
+  if(phase==='input'){const left=Math.max(0,6-(now-lastInput)/1000);GG.label(ctx,'NÄCHSTER DRUCK',940,44,'right');GG.value(ctx,`${left.toFixed(1)} s`,940,82,'right',left<2?COL.roseInk:COL.ink,30);}
 
   GG.panel(ctx,16,100,300,600);GG.label(ctx,'SO GEHT’S',36,132);
   let y=GG.wrap(ctx,'Merk dir die Folge aus Farben und Tönen und drück sie danach in derselben Reihenfolge nach.',36,160,260,21)+8;
   y=GG.wrap(ctx,'Jede Stufe hängt einen Ton an. Ein falsches Feld oder mehr als 6 Sekunden Pause, und du bist raus.',36,y,260,21)+12;
   GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'ZUSATZREGELN',36,y);y+=26;
   MILESTONES.forEach((m,k)=>{const t=twistOrder[k],on=active.has(t);
-    GG.text(ctx,`ab Stufe ${m}`,36,y,{size:14,color:COL.muted});GG.text(ctx,on?TWISTS[t].name:'?',296,y,{size:14,font:MONO,weight:600,align:'right',color:on?COL.accent:COL.muted});y+=24;});
+    GG.text(ctx,`ab Stufe ${m}`,36,y,{size:14,color:COL.muted});GG.text(ctx,on?TWISTS[t].name:'?',296,y,{size:14,font:MONO,weight:600,align:'right',color:on?COL.accentInk:COL.muted});y+=24;});
   GG.panel(ctx,964,100,300,600);
   GG.label(ctx,'PUNKTE',984,132);GG.value(ctx,GG.num(score),984,168);
   GG.label(ctx,'DEIN REKORD',984,212);GG.value(ctx,GG.num(best),984,248);

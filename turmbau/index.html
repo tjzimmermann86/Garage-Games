@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Turmbau</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/garage.css">
-<style>:root{--accent:#f0b24a}</style>
+<style>:root{--accent:var(--amber);--accent-ink:var(--amber-ink)}</style>
 </head>
 <body>
 <div class="wrap">
@@ -136,10 +137,10 @@ function update(dt){
 function draw(dt,now){
   update(dt);GG.clear(ctx);
   const sky=ctx.createLinearGradient(0,0,0,H);const k=Math.min(1,cam/4000);
-  sky.addColorStop(0,k>.5?'#0b1030':'#1d2b4a');sky.addColorStop(1,k>.5?'#3b2a6b':'#e08a5d');ctx.fillStyle=sky;ctx.fillRect(330,0,620,H);
+  if(GG.dark){sky.addColorStop(0,k>.5?'#0b1030':'#1d2b4a');sky.addColorStop(1,k>.5?'#3b2a6b':'#e08a5d');}else{sky.addColorStop(0,k>.5?'#c9c4f2':'#b9ddf7');sky.addColorStop(1,k>.5?'#f2d4ec':'#ffe2cc');}ctx.fillStyle=sky;ctx.fillRect(330,0,620,H);
   // Stadt im Hintergrund (Parallaxe)
-  ctx.fillStyle='rgba(10,12,24,.55)';for(let i=0;i<14;i++){const x=330+i*46,h=(60+((i*73)%110))*1.6,y=GROUND+cam*.3;ctx.fillRect(x,y-h,40,h);}
-  ctx.fillStyle='#2a2f35';ctx.fillRect(330,toScreen(0),620,H);
+  ctx.fillStyle=GG.dark?'rgba(10,12,24,.55)':'rgba(120,138,180,.3)';for(let i=0;i<14;i++){const x=330+i*46,h=(60+((i*73)%110))*1.6,y=GROUND+cam*.3;ctx.fillRect(x,y-h,40,h);}
+  ctx.fillStyle=GG.dark?'#2a2f35':COL.lead;ctx.fillRect(330,toScreen(0),620,H);
   for(let i=1;i<blocks.length;i++){const b=blocks[i],sy=toScreen(b.y);if(sy>-50&&sy<H+50)drawBlock(b.x,sy,b.w,b.col);}
   const base=blocks[0],bs=toScreen(0);ctx.fillStyle='#6b7378';ctx.fillRect(base.x-base.w/2,bs,base.w,26);ctx.fillStyle='#4e5d63';ctx.fillRect(base.x-base.w/2,bs,base.w,5);
   for(const d of debris)drawBlock(d.x,toScreen(d.y),d.w,d.col,d.rot);
@@ -153,7 +154,7 @@ function draw(dt,now){
     drawBlock(p.x,p.y+BH,cur.w,cur.col,mode()==='schiene'?0:Math.atan2(p.x-p.hx,p.y-PY)*.0);
     if(state==='play'){const top=blocks[blocks.length-1],ty=toScreen(top.y+BH);ctx.setLineDash([4,6]);ctx.strokeStyle='rgba(255,255,255,.18)';ctx.beginPath();ctx.moveTo(p.x,p.y+BH);ctx.lineTo(p.x,ty);ctx.stroke();ctx.setLineDash([]);}
   }
-  if(wind){const dir=Math.sign(wind);GG.rr(ctx,PX-90,PY+12,180,30,15);ctx.fillStyle='rgba(10,16,19,.8)';ctx.fill();GG.text(ctx,`Wind ${dir>0?'→':'←'} ${Math.round(Math.abs(wind))}`,PX,PY+33,{align:'center',font:MONO,size:13,color:COL.water});}
+  if(wind){const dir=Math.sign(wind);GG.rr(ctx,PX-90,PY+12,180,30,15);ctx.fillStyle=COL.panel;ctx.fill();GG.text(ctx,`Wind ${dir>0?'→':'←'} ${Math.round(Math.abs(wind))}`,PX,PY+33,{align:'center',font:MONO,size:13,color:COL.waterInk});}
   if(flash>0){ctx.fillStyle=`rgba(255,240,200,${flash*.2})`;ctx.fillRect(330,0,620,H);}
   // Seiten
   ctx.fillStyle=COL.bg;ctx.fillRect(0,0,330,H);ctx.fillRect(950,0,330,H);
@@ -161,11 +162,11 @@ function draw(dt,now){
   let y=GG.wrap(ctx,'Lass den Block im richtigen Moment fallen. Was über den Turm hinausragt, wird abgeschnitten.',36,160,260,21)+8;
   y=GG.wrap(ctx,'Triffst du genau, gibt es „Perfekt“. Drei in Folge machen den Block wieder breiter.',36,y,260,21)+12;
   GG.hr(ctx,36,296,y-6);y+=20;GG.label(ctx,'KRANMODUS',36,y);y+=26;
-  modes.forEach((m,k)=>{const on=phase()===k;GG.text(ctx,`ab Etage ${k*PHASE_LEN}`,36,y,{size:14,color:COL.muted});GG.text(ctx,MODES[m].name,296,y,{size:14,font:MONO,weight:600,align:'right',color:on?COL.accent:COL.muted});y+=24;});
-  GG.text(ctx,`ab Etage ${PHASE_LEN*(windFrom-1)}`,36,y,{size:14,color:COL.muted});GG.text(ctx,'Wind',296,y,{size:14,font:MONO,weight:600,align:'right',color:wind?COL.water:COL.muted});y+=34;
+  modes.forEach((m,k)=>{const on=phase()===k;GG.text(ctx,`ab Etage ${k*PHASE_LEN}`,36,y,{size:14,color:COL.muted});GG.text(ctx,MODES[m].name,296,y,{size:14,font:MONO,weight:600,align:'right',color:on?COL.accentInk:COL.muted});y+=24;});
+  GG.text(ctx,`ab Etage ${PHASE_LEN*(windFrom-1)}`,36,y,{size:14,color:COL.muted});GG.text(ctx,'Wind',296,y,{size:14,font:MONO,weight:600,align:'right',color:wind?COL.waterInk:COL.muted});y+=34;
   GG.label(ctx,'MATERIAL',36,y);GG.text(ctx,MATS[mat].name,296,y,{size:14,font:MONO,weight:600,align:'right'});
   GG.panel(ctx,964,100,300,600);
-  GG.label(ctx,'ETAGEN',984,132);GG.value(ctx,String(height),984,180,'left',COL.accent,48);
+  GG.label(ctx,'ETAGEN',984,132);GG.value(ctx,String(height),984,180,'left',COL.accentInk,48);
   GG.label(ctx,'PERFEKT',984,232);GG.value(ctx,String(perfects),984,268);
   GG.label(ctx,'PUNKTE',984,316);GG.value(ctx,GG.num(height*10+perfects*5),984,352);
   GG.label(ctx,'DEIN REKORD',984,400);GG.value(ctx,`${best} Etagen`,984,436,'left',COL.ink,26);

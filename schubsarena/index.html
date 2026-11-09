@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Schubsarena</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/garage.css">
-<style>:root{--accent:#f0b24a}</style>
+<style>:root{--accent:var(--amber);--accent-ink:var(--amber-ink)}</style>
 </head>
 <body>
 <div class="wrap">
@@ -157,15 +158,15 @@ function draw(dt,now){
   if(state==='countdown'){t+=dt;if(t>=0){state='play';t=0;}}
   else if(state==='play'||state==='end'){const n=speed>1?6:2;for(let k=0;k<n;k++)step(dt/2);}
   GG.clear(ctx);
-  ctx.fillStyle='#07090b';ctx.fillRect(330,96,620,620);
-  const g=ctx.createRadialGradient(CX,CY,50,CX,CY,420);g.addColorStop(0,'#141b20');g.addColorStop(1,'#07090b');ctx.fillStyle=g;ctx.fillRect(330,96,620,620);
+  ctx.fillStyle=GG.dark?'#07090b':COL.lead;ctx.fillRect(330,96,620,620);
+  const g=ctx.createRadialGradient(CX,CY,50,CX,CY,420);g.addColorStop(0,GG.dark?'#141b20':COL.board);g.addColorStop(1,GG.dark?'#07090b':COL.lead);ctx.fillStyle=g;ctx.fillRect(330,96,620,620);
   // Plattform
-  ctx.save();shapePath(radius);ctx.fillStyle='#2b363d';ctx.fill('evenodd');ctx.clip('evenodd');
-  ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1;for(let x=CX-R0;x<CX+R0;x+=30){ctx.beginPath();ctx.moveTo(x,CY-R0);ctx.lineTo(x,CY+R0);ctx.stroke();ctx.beginPath();ctx.moveTo(CX-R0,x-CX+CY);ctx.lineTo(CX+R0,x-CX+CY);ctx.stroke();}
+  ctx.save();shapePath(radius);ctx.fillStyle=GG.dark?'#2b363d':COL.panel;ctx.fill('evenodd');ctx.clip('evenodd');
+  ctx.strokeStyle=GG.dark?'rgba(255,255,255,.04)':'rgba(40,48,71,.06)';ctx.lineWidth=1;for(let x=CX-R0;x<CX+R0;x+=30){ctx.beginPath();ctx.moveTo(x,CY-R0);ctx.lineTo(x,CY+R0);ctx.stroke();ctx.beginPath();ctx.moveTo(CX-R0,x-CX+CY);ctx.lineTo(CX+R0,x-CX+CY);ctx.stroke();}
   if(round.ice){ctx.fillStyle='rgba(159,214,255,.12)';ctx.fill();}
   ctx.restore();
   const warn=t>3&&state==='play';
-  ctx.save();shapePath(radius);ctx.lineWidth=8;ctx.strokeStyle=COL.amber;ctx.setLineDash([14,14]);ctx.lineDashOffset=-now/40;ctx.globalAlpha=warn?.9:.5;ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  ctx.save();shapePath(radius);ctx.lineWidth=8;ctx.strokeStyle=GG.dark?COL.amber:COL.amberInk;ctx.setLineDash([14,14]);ctx.lineDashOffset=-now/40;ctx.globalAlpha=warn?.9:.5;ctx.stroke();ctx.setLineDash([]);ctx.restore();
   for(const bp of bumpers){if(edge(bp.x,bp.y)<bp.r)continue;ctx.fillStyle=bp.hit?'#fff':COL.rose;ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r,0,7);ctx.fill();ctx.fillStyle='#4a1a1e';ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r*.55,0,7);ctx.fill();}
   for(const b of balls){
     if(!b.alive&&!b.fall)continue;if(!b.alive)continue;
@@ -175,12 +176,12 @@ function draw(dt,now){
     ctx.fillStyle=gr;ctx.beginPath();ctx.arc(b.x,b.y,BR*s*Math.sqrt(b.m),0,7);ctx.fill();
     if(b.dash){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,BR+5,0,7);ctx.stroke();}
     if(b.player){ctx.strokeStyle=COL.accent;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(b.x,b.y,BR+7,0,7);ctx.stroke();}
-    GG.text(ctx,b.name,b.x,b.y-BR-10,{size:12,weight:600,align:'center',font:MONO,color:b.player?COL.accent:COL.ink});
+    GG.text(ctx,b.name,b.x,b.y-BR-10,{size:12,weight:600,align:'center',font:MONO,color:b.player?COL.accentInk:COL.ink});
   }
-  if(state==='countdown')GG.value(ctx,String(Math.ceil(-t)),CX,CY+30,'center',COL.accent,110);
+  if(state==='countdown')GG.value(ctx,String(Math.ceil(-t)),CX,CY+30,'center',COL.accentInk,110);
   // Kopf und Seiten
   ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,96);
-  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length}`,340,40,'left',COL.accent);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length}`,340,40,'left',COL.accentInk);
   GG.text(ctx,SHAPES[round.shape],340,78,{size:32,weight:800});
   GG.label(ctx,'ÜBRIG',940,40,'right');GG.value(ctx,`${aliveBalls().length} / ${balls.length}`,940,78,'right',COL.ink,32);
   GG.panel(ctx,16,100,300,600);GG.label(ctx,'SO GEHT’S',36,132);
@@ -192,7 +193,7 @@ function draw(dt,now){
   GG.label(ctx,'PUNKTE',984,132);GG.value(ctx,GG.num(total),984,168);
   const p=balls[0];GG.label(ctx,'RAMMSTOSS',984,212);GG.rr(ctx,984,224,260,8,4);ctx.fillStyle=COL.board;ctx.fill();GG.rr(ctx,984,224,260*(1-p.cd/2.2),8,4);ctx.fillStyle=p.cd?COL.steel:COL.accent;ctx.fill();
   GG.label(ctx,'AUSGESCHIEDEN',984,276);
-  placements.slice().reverse().forEach((b,k)=>{GG.text(ctx,`${balls.length-k}. ${b.name}`,984,304+k*24,{size:14,color:b.player?COL.accent:COL.muted});});
+  placements.slice().reverse().forEach((b,k)=>{GG.text(ctx,`${balls.length-k}. ${b.name}`,984,304+k*24,{size:14,color:b.player?COL.accentInk:COL.muted});});
   GG.wrap(ctx,'Platzpunkte: 1. Platz 10, 2. Platz 6, 3. Platz 4, danach weniger.',984,650,260,20,{color:COL.muted,size:14});
   GG.drawToast(ctx,CX,140,dt);
 }

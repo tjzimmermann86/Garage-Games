@@ -9,7 +9,7 @@ Die Startseite ist das Spielmenü:
 - **Start:** Name und Avatar wählen (16 Gesichter über den runden Avatar-Knopf). Jeder Name ist nur einmal vergeben, ein belegter Name wird sofort angezeigt. War man vorher in einem Turnier (z. B. nach einem Absturz), erscheint **„Wieder beitreten“**.
 - **Spiel erstellen:** Name des Spiels, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl.
 - **Spiel beitreten:** Liste der offenen Spiele oder Beitritt mit 4-stelligem Code. Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
-- **Einstellungen:** Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
+- **Einstellungen:** Hell (Pastell, Standard) oder Dunkel, Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
 - **Spiel beenden:** verlässt den Warteraum, stoppt die Musik und schließt das Fenster, wenn der Browser es erlaubt.
 
 ### Turnier im Warteraum

@@ -1,17 +1,22 @@
 /* Gemeinsame Bausteine der Garage Games: Canvas, Farben, Zufall, Sound, Startkarten. */
 window.GG=(()=>{
   const W=1280,H=720;
+  /* Darstellung vor dem Auslesen der Farben setzen: hell (Standard) oder dunkel */
+  const THEME=(()=>{try{return JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark'?'dark':'light';}catch(e){return'light';}})();
+  document.documentElement.dataset.theme=THEME;
   const css=getComputedStyle(document.documentElement),C=k=>css.getPropertyValue(k).trim();
   const COL={};
   ['bg','panel','board','lead','ink','muted','amber','rose','sea','water','violet','lime','steel','plate','accent'].forEach(k=>COL[k]=C('--'+k));
   COL.edge=C('--panel-edge');COL.steelDark=C('--steel-dark');
+  ['amber','rose','sea','water','violet','lime','accent'].forEach(k=>COL[k+'Ink']=C(`--${k}-ink`));
+  if(!COL.accentInk||COL.accentInk.startsWith('var('))COL.accentInk=COL.amberInk;
   if(COL.accent.startsWith('var('))COL.accent=C(COL.accent.slice(4,-1))||COL.amber;
   const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
   /* Einstellungen (pro Rechner im Browser gespeichert) */
-  const SKEY='gg-settings',DEF={resolution:'auto',master:80,music:50,sfx:80};
+  const SKEY='gg-settings',DEF={resolution:'auto',master:80,music:50,sfx:80,theme:'light'};
   function loadSettings(){try{return{...DEF,...JSON.parse(localStorage.getItem(SKEY)||'{}')};}catch(e){return{...DEF};}}
   const settings=loadSettings();
-  function saveSettings(patch){Object.assign(settings,patch);try{localStorage.setItem(SKEY,JSON.stringify(settings));}catch(e){}applyVolume();}
+  function saveSettings(patch){Object.assign(settings,patch);if(patch.theme)document.documentElement.dataset.theme=patch.theme;try{localStorage.setItem(SKEY,JSON.stringify(settings));}catch(e){}applyVolume();}
   const vol=kind=>(settings.master/100)*((kind?settings[kind]:100)/100);
   const RES={'720':1,'1080':1.5,'1440':2};
   const DPR=settings.resolution==='auto'?Math.min(2,window.devicePixelRatio||1):(RES[settings.resolution]||1);
@@ -91,7 +96,7 @@ window.GG=(()=>{
   function drawToast(ctx,cx,cy,dt){
     if(toastT<=0)return;toastT-=dt;
     ctx.globalAlpha=Math.min(1,toastT*2);ctx.font=`600 16px ${DISPLAY}`;ctx.textAlign='center';ctx.textBaseline='middle';
-    const w=ctx.measureText(toastMsg).width+36;rr(ctx,cx-w/2,cy-18,w,36,18);ctx.fillStyle='rgba(10,16,19,.92)';ctx.fill();ctx.strokeStyle=toastCol||COL.accent;ctx.lineWidth=1;ctx.stroke();
+    const w=ctx.measureText(toastMsg).width+36;rr(ctx,cx-w/2,cy-18,w,36,18);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=toastCol||COL.accent;ctx.lineWidth=1;ctx.stroke();
     ctx.fillStyle=COL.ink;ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;ctx.textBaseline='alphabetic';
   }
   function loop(fn){let last=performance.now();const f=now=>{const dt=Math.min(.05,(now-last)/1000);last=now;fn(dt,now);requestAnimationFrame(f);};requestAnimationFrame(f);}
@@ -104,7 +109,7 @@ window.GG=(()=>{
     GGNet.call({action:'result',code:room.code,idx:room.idx,score:Math.max(0,Math.round(score||0))});
   }
   const backToLobby=()=>{location.href='../';};
-  function notice(msg){let d=document.getElementById('ggNotice');if(!d){d=document.createElement('div');d.id='ggNotice';d.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:50;background:#0a1013;border:1px solid #f0b24a;color:#ece4d4;border-radius:999px;padding:10px 18px;font:600 15px '+DISPLAY+';max-width:calc(100% - 32px)';document.body.appendChild(d);}d.textContent=msg;}
+  function notice(msg){let d=document.getElementById('ggNotice');if(!d){d=document.createElement('div');d.id='ggNotice';d.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:50;background:var(--panel);border:1px solid var(--amber);color:var(--ink);border-radius:999px;padding:10px 18px;font:600 15px '+DISPLAY+';max-width:calc(100% - 32px)';document.body.appendChild(d);}d.textContent=msg;}
   function watchRoom(){
     if(!room||!window.GGNet)return;
     const rs=document.getElementById('restart');if(rs)rs.hidden=true;
@@ -122,5 +127,5 @@ window.GG=(()=>{
 
   const rowsHtml=pairs=>`<div class="rows">${pairs.map(([a,b,cls])=>`<span${cls?` class="${cls}"`:''}>${a}</span><span${cls?` class="${cls}"`:''}>${b}</span>`).join('')}</div>`;
 
-  return{room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
+  return{dark:THEME==='dark',room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
 })();

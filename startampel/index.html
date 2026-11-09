@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Startampel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/garage.css">
-<style>:root{--accent:#b6d65a}</style>
+<style>:root{--accent:var(--lime);--accent-ink:var(--lime-ink)}</style>
 </head>
 <body>
 <div class="wrap">
@@ -101,31 +102,31 @@ function drawSignal(now){
     const lit=pre?0:Math.min(5,Math.floor((now-t.start)/700)+1),off=t.state!=='wait';
     ctx.fillStyle='#16191c';GG.rr(ctx,AX+60,AY+150,AW-120,170,14);ctx.fill();
     for(let k=0;k<5;k++){const x=AX+120+k*90;for(const yy of[AY+200,AY+270]){const on=!off&&k<lit;ctx.save();if(on){ctx.shadowColor='#ff2a2a';ctx.shadowBlur=30;}ctx.fillStyle=on?'#ff3b30':'#3a1414';ctx.beginPath();ctx.arc(x,yy,28,0,7);ctx.fill();ctx.restore();}}
-    GG.text(ctx,off?(fail?'':'LOS!'):'Warten, bis alle Lichter ausgehen',AX+AW/2,AY+410,{size:off?56:18,weight:800,align:'center',color:off?COL.accent:COL.muted});
+    GG.text(ctx,off?(fail?'':'LOS!'):'Warten, bis alle Lichter ausgehen',AX+AW/2,AY+410,{size:off?56:18,weight:800,align:'center',color:off?COL.accentInk:COL.muted});
   }else if(t.type==='farbe'||t.type==='taeuschung'){
     const fake=t.state==='wait'&&t.fakes.find(f=>now>=f.s&&now<f.e);
-    GG.rr(ctx,AX+40,AY+40,AW-80,AH-80,14);ctx.fillStyle=go?'#2ea64f':fake?fake.col:'#22292e';ctx.fill();
+    GG.rr(ctx,AX+40,AY+40,AW-80,AH-80,14);ctx.fillStyle=go?'#2ea64f':fake?fake.col:COL.plate;ctx.fill();
     GG.text(ctx,go?'JETZT!':pre?'Gleich geht’s los':'Warten …',AX+AW/2,AY+AH/2+18,{size:go?72:30,weight:800,align:'center',color:go?'#08210f':COL.muted});
     if(t.type==='taeuschung')GG.text(ctx,'Nur bei Grün klicken',AX+AW/2,AY+AH-70,{size:15,align:'center',color:go?'#08210f':COL.muted,font:MONO});
   }else if(t.type==='ton'){
     const cx=AX+AW/2,cy=AY+AH/2-20;ctx.fillStyle=go?COL.accent:COL.steel;ctx.beginPath();ctx.moveTo(cx-60,cy-25);ctx.lineTo(cx-30,cy-25);ctx.lineTo(cx+10,cy-60);ctx.lineTo(cx+10,cy+60);ctx.lineTo(cx-30,cy+25);ctx.lineTo(cx-60,cy+25);ctx.fill();
     ctx.strokeStyle=go?COL.accent:COL.edge;ctx.lineWidth=6;for(const r of[40,70]){ctx.beginPath();ctx.arc(cx+10,cy,r,-.7,.7);ctx.stroke();}
-    GG.text(ctx,go?'PIEP!':'Klick beim Piep · Ton an!',cx,AY+AH-90,{size:go?44:18,weight:800,align:'center',color:go?COL.accent:COL.muted});
+    GG.text(ctx,go?'PIEP!':'Klick beim Piep · Ton an!',cx,AY+AH-90,{size:go?44:18,weight:800,align:'center',color:go?COL.accentInk:COL.muted});
   }else if(t.type==='zahl'){
     let d=null;if(go)d=t.target;else{for(const x of t.digits)if(now>=x.s)d=x.d;}
     GG.text(ctx,`Klick nur bei der ${t.target}`,AX+AW/2,AY+70,{size:22,weight:600,align:'center',color:COL.muted});
-    if(d!==null&&!pre)GG.value(ctx,String(d),AX+AW/2,AY+AH/2+80,'center',go?COL.accent:COL.ink,220);
+    if(d!==null&&!pre)GG.value(ctx,String(d),AX+AW/2,AY+AH/2+80,'center',go?COL.accentInk:COL.ink,220);
   }else if(t.type==='ziel'){
     if(go&&t.state!=='done'){const p=t.pos;[1,.68,.36].forEach((k,j)=>{ctx.fillStyle=j%2?'#f2f0ea':COL.rose;ctx.beginPath();ctx.arc(p.x,p.y,p.r*k,0,7);ctx.fill();});}
     if(t.state==='wait')GG.text(ctx,pre?'Gleich geht’s los':'Gleich taucht ein Ziel auf …',AX+AW/2,AY+AH/2,{size:22,weight:600,align:'center',color:COL.muted});
   }
-  if(fail){ctx.fillStyle='rgba(229,98,107,.25)';GG.rr(ctx,AX,AY,AW,AH,16);ctx.fill();GG.text(ctx,'FEHLSTART',AX+AW/2,AY+AH/2+24,{size:72,weight:800,align:'center',color:COL.rose});}
-  if(lastMsg&&now-lastMsg.at<1400){GG.rr(ctx,AX+AW/2-150,AY+AH-150,300,90,14);ctx.fillStyle='rgba(10,16,19,.9)';ctx.fill();GG.value(ctx,`${lastMsg.ms} ms`,AX+AW/2,AY+AH-100,'center',COL.accent,40);GG.text(ctx,`+${lastMsg.pts} Punkte`,AX+AW/2,AY+AH-74,{align:'center',color:COL.muted,font:MONO,size:14});}
+  if(fail){ctx.fillStyle='rgba(229,98,107,.25)';GG.rr(ctx,AX,AY,AW,AH,16);ctx.fill();GG.text(ctx,'FEHLSTART',AX+AW/2,AY+AH/2+24,{size:72,weight:800,align:'center',color:COL.roseInk});}
+  if(lastMsg&&now-lastMsg.at<1400){GG.rr(ctx,AX+AW/2-150,AY+AH-150,300,90,14);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();GG.value(ctx,`${lastMsg.ms} ms`,AX+AW/2,AY+AH-100,'center',COL.accentInk,40);GG.text(ctx,`+${lastMsg.pts} Punkte`,AX+AW/2,AY+AH-74,{align:'center',color:COL.muted,font:MONO,size:14});}
 }
 function draw(dt,now){
   update(now);GG.clear(ctx);
   const type=trial?trial.type:(ROUNDS[ri]==='gemischt'?'ampel':ROUNDS[ri]);
-  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length} · VERSUCH ${Math.min(tri+1,TRIES)} / ${TRIES}`,AX,44,'left',COL.accent);
+  GG.label(ctx,`RUNDE ${ri+1} / ${ROUNDS.length} · VERSUCH ${Math.min(tri+1,TRIES)} / ${TRIES}`,AX,44,'left',COL.accentInk);
   GG.text(ctx,TYPES[type].name,AX,92,{size:34,weight:800});
   GG.label(ctx,'PUNKTE',AX+AW,44,'right');GG.value(ctx,GG.num(total),AX+AW,92,'right',COL.ink,34);
   drawSignal(now);
@@ -137,7 +138,7 @@ function draw(dt,now){
   GG.panel(ctx,964,120,300,520);GG.label(ctx,'DIESE RUNDE',984,152);
   for(let k=0;k<TRIES;k++){const r=roundTimes[k],yy=196+k*44;GG.text(ctx,`Versuch ${k+1}`,984,yy,{color:COL.muted});GG.value(ctx,r?`${r.ms} ms`:'–',1244,yy,'right',r?COL.ink:COL.muted,22);}
   const all=results.flatMap(r=>r.times).concat(roundTimes);
-  if(all.length){const best=Math.min(...all.map(r=>r.ms));GG.label(ctx,'BESTZEIT',984,360);GG.value(ctx,`${best} ms`,984,396,'left',COL.accent);}
+  if(all.length){const best=Math.min(...all.map(r=>r.ms));GG.label(ctx,'BESTZEIT',984,360);GG.value(ctx,`${best} ms`,984,396,'left',COL.accentInk);}
 }
 GG.loop(draw);
 
