@@ -112,6 +112,21 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .hats button.locked svg{filter:grayscale(1);opacity:.7}
 .ring{display:inline-grid;flex:none;border-radius:50%;box-shadow:0 0 0 2px var(--panel),0 0 0 5px var(--rc)}
 .pod .ring{box-shadow:0 0 0 3px var(--panel),0 0 0 7px var(--rc)}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.mode{appearance:none;text-align:left;display:flex;flex-direction:column;gap:6px;background:var(--board);border:1px solid var(--lead);border-radius:14px;padding:18px;color:var(--ink);font:inherit;cursor:pointer}
+.mode strong{font-size:1.25rem}
+.mode span:last-child{color:var(--muted);line-height:1.45}
+.mode:hover{border-color:var(--amber-ink)}
+.solo{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.solo .game{display:flex;flex-direction:column;gap:6px;background:var(--board);border:1px solid var(--lead);border-radius:12px;padding:14px;color:var(--ink);text-decoration:none}
+.solo .game:hover{border-color:var(--amber-ink)}
+.solo .game strong{font-size:1.15rem}
+.solo .score{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--lead);padding-top:6px}
+.solo .score b{font:600 1.3rem var(--mono);color:var(--amber-ink)}
+.solo .btn{align-self:flex-start;margin-top:4px}
+.multi{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px;align-items:start}
+.seg.res span{display:flex;flex-direction:column;align-items:center;gap:1px}
+.seg.res small{font:500 .68rem var(--mono);color:var(--muted)}
 .bgrow{display:flex;flex-wrap:wrap;gap:8px}
 .bgsw{appearance:none;width:36px;height:36px;border-radius:50%;border:3px solid var(--panel);background:var(--c);box-shadow:0 0 0 1px var(--lead);cursor:pointer;padding:0}
 .bgsw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--amber-ink)}
@@ -167,9 +182,8 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
   </div>
   <div class="layout">
     <nav class="menu" id="nav" aria-label="Hauptmenü" hidden>
-      <button type="button" data-go="lobby" id="navLobby" hidden>Warteraum <small id="navCode"></small></button>
-      <button type="button" data-go="create" id="navCreate">Spiel erstellen</button>
-      <button type="button" data-go="join" id="navJoin">Spiel beitreten <small id="navOpen"></small></button>
+      <button type="button" data-go="solo" id="navSolo">Einzelspieler <small>üben</small></button>
+      <button type="button" data-go="multi" id="navMulti">Mehrspieler <small id="navMultiInfo"></small></button>
       <button type="button" data-go="settings">Einstellungen</button>
       <div class="spacer"></div>
       <button type="button" data-go="quit" class="quit">Spiel beenden</button>
@@ -251,13 +265,12 @@ function maybeLaunch(){
 
 /* ---------- Navigation ---------- */
 const nav=$('#nav');
-nav.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(b&&!b.disabled)show(b.dataset.go);});
+nav.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(!b||b.disabled)return;show(b.dataset.go==='multi'&&S.code?'lobby':b.dataset.go);});
 function updateNav(){
   nav.hidden=!S.named;
-  $('#navLobby').hidden=!S.code;$('#navCode').textContent=S.code||'';
-  $('#navCreate').disabled=!!S.code;$('#navJoin').disabled=!!S.code;
-  $('#navOpen').textContent=S.rooms.length?`${S.rooms.length} offen`:'';
-  nav.querySelectorAll('button[data-go]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.go===S.screen)));
+  $('#navMultiInfo').textContent=S.code?`Raum ${S.code}`:S.rooms.length?`${S.rooms.length} offen`:'';
+  const cur=S.screen==='lobby'?'multi':S.screen;
+  nav.querySelectorAll('button[data-go]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.go===cur)));
   const m=$('#me');m.hidden=!S.named;if(S.named)m.innerHTML=`${av(me.avatar,26)}<span>${esc(me.name)}</span>`;
 }
 function show(screen){S.screen=screen;updateNav();render();}
@@ -293,7 +306,7 @@ async function act(action,extra){const r=await Net.call({action,code:S.code,...e
 const screen=$('#screen');
 function render(){
   const key=S.named?S.screen:'name';
-  const f={name:vName,menu:vMenu,create:vCreate,join:vJoin,lobby:vLobby,settings:vSettings,quit:vQuit,bye:vBye}[key];
+  const f={name:vName,menu:vMenu,solo:vSolo,multi:vMulti,lobby:vLobby,settings:vSettings,quit:vQuit,bye:vBye}[key];
   screen.innerHTML=f();if(bind[key])bind[key]();refresh();
 }
 function refresh(){
@@ -339,36 +352,47 @@ function vName(){
     ${avatarPicker('avGrid')}
   </form></section>`;}
 function vMenu(){return`<section class="box"><div class="label">Hauptmenü</div><h2>Hallo ${esc(me.name)}!</h2>
-  <p>Erstell ein Spiel und lade die anderen ein, oder tritt einem offenen Spiel bei. Im Warteraum legt der Gastgeber fest, welche Minispiele drankommen und wie gewertet wird.</p>
-  <div class="row"><button class="btn" type="button" data-go2="create">Spiel erstellen</button><button class="btn sec" type="button" data-go2="join">Spiel beitreten</button></div>
+  <div class="modes">
+    <button type="button" class="mode" data-go2="solo"><span class="label">Einzelspieler</span><strong>Üben und Highscores jagen</strong><span>Alle ${GAMES.length} Minispiele allein spielen, jedes Mal mit neuer Variante.</span></button>
+    <button type="button" class="mode" data-go2="${S.code?'lobby':'multi'}"><span class="label">Mehrspieler</span><strong>${S.code?`Zurück in Raum ${esc(S.code)}`:'Turnier mit Freunden'}</strong><span>Raum erstellen oder beitreten, gemeinsam spielen, Siegerpodest am Ende.</span></button>
+  </div>
   <div class="hint">Gerade online: <strong id="onlineCount">${S.online.length}</strong> weitere Spieler</div></section>${modeHint()}`;}
 function modeHint(){
   if(Net.mode==='server')return'';
   return`<section class="box"><div class="label">Offline-Modus</div><p>Es ist noch keine Datenbank verbunden. Spiele und Warteräume sind deshalb nur in diesem Browser sichtbar. Zum Ausprobieren kannst du zwei Tabs öffnen.</p>
   <p class="hint">Für die LAN: In Vercel unter <code>Storage</code> eine <code>Upstash for Redis</code>-Datenbank mit dem Projekt verbinden und neu deployen. Dann sehen sich alle Rechner.</p></section>`;
 }
-function vCreate(){
-  return`<section class="box"><div class="label">Spiel erstellen</div><h2>Neuer Warteraum</h2>
+function vSolo(){
+  const st=GGProgress.stats(),best=st.best||{},cnt=id=>+st.played[id]||0;
+  return`<section class="box"><div class="label">Einzelspieler</div><h2>Üben und Highscores jagen</h2>
+    <p>Jedes Minispiel kommt jedes Mal mit einer neuen Variante. Dein bester Wert wird auf diesem Rechner gespeichert.</p>
+    <div class="solo">${GAMES.map(g=>`<a class="game" href="${g.id}/"><span class="label">${esc(g.tag)}</span><strong>${esc(g.name)}</strong>
+      <span class="score"><span class="meta">Highscore</span><b>${best[g.id]!=null?GG.num(best[g.id]):'–'}</b></span><span class="meta">${cnt(g.id)?`${cnt(g.id)}× gespielt`:'noch nicht gespielt'}</span><span class="btn small">Spielen</span></a>`).join('')}</div>
+    <div class="hint">Insgesamt ${GG.num(st.games)} Minispiele gespielt. Gespielte Spiele zählen auch für die Kopfbedeckungen.</div></section>`;
+}
+function vMulti(){
+  return`<div class="multi">
+  <section class="box"><div class="label">Mehrspieler</div><h2>Raum erstellen</h2>
   <form id="createForm" class="list" style="gap:18px">
-    <div class="field"><label class="label" for="cTitle">Name des Spiels</label><input type="text" id="cTitle" maxlength="32" value="Garage von ${esc(me.name)}"></div>
+    <div class="field"><label class="label" for="cTitle">Name des Raums</label><input type="text" id="cTitle" maxlength="32" value="Garage von ${esc(me.name)}"></div>
     <div class="field"><span class="label">Wer darf beitreten?</span>
-      <div class="seg" role="radiogroup" aria-label="Sichtbarkeit"><label><input type="radio" name="vis" value="1" checked><span>Offen für alle</span></label><label><input type="radio" name="vis" value="0"><span>Nur mit Einladung</span></label></div>
-      <span class="hint">Offene Spiele stehen in der Liste unter „Spiel beitreten“. Einladungen und der Code funktionieren immer.</span></div>
+      <div class="seg" role="radiogroup" aria-label="Sichtbarkeit"><label><input type="radio" name="vis" value="1" checked><span>Offen für alle</span></label><label><input type="radio" name="vis" value="0"><span>Nur mit Einladung</span></label></div></div>
     <div class="field"><label class="label" for="cMax">Höchstens Spieler</label><select id="cMax">${[2,4,6,8,10,12,14,16].map(n=>`<option${n===16?' selected':''}>${n}</option>`).join('')}</select></div>
     <p class="hint">Modus, Anzahl der Spiele und Wertung stellst du gleich im Warteraum ein.</p>
-    <div class="row"><button class="btn" type="submit">Warteraum öffnen</button><button class="btn sec" type="button" data-go2="menu">Abbrechen</button></div>
-  </form></section>`;}
+    <div class="row"><button class="btn" type="submit">Raum erstellen</button></div>
+  </form></section>
+  <section class="box"><div class="label">Mehrspieler</div><h2>Raum beitreten</h2>
+    <div class="label">Offene Räume</div><div class="list" id="openList">${openListHtml()}</div>
+    <div class="label">Mit Code</div><p class="hint">Für Räume „nur mit Einladung“: Lass dir den 4-stelligen Code vom Gastgeber geben.</p>
+    <form id="codeForm" class="row"><input type="text" class="code" id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off" aria-label="Code" required><button class="btn" type="submit">Beitreten</button></form></section>
+  </div>`;}
 function openListHtml(){
-  if(!S.rooms.length)return`<div class="empty">Gerade gibt es keine offenen Spiele. Erstell selbst eins oder frag nach einem Code.</div>`;
+  if(!S.rooms.length)return`<div class="empty">Gerade gibt es keine offenen Räume. Erstell selbst einen oder frag nach einem Code.</div>`;
   const st={lobby:['ok','Wartet'],voting:['run','Abstimmung'],between:['run','Turnier läuft'],running:['run','Turnier läuft'],final:['ok','Siegerehrung']};
   return S.rooms.map(r=>`<div class="item">${av(r.hostAvatar,40)}<div class="grow"><strong>${esc(r.title)}</strong><span class="meta">Gastgeber ${esc(r.host)} · ${esc(MODES[r.mode]||'')} · ${r.count} Spiele · Code ${esc(r.code)}</span></div>
     <span class="tag ${st[r.status][0]}">${st[r.status][1]}</span><span class="meta">${r.players}/${r.max}</span>
     <button class="btn small" type="button" data-join="${esc(r.code)}"${r.players>=r.max?' disabled':''}>${r.players>=r.max?'Voll':'Beitreten'}</button></div>`).join('');
 }
-function vJoin(){return`<section class="box"><div class="label">Spiel beitreten</div><h2>Offene Spiele</h2>
-  <div class="list" id="openList">${openListHtml()}</div></section>
-  <section class="box"><div class="label">Mit Code</div><p>Für Spiele „nur mit Einladung“: Lass dir den 4-stelligen Code vom Gastgeber geben.</p>
-  <form id="codeForm" class="row"><input type="text" class="code" id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off" aria-label="Code" required><button class="btn" type="submit">Beitreten</button></form></section>`;}
 
 /* ---------- Warteraum ---------- */
 function vLobby(){
@@ -490,8 +514,8 @@ function vSettings(){
     <div class="field"><span class="label">Farben</span><div class="seg" role="radiogroup" aria-label="Farben"><label><input type="radio" name="theme" value="light"${th==='light'?' checked':''}><span>Hell</span></label><label><input type="radio" name="theme" value="dark"${th==='dark'?' checked':''}><span>Dunkel</span></label></div>
       <span class="hint">Gilt für das Menü und alle Minispiele.</span></div></section>
   <section class="box"><h2>Bild</h2>
-    <div class="field"><label class="label" for="res">Auflösung der Spiele</label><select id="res">
-      ${[['auto','Automatisch (Bildschirm)'],['720','1280 × 720'],['1080','1920 × 1080'],['1440','2560 × 1440']].map(([v,t])=>`<option value="${v}"${s.resolution===v?' selected':''}>${t}</option>`).join('')}</select>
+    <div class="field"><span class="label">Auflösung der Spiele</span><div class="seg res" role="radiogroup" aria-label="Auflösung">
+      ${[['auto','Automatisch','Bildschirm'],['720','720p','1280 × 720'],['1080','1080p','1920 × 1080'],['1440','1440p','2560 × 1440']].map(([v,t,d])=>`<label><input type="radio" name="res" value="${v}"${s.resolution===v?' checked':''}><span>${t}<small>${d}</small></span></label>`).join('')}</div>
       <span class="hint">Niedriger läuft auf schwachen Rechnern flüssiger. Gilt ab dem nächsten gestarteten Minispiel.</span></div>
     <div class="row"><button class="btn sec" type="button" id="fsBtn">${document.fullscreenElement?'Vollbild beenden':'Vollbild'}</button></div></section>
   <section class="box"><h2>Ton</h2>
@@ -531,10 +555,10 @@ const bind={
       $('#rejoinNo').addEventListener('click',()=>{Net.remember(null);S.rejoin=null;render();});
     }
   },
-  create(){$('#createForm').addEventListener('submit',async e=>{e.preventDefault();
+  multi(){$('#createForm').addEventListener('submit',async e=>{e.preventDefault();
     const r=await Net.call({action:'create',title:$('#cTitle').value,public:document.querySelector('input[name=vis]:checked').value==='1',max:$('#cMax').value});
-    if(r.error){toast(r.error);return;}setRoom(r.room);show('lobby');});},
-  join(){$('#codeIn').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''));
+    if(r.error){toast(r.error);return;}setRoom(r.room);show('lobby');});
+    $('#codeIn').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''));
     $('#codeForm').addEventListener('submit',e=>{e.preventDefault();join($('#codeIn').value);});},
   lobby(){
     if(!S.room)return;S.myVotes=null;
@@ -565,7 +589,7 @@ const bind={
   },
   settings(){
     screen.querySelectorAll('input[name=theme]').forEach(r=>r.addEventListener('change',e=>{GG.saveSettings({theme:e.target.value});toast(e.target.value==='dark'?'Dunkelmodus an.':'Helle Farben an.');}));
-    $('#res').addEventListener('change',e=>{GG.saveSettings({resolution:e.target.value});toast('Gespeichert. Gilt ab dem nächsten Minispiel.');});
+    screen.querySelectorAll('input[name=res]').forEach(r=>r.addEventListener('change',e=>{GG.saveSettings({resolution:e.target.value});toast('Gespeichert. Gilt ab dem nächsten Minispiel.');}));
     $('#fsBtn').addEventListener('click',async e=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(err){toast('Vollbild geht hier nicht. Drück F11.');}setTimeout(()=>{e.target.textContent=document.fullscreenElement?'Vollbild beenden':'Vollbild';},200);});
     const KEYS={vMaster:'master',vMusic:'music',vSfx:'sfx'};
     const setVol=(id,v)=>{v=Math.max(0,Math.min(100,Math.round(v/10)*10));const r=$('#'+id);r.value=v;r.style.setProperty('--p',v+'%');$('#'+id+'Out').textContent=v+' %';

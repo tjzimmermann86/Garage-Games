@@ -7,9 +7,9 @@ Minispiel-Sammlung für die **Lübtheen Garage LAN**.
 Die Startseite ist das Spielmenü:
 
 - **Start:** Name und Avatar wählen über den runden Avatar-Knopf: 30 Charaktere (15 Männer, 15 Frauen), 12 Hintergrundfarben oder „passend“, dazu freigespielte Kopfbedeckungen. Jeder Name ist nur einmal vergeben, ein belegter Name wird sofort angezeigt. War man vorher in einem Turnier (z. B. nach einem Absturz), erscheint **„Wieder beitreten“**.
-- **Spiel erstellen:** Name des Spiels, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl.
-- **Spiel beitreten:** Liste der offenen Spiele oder Beitritt mit 4-stelligem Code. Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
-- **Einstellungen:** Hell (Pastell, Standard) oder Dunkel, Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
+- **Einzelspieler:** Alle Minispiele allein spielen und üben. Pro Spiel werden Highscore und Anzahl der Partien auf dem Rechner gespeichert; ein neuer Highscore wird im Spiel angezeigt.
+- **Mehrspieler:** Raum erstellen (Name, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl) oder Raum beitreten (offene Räume oder 4-stelliger Code). Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
+- **Einstellungen:** Hell (Pastell, Standard) oder Dunkel, Auflösung der Spiele (Automatisch / 720p / 1080p / 1440p), Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
 - **Spiel beenden:** verlässt den Warteraum, stoppt die Musik und schließt das Fenster, wenn der Browser es erlaubt.
 
 ### Kopfbedeckungen freispielen

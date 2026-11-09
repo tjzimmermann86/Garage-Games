@@ -31,7 +31,13 @@
     const fresh=all.filter(u=>isOpen(s,u)&&!before.includes(u));save(s);
     return fresh.map(u=>u.label==='hat'?u.hat:{shirt:u.shirt});
   }
-  function recordGame(id){return change(s=>{s.games++;if(GAME_IDS.includes(id))s.played[id]=true;});}
+  // zählt ein beendetes Minispiel und merkt sich den Highscore
+  function recordGame(id,score){
+    const prev=(load().best||{})[id];let record=false;
+    const fresh=change(s=>{s.games++;if(GAME_IDS.includes(id)){s.played[id]=(+s.played[id]||0)+1;
+      if(Number.isFinite(score)&&score>0&&(prev==null||score>prev)){s.best={...(s.best||{}),[id]:Math.round(score)};record=prev!=null||true;}}});
+    fresh.record=record?{prev:prev??null}:null;return fresh;
+  }
   function recordTournament(key,place){
     const done=(()=>{try{return JSON.parse(localStorage.getItem('gg-recorded')||'[]');}catch(e){return[];}})();
     if(done.includes(key))return[];

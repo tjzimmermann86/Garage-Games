@@ -107,8 +107,10 @@ window.GG=(()=>{
   function report(score){
     if(room&&reported)return;if(room)reported=true;   // ohne Turnier zählt jede gespielte Partie
     // Fortschritt zählt auch ohne Turnier; neue Kopfbedeckungen kurz anzeigen
-    if(window.GGProgress){const id=(location.pathname.match(/\/([a-z]+)\/(?:index\.html)?$/)||[])[1];const fresh=GGProgress.recordGame(id);
-      if(fresh.length&&window.Avatars)setTimeout(()=>{notice(`Freigespielt: ${fresh.map(Avatars.unlockName).join(', ')}! Im Menü unter Einstellungen → Avatar.`);setTimeout(()=>{const d=document.getElementById('ggNotice');if(d)d.remove();},6000);},300);}
+    if(window.GGProgress){const id=(location.pathname.match(/\/([a-z]+)\/(?:index\.html)?$/)||[])[1];const fresh=GGProgress.recordGame(id,score);
+      const msgs=[];if(fresh.record)msgs.push(fresh.record.prev==null?`Erster Highscore: ${num(score)} Punkte`:`Neuer Highscore: ${num(score)} Punkte (vorher ${num(fresh.record.prev)})`);
+      if(fresh.length&&window.Avatars)msgs.push(`Freigespielt: ${fresh.map(Avatars.unlockName).join(', ')}!`);
+      if(msgs.length)setTimeout(()=>{notice(msgs.join(' · '));setTimeout(()=>{const d=document.getElementById('ggNotice');if(d)d.remove();},6500);},300);}
     if(!room||!window.GGNet)return;
     GGNet.call({action:'result',code:room.code,idx:room.idx,score:Math.max(0,Math.round(score||0))});
   }
