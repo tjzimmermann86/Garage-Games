@@ -55,8 +55,10 @@ input.code{font:600 1.4rem var(--mono);letter-spacing:.3em;text-transform:upperc
 .btn.sec:hover{background:var(--plate)}
 .btn.small{padding:6px 12px;font-size:.88rem}
 .btn.danger{background:transparent;color:var(--rose-ink);border:1px solid color-mix(in srgb,var(--rose) 50%,transparent)}
-.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--lead);border-radius:10px;overflow:hidden;align-self:flex-start}
-.seg label{padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:600;position:relative}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--lead);border-radius:10px;overflow:hidden;align-self:flex-start;min-width:min(100%,420px)}
+@media (max-width:520px){.seg{grid-auto-flow:row;width:100%}}
+.seg label{padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:600;position:relative;text-align:center;display:flex;align-items:center;justify-content:center}
+.seg label+label{border-left:1px solid var(--lead)}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg label:has(input:checked){background:var(--board);color:var(--ink);box-shadow:inset 0 -3px 0 var(--amber)}
 .seg label:has(input:focus-visible){outline:3px solid var(--sea);outline-offset:-3px}
@@ -84,10 +86,15 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--amber-ink)}
 .invite .grow{flex:1;min-width:200px}
 .banner{background:color-mix(in srgb,var(--sea) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--sea) 45%,transparent);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
 .banner .grow{flex:1;min-width:180px}
-.slider{display:grid;grid-template-columns:150px minmax(0,1fr) 56px;gap:12px;align-items:center}
-@media (max-width:520px){.slider{grid-template-columns:1fr 56px}.slider input{grid-column:1/-1;grid-row:2}}
-.slider output{font:600 1rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
-input[type=range]{width:100%;accent-color:var(--amber-ink)}
+.slider{display:grid;grid-template-columns:140px 30px minmax(0,320px) 30px 52px;gap:8px;align-items:center}
+@media (max-width:520px){.slider{grid-template-columns:30px minmax(0,1fr) 30px 48px}.slider>label{grid-column:1/-1}}
+.slider output{font:600 .9rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.slider .step{appearance:none;width:30px;height:30px;border-radius:8px;border:1px solid var(--lead);background:var(--board);color:var(--ink);font:700 1.05rem var(--mono);cursor:pointer;line-height:1;padding:0}
+.slider .step:hover{background:var(--plate)}
+.slider .step:disabled{opacity:.35;cursor:default}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;background:linear-gradient(to right,var(--amber) var(--p,50%),var(--lead) var(--p,50%));cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--panel);border:2px solid var(--amber-ink)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--panel);border:2px solid var(--amber-ink)}
 .hint{font-size:.9rem;color:var(--muted);line-height:1.45}
 .hint code{font-family:var(--mono);font-size:.85em;color:var(--ink)}
 .hint.bad{color:var(--rose-ink)}.hint.good{color:var(--sea-ink)}
@@ -377,7 +384,7 @@ function standingsHtml(r){
   const st=LobbyCore.standings(r),n=r.results.length;if(!n)return`<div class="empty">Noch kein Spiel gespielt.</div>`;
   return`<div class="tablewrap"><table class="stand"><thead><tr><th>Platz</th><th>Spieler</th>${r.results.map((_,i)=>`<th title="${esc(gameName(r.playlist[i]))}">${esc(gameName(r.playlist[i]).slice(0,10))}</th>`).join('')}<th>Gesamt</th></tr></thead>
   <tbody>${st.map(x=>`<tr><td>${x.place}.</td><td><span class="pl">${av(x.avatar,28)}${esc(x.name)}</span></td>${x.per.map(c=>`<td>${c?(r.scoring==='place'?`${c.pts}<small>${GG.num(c.score)}</small>`:GG.num(c.score)):'–'}</td>`).join('')}<td class="tot">${GG.num(x.total)}</td></tr>`).join('')}</tbody></table></div>
-  <p class="hint">${r.scoring==='place'?'Platzwertung: pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz. Klein darunter die Punkte im Spiel.':'Turnier: Die Punkte aller Spiele werden addiert.'}</p>`;
+  <p class="hint">${r.scoring==='place'?'Platzwertung: pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz. Klein darunter die Punkte im Spiel.':'Punkte addieren: Die Punkte aller Spiele werden zusammengezählt.'}</p>`;
 }
 function playlistHtml(r){
   const n=total(r),idx=r.results.length;
@@ -460,7 +467,7 @@ function lobbyLive(){
     :`<div class="empty">Gerade ist niemand frei im Menü. Teile den Code oder den Link.</div>`;
 }
 function vSettings(){
-  const s=GG.settings,sl=(id,label,v)=>`<div class="slider"><label for="${id}">${label}</label><input type="range" id="${id}" min="0" max="100" step="5" value="${v}"><output id="${id}Out" for="${id}">${v} %</output></div>`;
+  const s=GG.settings,sl=(id,label,v)=>{v=Math.round(v/10)*10;return`<div class="slider"><label for="${id}">${label}</label><button type="button" class="step" data-vol="${id}" data-d="-10" aria-label="${label} leiser"${v<=0?' disabled':''}>−</button><input type="range" id="${id}" min="0" max="100" step="10" value="${v}" style="--p:${v}%"><button type="button" class="step" data-vol="${id}" data-d="10" aria-label="${label} lauter"${v>=100?' disabled':''}>+</button><output id="${id}Out" for="${id}">${v} %</output></div>`;}
   const th=s.theme==='dark'?'dark':'light';
   return`<section class="box"><div class="label">Einstellungen</div><h2>Darstellung</h2>
     <div class="field"><span class="label">Farben</span><div class="seg" role="radiogroup" aria-label="Farben"><label><input type="radio" name="theme" value="light"${th==='light'?' checked':''}><span>Hell</span></label><label><input type="radio" name="theme" value="dark"${th==='dark'?' checked':''}><span>Dunkel</span></label></div>
@@ -543,7 +550,11 @@ const bind={
     screen.querySelectorAll('input[name=theme]').forEach(r=>r.addEventListener('change',e=>{GG.saveSettings({theme:e.target.value});toast(e.target.value==='dark'?'Dunkelmodus an.':'Helle Farben an.');}));
     $('#res').addEventListener('change',e=>{GG.saveSettings({resolution:e.target.value});toast('Gespeichert. Gilt ab dem nächsten Minispiel.');});
     $('#fsBtn').addEventListener('click',async e=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(err){toast('Vollbild geht hier nicht. Drück F11.');}setTimeout(()=>{e.target.textContent=document.fullscreenElement?'Vollbild beenden':'Vollbild';},200);});
-    [['vMaster','master'],['vMusic','music'],['vSfx','sfx']].forEach(([id,key])=>$('#'+id).addEventListener('input',e=>{GG.musicStart();$('#'+id+'Out').textContent=e.target.value+' %';GG.saveSettings({[key]:+e.target.value});}));
+    const KEYS={vMaster:'master',vMusic:'music',vSfx:'sfx'};
+    const setVol=(id,v)=>{v=Math.max(0,Math.min(100,Math.round(v/10)*10));const r=$('#'+id);r.value=v;r.style.setProperty('--p',v+'%');$('#'+id+'Out').textContent=v+' %';
+      screen.querySelectorAll(`[data-vol="${id}"]`).forEach(b=>b.disabled=(+b.dataset.d<0&&v<=0)||(+b.dataset.d>0&&v>=100));GG.musicStart();GG.saveSettings({[KEYS[id]]:v});};
+    Object.keys(KEYS).forEach(id=>$('#'+id).addEventListener('input',e=>setVol(id,+e.target.value)));
+    screen.querySelectorAll('[data-vol]').forEach(b=>b.addEventListener('click',()=>{setVol(b.dataset.vol,+$('#'+b.dataset.vol).value+ +b.dataset.d);if(b.dataset.vol==='vSfx')GG.sfx('tick');}));
     $('#testSfx').addEventListener('click',()=>GG.sfx('win'));
     const ri=$('#renameIn'),rh=$('#renameHint');
     bindPicker('avBtn2','avGrid2',()=>{updateNav();if(S.code)Net.call({action:'join',code:S.code});toast('Avatar gespeichert.');});

@@ -21,7 +21,7 @@
   ];
   const GAME_IDS=GAMES.map(g=>g.id);
   const MODES={vote:'Abstimmung',host:'Gastgeber wählt',random:'Zufall'};
-  const SCORING={sum:'Turnier: Punkte addieren',place:'Platzwertung'};
+  const SCORING={sum:'Punkte addieren',place:'Platzwertung'};
   const PLACE_POINTS=[10,8,6,5,4,3,2,1];
 
   const clean=(s,max=20)=>String(s||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,max);

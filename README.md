@@ -37,7 +37,7 @@ Der Gastgeber stellt ein:
 |---|---|
 | Modus | **Abstimmung:** Jeder hat so viele Stimmen, wie Spiele gespielt werden, und verteilt sie frei (auch mehrere auf ein Spiel). Die Spiele mit den meisten Stimmen werden gespielt, bei Gleichstand entscheidet der Zufall.<br>**Gastgeber wählt:** Der Gastgeber hakt die Spiele selbst an.<br>**Zufall:** Vor jeder Runde wird ein zufälliges Spiel gezogen (nie zweimal dasselbe direkt hintereinander). |
 | Anzahl Spiele | 1–6 bei Abstimmung, 1–10 bei Zufall |
-| Wertung | **Turnier: Punkte addieren:** Die Punkte aller Spiele werden zusammengezählt.<br>**Platzwertung:** Pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz, jedes Spiel zählt gleich. |
+| Wertung | **Punkte addieren:** Die Punkte aller Spiele werden zusammengezählt.<br>**Platzwertung:** Pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz, jedes Spiel zählt gleich. |
 
 Ablauf: Warteraum → (Abstimmung) → Zwischenstand → Gastgeber startet das nächste Spiel → 3-Sekunden-Countdown bei allen → Minispiel mit derselben Variante → Ergebnis wird automatisch gemeldet → zurück zum Zwischenstand. Der Gastgeber entscheidet, wann es weitergeht. Wer noch spielt, wird beim nächsten Start mitgenommen. Am Ende zeigt das **Siegerpodest** die Plätze 1–3, die übrigen darunter, plus die Tabelle aller Ergebnisse.
 
