@@ -128,9 +128,11 @@ function draw(dt,now){
     GG.text(ctx,String(k+1),lx,ly+6,{font:MONO,weight:600,size:16,align:'center',color:on?'#111':COL.ink});
   }
   ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(CX,CY,RI-10,0,7);ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();
-  GG.label(ctx,'STUFE',CX,CY-26,'center');GG.value(ctx,String(Math.max(1,seq.length)),CX,CY+14,'center',COL.ink,40);
+  // dein Avatar in der Mitte: freut sich bei richtigen Folgen, ist traurig beim Fehler
+  GG.drawAvatar(ctx,GG.myAvatar(),CX,CY-36,52,phase==='over'?'sad':phase==='wait'?'win':null);
+  GG.value(ctx,String(Math.max(1,seq.length)),CX,CY+24,'center',COL.ink,32);
   const status=phase==='show'?'Zuhören':phase==='input'?(active.has('rueckwaerts')?'Rückwärts!':active.has('mischen')?'Gemischt!':'Du bist dran'):phase==='over'?'Ausgeschieden':phase==='wait'?'Richtig!':'';
-  GG.text(ctx,status,CX,CY+40,{size:14,weight:600,align:'center',color:phase==='over'?COL.roseInk:COL.accentInk});
+  GG.text(ctx,status,CX,CY+48,{size:14,weight:600,align:'center',color:phase==='over'?COL.roseInk:COL.accentInk});
 
   GG.label(ctx,'FARBFOLGE',340,44,'left',COL.accentInk);
   GG.text(ctx,`Folge mit ${seq.length} ${seq.length===1?'Ton':'Tönen'}`,340,82,{size:30,weight:800});

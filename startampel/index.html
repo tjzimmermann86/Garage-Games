@@ -107,9 +107,9 @@ function drawSignal(now){
     GG.text(ctx,off?(fail?'':'LOS!'):'Warten, bis alle Lichter ausgehen',AX+AW/2,AY+410,{size:off?56:18,weight:800,align:'center',color:off?COL.accentInk:COL.muted});
   }else if(t.type==='farbe'||t.type==='taeuschung'){
     const fake=t.state==='wait'&&t.fakes.find(f=>now>=f.s&&now<f.e);
-    GG.rr(ctx,AX+40,AY+40,AW-80,AH-80,14);ctx.fillStyle=go?'#2ea64f':fake?fake.col:COL.plate;ctx.fill();
-    GG.text(ctx,go?'JETZT!':pre?'Gleich geht’s los':'Warten …',AX+AW/2,AY+AH/2+18,{size:go?72:30,weight:800,align:'center',color:go?'#08210f':COL.muted});
-    if(t.type==='taeuschung')GG.text(ctx,'Nur bei Grün klicken',AX+AW/2,AY+AH-70,{size:15,align:'center',color:go?'#08210f':COL.muted,font:MONO});
+    GG.rr(ctx,AX+40,AY+40,AW-80,AH-80,14);ctx.fillStyle=go?'#7cc79a':fake?fake.col:COL.plate;ctx.fill();
+    GG.text(ctx,go?'JETZT!':pre?'Gleich geht’s los':'Warten …',AX+AW/2,AY+AH/2+18,{size:go?72:30,weight:800,align:'center',color:go?'#173d27':COL.muted});
+    if(t.type==='taeuschung')GG.text(ctx,'Nur bei Grün klicken',AX+AW/2,AY+AH-70,{size:15,align:'center',color:go?'#173d27':COL.muted,font:MONO});
   }else if(t.type==='ton'){
     const cx=AX+AW/2,cy=AY+AH/2-20;ctx.fillStyle=go?COL.accent:COL.steel;ctx.beginPath();ctx.moveTo(cx-60,cy-25);ctx.lineTo(cx-30,cy-25);ctx.lineTo(cx+10,cy-60);ctx.lineTo(cx+10,cy+60);ctx.lineTo(cx-30,cy+25);ctx.lineTo(cx-60,cy+25);ctx.fill();
     ctx.strokeStyle=go?COL.accent:COL.edge;ctx.lineWidth=6;for(const r of[40,70]){ctx.beginPath();ctx.arc(cx+10,cy,r,-.7,.7);ctx.stroke();}
@@ -122,8 +122,8 @@ function drawSignal(now){
     if(go&&t.state!=='done'){const p=t.pos;[1,.68,.36].forEach((k,j)=>{ctx.fillStyle=j%2?'#f2f0ea':COL.rose;ctx.beginPath();ctx.arc(p.x,p.y,p.r*k,0,7);ctx.fill();});}
     if(t.state==='wait')GG.text(ctx,pre?'Gleich geht’s los':'Gleich taucht ein Ziel auf …',AX+AW/2,AY+AH/2,{size:22,weight:600,align:'center',color:COL.muted});
   }
-  if(fail){ctx.fillStyle='rgba(229,98,107,.25)';GG.rr(ctx,AX,AY,AW,AH,16);ctx.fill();GG.text(ctx,'FEHLSTART',AX+AW/2,AY+AH/2+24,{size:72,weight:800,align:'center',color:COL.roseInk});}
-  if(lastMsg&&now-lastMsg.at<1400){GG.rr(ctx,AX+AW/2-150,AY+AH-150,300,90,14);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();GG.value(ctx,`${lastMsg.ms} ms`,AX+AW/2,AY+AH-100,'center',COL.accentInk,40);GG.text(ctx,`+${lastMsg.pts} Punkte`,AX+AW/2,AY+AH-74,{align:'center',color:COL.muted,font:MONO,size:14});}
+  if(fail){ctx.fillStyle='rgba(229,98,107,.25)';GG.rr(ctx,AX,AY,AW,AH,16);ctx.fill();GG.drawAvatar(ctx,GG.myAvatar(),AX+AW/2,AY+AH/2-90,120,'sad',COL.roseInk);GG.text(ctx,'FEHLSTART',AX+AW/2,AY+AH/2+70,{size:72,weight:800,align:'center',color:COL.roseInk});}
+  if(lastMsg&&now-lastMsg.at<1400){GG.rr(ctx,AX+AW/2-170,AY+AH-150,340,90,14);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.stroke();GG.drawAvatar(ctx,GG.myAvatar(),AX+AW/2-120,AY+AH-105,62,lastMsg.pts>300?'win':'happy');GG.value(ctx,`${lastMsg.ms} ms`,AX+AW/2+30,AY+AH-100,'center',COL.accentInk,40);GG.text(ctx,`+${lastMsg.pts} Punkte`,AX+AW/2+30,AY+AH-74,{align:'center',color:COL.muted,font:MONO,size:14});}
 }
 function draw(dt,now){
   update(now);GG.clear(ctx);

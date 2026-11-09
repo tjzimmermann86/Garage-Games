@@ -42,7 +42,7 @@
 (()=>{
 const{W,H,COL,MONO}=GG;
 const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
-const CX=640,CY=405,R0=275,BR=18;
+const CX=640,CY=405,R0=275,BR=21;
 const SHAPES={circle:'Runde Scheibe',square:'Quadrat',hex:'Sechseck',ring:'Ring mit Loch'};
 const POOLS=[
   [{shape:'circle',bots:3,rate:5},{shape:'square',bots:3,rate:5}],
@@ -80,8 +80,9 @@ function setupRound(i){
   radius=R0;hole=round.shape==='ring'?70:0;t=0;placements=[];speed=1;state='idle';
   const n=round.bots+1,startR=round.shape==='ring'?170:150,off=R.range(0,Math.PI*2);
   const names=R.shuffle(BOTS.slice());
+  const mineF=Avatars.split(GG.myAvatar()).face,faces=R.shuffle([...Array(Avatars.count).keys()].filter(f=>f!==mineF)),botAv=faces.slice(0,n).map((f,k)=>Avatars.make(f,0,1+((k*5+R.int(0,11))%12)));
   balls=[];for(let k=0;k<n;k++){const a=off+k*2*Math.PI/n;balls.push({x:CX+Math.cos(a)*startR,y:CY+Math.sin(a)*startR,vx:0,vy:0,m:k&&round.heavy?1.35:1,
-    name:k?names[k-1][0]:'Du',col:k?names[k-1][1]:COL.accent,player:k===0,alive:true,fall:0,cd:R.range(.5,1.5),wander:R.range(0,6.28),dash:0,R:GG.rng(seed+i*13+k)});}
+    name:k?names[k-1][0]:GG.myName(),av:k?botAv[k-1]:GG.myAvatar(),col:k?names[k-1][1]:COL.accent,player:k===0,alive:true,fall:0,cd:R.range(.5,1.5),wander:R.range(0,6.28),dash:0,R:GG.rng(seed+i*13+k)});}
   bumpers=[];const nb=round.bumpers||0;for(let k=0;k<nb;k++){const a=off+Math.PI/nb+k*2*Math.PI/nb;bumpers.push({x:CX+Math.cos(a)*(round.shape==='ring'?120:95),y:CY+Math.sin(a)*(round.shape==='ring'?120:95),r:22,hit:0});}
 }
 function begin(){ov.hide();state='countdown';t=-3;}
@@ -160,25 +161,26 @@ function draw(dt,now){
   if(state==='countdown'){t+=dt;if(t>=0){state='play';t=0;}}
   else if(state==='play'||state==='end'){const n=speed>1?6:2;for(let k=0;k<n;k++)step(dt/2);}
   GG.clear(ctx);
-  ctx.fillStyle=GG.dark?'#07090b':COL.lead;ctx.fillRect(330,96,620,620);
-  const g=ctx.createRadialGradient(CX,CY,50,CX,CY,420);g.addColorStop(0,GG.dark?'#141b20':COL.board);g.addColorStop(1,GG.dark?'#07090b':COL.lead);ctx.fillStyle=g;ctx.fillRect(330,96,620,620);
+  // flacher Grund wie bei den Avataren: einfarbige Fläche mit lockerem Punktmuster
+  ctx.fillStyle=GG.dark?COL.board:COL.lead;ctx.fillRect(330,96,620,620);
+  ctx.fillStyle=GG.dark?'rgba(0,0,0,.18)':'rgba(59,51,70,.07)';for(let y=110;y<716;y+=28)for(let x=344+((y/28)%2)*14;x<950;x+=28){ctx.beginPath();ctx.arc(x,y,2.5,0,7);ctx.fill();}
   // Plattform
-  ctx.save();shapePath(radius);ctx.fillStyle=GG.dark?'#2b363d':COL.panel;ctx.fill('evenodd');ctx.clip('evenodd');
+  ctx.save();shapePath(radius);ctx.fillStyle=GG.dark?COL.plate:COL.panel;ctx.fill('evenodd');ctx.clip('evenodd');
   ctx.strokeStyle=GG.dark?'rgba(255,255,255,.04)':'rgba(40,48,71,.06)';ctx.lineWidth=1;for(let x=CX-R0;x<CX+R0;x+=30){ctx.beginPath();ctx.moveTo(x,CY-R0);ctx.lineTo(x,CY+R0);ctx.stroke();ctx.beginPath();ctx.moveTo(CX-R0,x-CX+CY);ctx.lineTo(CX+R0,x-CX+CY);ctx.stroke();}
   if(round.ice){ctx.fillStyle='rgba(159,214,255,.12)';ctx.fill();}
   ctx.restore();
   const warn=t>3&&state==='play';
   ctx.save();shapePath(radius);ctx.lineWidth=8;ctx.strokeStyle=GG.dark?COL.amber:COL.amberInk;ctx.setLineDash([14,14]);ctx.lineDashOffset=-now/40;ctx.globalAlpha=warn?.9:.5;ctx.stroke();ctx.setLineDash([]);ctx.restore();
-  for(const bp of bumpers){if(edge(bp.x,bp.y)<bp.r)continue;ctx.fillStyle=bp.hit?'#fff':COL.rose;ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r,0,7);ctx.fill();ctx.fillStyle='#4a1a1e';ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r*.55,0,7);ctx.fill();}
+  for(const bp of bumpers){if(edge(bp.x,bp.y)<bp.r)continue;ctx.fillStyle='rgba(59,51,70,.15)';ctx.beginPath();ctx.ellipse(bp.x+3,bp.y+5,bp.r,bp.r*.85,0,0,7);ctx.fill();ctx.fillStyle=bp.hit?'#fff':COL.rose;ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r,0,7);ctx.fill();ctx.lineWidth=3;ctx.strokeStyle=COL.roseInk;ctx.stroke();ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(bp.x,bp.y,bp.r*.55,0,7);ctx.fill();}
   for(const b of balls){
     if(!b.alive&&!b.fall)continue;if(!b.alive)continue;
     const s=b.fall?Math.max(0,1-b.fall/.55):1;
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(b.x+4,b.y+6,BR*s,BR*s*.8,0,0,7);ctx.fill();
-    const gr=ctx.createRadialGradient(b.x-6*s,b.y-6*s,2,b.x,b.y,BR*s*b.m);gr.addColorStop(0,'#fff');gr.addColorStop(.3,b.col);gr.addColorStop(1,'#111');
-    ctx.fillStyle=gr;ctx.beginPath();ctx.arc(b.x,b.y,BR*s*Math.sqrt(b.m),0,7);ctx.fill();
-    if(b.dash){ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(b.x,b.y,BR+5,0,7);ctx.stroke();}
-    if(b.player){ctx.strokeStyle=COL.accent;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(b.x,b.y,BR+7,0,7);ctx.stroke();}
-    GG.text(ctx,b.name,b.x,b.y-BR-10,{size:12,weight:600,align:'center',font:MONO,color:b.player?COL.accentInk:COL.ink});
+    // Spieler sind ihre Avatare: flacher Schatten, Avatar-Gesicht, Ring für dich
+    const rad=BR*s*Math.sqrt(b.m);
+    ctx.fillStyle='rgba(59,51,70,.18)';ctx.beginPath();ctx.ellipse(b.x+3,b.y+6,rad,rad*.82,0,0,7);ctx.fill();
+    GG.drawAvatar(ctx,b.av,b.x,b.y,rad*2,b.fall?'sad':state==='end'&&aliveBalls()[0]===b?'win':null,b.player?COL.amberInk:(GG.dark?'#151218':'#fff'));
+    if(b.dash){ctx.strokeStyle=COL.apricot||'#fbcfae';ctx.lineWidth=3;ctx.beginPath();ctx.arc(b.x,b.y,rad+8,0,7);ctx.stroke();}
+    GG.text(ctx,b.name,b.x,b.y-BR-12,{size:12,weight:600,align:'center',font:MONO,color:b.player?COL.accentInk:COL.ink});
   }
   if(state==='countdown')GG.value(ctx,String(Math.ceil(-t)),CX,CY+30,'center',COL.accentInk,110);
   // Kopf und Seiten

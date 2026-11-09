@@ -99,6 +99,7 @@
     const lip=fem?'#c94a63':D;
     if(t==='grin')return`<path d="M25 40q7 9 14 0z" fill="#fff" stroke="${lip}" stroke-width="1.8" stroke-linejoin="round"/>`;
     if(t==='o')return`<circle cx="32" cy="42" r="2.6" fill="${lip}"/>`;
+    if(t==='sad')return`<path d="M26 44q6-5 12 0" fill="none" stroke="${lip}" stroke-width="2.2" stroke-linecap="round"/>`;
     if(t==='flat')return`<path d="M27 42h10" stroke="${lip}" stroke-width="2.2" stroke-linecap="round"/>`;
     if(t==='tongue')return`<path d="M26 40q6 6 12 0" fill="none" stroke="${lip}" stroke-width="2.2" stroke-linecap="round"/><path d="M30 43q2 4 4 0z" fill="#e2587e"/>`;
     return`<path d="M26 40q6 6 12 0" fill="none" stroke="${lip}" stroke-width="2.2" stroke-linecap="round"/>`;
@@ -142,15 +143,15 @@
   const split=id=>{id=Math.max(0,Math.floor(+id)||0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%10%HATS.length,bg:Math.floor(id/1000)%100%(BGS.length+1),shirt:Math.floor(id/100000)%100%SHIRTS.length};};
   function svg(id,size=48,opts={}){
     const{face,hat:h,bg:b,shirt:sh}=split(id),[faceBg,skin,style,hc,ey0,mo0,ex]=FACES[face],bg=b?BGS[b-1]:faceBg,hair=HAIR[hc],fem=isFem(face),k=++uid;
-    // Ausdruck: 'win' = breites Grinsen (Platz 1), 'happy' = Lächeln (Platz 2 und 3)
+    // Ausdruck: 'win' = breites Grinsen (Platz 1), 'happy' = Lächeln (Platz 2 und 3), 'sad' = traurig (ausgeschieden)
     const keepEyes=['glasses','sun'].includes(ey0);
-    const ey=opts.mood==='win'&&!keepEyes?(fem?'lashhappy':'happy'):ey0,mo=opts.mood==='win'?'grin':opts.mood==='happy'&&mo0!=='grin'?'smile':mo0;
+    const ey=opts.mood==='win'&&!keepEyes?(fem?'lashhappy':'happy'):opts.mood==='sad'&&!keepEyes?(fem?'lash':'dot'):ey0,mo=opts.mood==='win'?'grin':opts.mood==='sad'?'sad':opts.mood==='happy'&&mo0!=='grin'?'smile':mo0;
     // Mit Kopfbedeckung bleibt von der Frisur nur, was unter der Krempe hervorschaut
     const front=frontHair(style,hair);
     const cut={1:28,2:28.5,5:29,7:24,8:26.5}[h];   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
     const frontClipped=cut?`<clipPath id="gga${k}"><rect x="0" y="${cut}" width="64" height="40"/></clipPath><g clip-path="url(#gga${k})">${front}</g>`:front;
     // Alles wird auf den Kreis zugeschnitten; die Figur ist etwas kleiner, damit auch Hüte ganz hineinpassen
-    return`<svg viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${fem?'Frau':'Mann'}${h?' mit '+HATS[h].name:''}" style="display:block;flex:none">
+    return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${fem?'Frau':'Mann'}${h?' mit '+HATS[h].name:''}" style="display:block;flex:none">
       <clipPath id="ggc${k}"><circle cx="32" cy="32" r="32"/></clipPath><g clip-path="url(#ggc${k})">
       <circle cx="32" cy="32" r="32" fill="${bg}"/>
       <g transform="translate(32 41) scale(.86) translate(-32 -41)">

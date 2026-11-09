@@ -26,7 +26,9 @@
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+html{scrollbar-gutter:stable}
 html,body{background:var(--bg);color:var(--ink)}
+.mechip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--panel-edge);border-radius:999px;padding:3px 12px 3px 3px;font:600 .88rem var(--display);color:var(--ink);text-decoration:none}
 body{margin:0;font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}

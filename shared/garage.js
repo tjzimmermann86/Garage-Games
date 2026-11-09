@@ -131,7 +131,28 @@ window.GG=(()=>{
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchRoom);else setTimeout(watchRoom,0);
 
+  /* Avatare im Canvas: SVG als Bild, zwischengespeichert */
+  const avCache=new Map();
+  function avatarImg(id,mood){
+    if(!window.Avatars)return null;const key=id+'|'+(mood||'');
+    if(!avCache.has(key)){const im=new Image();im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(Avatars.svg(id,128,{mood}));avCache.set(key,im);}
+    return avCache.get(key);
+  }
+  function drawAvatar(ctx,id,x,y,size,mood,ring){
+    const im=avatarImg(id,mood);if(!im)return;
+    if(ring){ctx.fillStyle=ring;ctx.beginPath();ctx.arc(x,y,size/2+4,0,7);ctx.fill();ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(x,y,size/2+1.5,0,7);ctx.fill();}
+    if(im.complete&&im.naturalWidth)ctx.drawImage(im,x-size/2,y-size/2,size,size);
+  }
+  const myAvatar=()=>{try{return window.GGNet&&GGNet.me.avatar!=null?GGNet.me.avatar:0;}catch(e){return 0;}};
+  const myName=()=>{try{return window.GGNet&&GGNet.me.name||'Du';}catch(e){return'Du';}};
+  // Eigener Avatar oben rechts im Spielkopf (führt zurück ins Menü)
+  function headerChip(){
+    const a=document.querySelector('header .actions')||document.querySelector('header > div:last-child');if(!a||!window.Avatars||document.getElementById('meChip'))return;
+    const c=document.createElement('a');c.id='meChip';c.className='mechip';c.href='../';c.title='Zum Menü';c.innerHTML=Avatars.svg(myAvatar(),26)+`<span>${myName().replace(/[<>&]/g,'')}</span>`;a.prepend(c);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',headerChip);else setTimeout(headerChip,0);
+
   const rowsHtml=pairs=>`<div class="rows">${pairs.map(([a,b,cls])=>`<span${cls?` class="${cls}"`:''}>${a}</span><span${cls?` class="${cls}"`:''}>${b}</span>`).join('')}</div>`;
 
-  return{dark:THEME==='dark',room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
+  return{avatarImg,drawAvatar,myAvatar,myName,dark:THEME==='dark',room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
 })();

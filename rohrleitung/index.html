@@ -16,6 +16,7 @@
 
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+html{scrollbar-gutter:stable}
 html,body{background:var(--bg);color:var(--ink)}
 body{margin:0;font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
@@ -320,18 +321,28 @@ function drawTile(i,now){
   ctx.strokeStyle=COL.board;ctx.lineWidth=pw*.46;arms();
   if(wet>0){ctx.globalAlpha=wet;ctx.strokeStyle=COL.water;ctx.lineWidth=pw*.46;arms();ctx.globalAlpha=1;}
   ctx.restore();
+  // Pumpe und Hähne haben Gesichter wie die Avatare: durstige Hähne schlafen, mit Wasser lachen sie
+  const face=(fx,fy,r,mood)=>{
+    ctx.strokeStyle=COL.ink;ctx.fillStyle=COL.ink;ctx.lineWidth=Math.max(1.4,r*.13);ctx.lineCap='round';
+    const ex=r*.36,ey=fy-r*.12;
+    if(mood==='happy'||mood==='win'){[-1,1].forEach(k=>{ctx.beginPath();ctx.arc(fx+k*ex,ey+r*.06,r*.14,Math.PI*1.1,Math.PI*1.9);ctx.stroke();});}
+    else if(mood==='sleepy'){[-1,1].forEach(k=>{ctx.beginPath();ctx.arc(fx+k*ex,ey-r*.04,r*.14,Math.PI*.1,Math.PI*.9);ctx.stroke();});}
+    else{[-1,1].forEach(k=>{ctx.beginPath();ctx.arc(fx+k*ex,ey,r*.1,0,7);ctx.fill();});}
+    if(mood==='win'){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(fx,fy+r*.22,r*.3,0,Math.PI);ctx.closePath();ctx.fill();ctx.stroke();}
+    else if(mood==='sleepy'){ctx.beginPath();ctx.arc(fx,fy+r*.32,r*.1,0,7);ctx.stroke();}
+    else{ctx.beginPath();ctx.arc(fx,fy+r*.16,r*.26,Math.PI*.15,Math.PI*.85);ctx.stroke();}
+    ctx.fillStyle='rgba(224,138,160,.45)';[-1,1].forEach(k=>{ctx.beginPath();ctx.arc(fx+k*r*.6,fy+r*.18,r*.15,0,7);ctx.fill();});
+  };
   if(t.pump){
-    const s=cs*.6;rr(cx-s/2,cy-s/2,s,s,s*.18);ctx.fillStyle=COL.amber;ctx.fill();ctx.strokeStyle='#7a5413';ctx.lineWidth=2;ctx.stroke();
-    ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(cx,cy,s*.32,0,7);ctx.fill();
-    const a=-Math.PI*.75+(F.ends?F.endsLit/F.ends:0)*Math.PI*1.5*(round.hidden&&!wonAt?0:1)+Math.sin(now/300)*.04;
-    ctx.strokeStyle=COL.rose;ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a-Math.PI/2)*s*.26,cy+Math.sin(a-Math.PI/2)*s*.26);ctx.stroke();
-    ctx.fillStyle=COL.ink;ctx.beginPath();ctx.arc(cx,cy,2.5,0,7);ctx.fill();
+    const s=cs*.62;ctx.fillStyle='rgba(59,51,70,.16)';rr(cx-s/2+2,cy-s/2+4,s,s,s*.28);ctx.fill();
+    rr(cx-s/2,cy-s/2,s,s,s*.28);ctx.fillStyle=COL.amber;ctx.fill();ctx.strokeStyle=COL.amberInk;ctx.lineWidth=2;ctx.stroke();
+    face(cx,cy,s*.42,wonAt?'win':'happy');
   }else if(isEnd){
-    const r=cs*.2;ctx.fillStyle=COL.steelDark;ctx.beginPath();ctx.arc(cx,cy,r+3,0,7);ctx.fill();
-    ctx.fillStyle=wet>0?COL.water:COL.board;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
-    if(wet>0){ctx.globalAlpha=wet;ctx.fillStyle=COL.waterHi;ctx.beginPath();ctx.arc(cx-r*.3,cy-r*.3,r*.3,0,7);ctx.fill();ctx.globalAlpha=1;}
+    const r=cs*.22;ctx.fillStyle='rgba(59,51,70,.14)';ctx.beginPath();ctx.arc(cx+1.5,cy+3,r+2,0,7);ctx.fill();
+    ctx.fillStyle=wet>.5?COL.water:COL.panel;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();ctx.strokeStyle=wet>.5?COL.waterInk:COL.steelDark;ctx.lineWidth=2;ctx.stroke();
+    face(cx,cy,r,wonAt?'win':wet>.5?'happy':'sleepy');
   }
-  if(i===hover&&playing&&!check){ctx.strokeStyle=COL.amber;ctx.lineWidth=2;ctx.strokeRect(x+2.5,y+2.5,cs-5,cs-5);}
+  if(i===hover&&playing&&!check){ctx.strokeStyle=COL.amberInk;ctx.lineWidth=2;ctx.strokeRect(x+2.5,y+2.5,cs-5,cs-5);}
 }
 function drawLeaks(list,now){
   const pulse=.6+.4*Math.sin(now/160);
