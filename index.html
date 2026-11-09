@@ -30,10 +30,10 @@ body{padding-block:24px 32px}
 .layout:has(nav[hidden]){grid-template-columns:minmax(0,760px);justify-content:center}
 nav.menu{display:flex;flex-direction:column;gap:10px;background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:14px;min-height:430px}
 @media (max-width:760px){nav.menu{min-height:0}}
-nav.menu button{appearance:none;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);font:700 1.15rem var(--display);padding:14px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
+nav.menu button{appearance:none;text-align:center;border:1px solid var(--lead);background:transparent;color:var(--ink);font:700 1.15rem var(--display);padding:14px 16px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px}
 nav.menu button small{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em}
 nav.menu button:hover{background:var(--plate)}
-nav.menu button[aria-current="true"]{background:var(--board);border-color:var(--lead);box-shadow:inset 3px 0 0 var(--amber-ink)}
+nav.menu button[aria-current="true"]{background:var(--board);border-color:var(--amber-ink);box-shadow:inset 0 0 0 1px var(--amber-ink)}
 nav.menu button:disabled{opacity:.4;cursor:default}
 nav.menu .spacer{flex:1}
 nav.menu button.quit{color:var(--rose-ink);border-color:color-mix(in srgb,var(--rose) 45%,transparent)}
@@ -186,7 +186,7 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
   </div>
   <div class="layout">
     <nav class="menu" id="nav" aria-label="Hauptmenü" hidden>
-      <button type="button" data-go="solo" id="navSolo">Einzelspieler <small>üben</small></button>
+      <button type="button" data-go="solo" id="navSolo">Einzelspieler</button>
       <button type="button" data-go="multi" id="navMulti">Mehrspieler <small id="navMultiInfo"></small></button>
       <button type="button" data-go="settings">Einstellungen</button>
       <div class="spacer"></div>
