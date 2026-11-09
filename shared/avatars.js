@@ -104,6 +104,8 @@
     if(h===8)return dome(18.6,26.5,c)+`<path d="M13.6 27.5L13.6 13L22.5 20.5L32 7L41.5 20.5L50.4 13L50.4 27.5Z" fill="${c}"/><rect x="13.6" y="23.5" width="36.8" height="4.5" fill="${dk}"/><circle cx="32" cy="17" r="2.4" fill="#e5626b"/><circle cx="22.5" cy="23" r="1.6" fill="#4aa8ec"/><circle cx="41.5" cy="23" r="1.6" fill="#4aa8ec"/>`;
     return'';
   }
+  // Farbe aufhellen (+) oder abdunkeln (−), für das T-Shirt passend zum Hintergrund
+  function shade(hex,amt){const n=parseInt(hex.slice(1),16),f=c=>Math.round(amt<0?c*(1+amt):c+(255-c)*amt);return`rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`;}
   let uid=0;
   const split=id=>{id=Math.max(0,id|0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%HATS.length};};
   function svg(id,size=48){
@@ -112,9 +114,16 @@
     const front=frontHair(style,hair);
     const cut={1:28,2:28.5,5:29,7:24,8:26.5}[h];   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
     const frontClipped=cut?`<clipPath id="gga${k}"><rect x="0" y="${cut}" width="64" height="40"/></clipPath><g clip-path="url(#gga${k})">${front}</g>`:front;
-    return`<svg viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${fem?'Frau':'Mann'}${h?' mit '+HATS[h].name:''}" style="display:block;flex:none;overflow:visible">
-      <circle cx="32" cy="32" r="32" fill="${bg}"/>${backHair(style,hair)}<path d="M8 64q4-15 24-15t24 15z" fill="rgba(0,0,0,.28)"/>
-      <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}</svg>`;
+    // Alles wird auf den Kreis zugeschnitten; die Figur ist etwas kleiner, damit auch Hüte ganz hineinpassen
+    return`<svg viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${fem?'Frau':'Mann'}${h?' mit '+HATS[h].name:''}" style="display:block;flex:none">
+      <clipPath id="ggc${k}"><circle cx="32" cy="32" r="32"/></clipPath><g clip-path="url(#ggc${k})">
+      <circle cx="32" cy="32" r="32" fill="${bg}"/>
+      <g transform="translate(32 41) scale(.86) translate(-32 -41)">
+        ${backHair(style,hair)}
+        <path d="M-2 76Q0 52 32 51Q64 52 66 76Z" fill="${shade(bg,-.32)}"/><path d="M25.5 51.5L32 58L38.5 51.5" fill="none" stroke="${shade(bg,-.5)}" stroke-width="1.6" stroke-linejoin="round"/>
+        <rect x="27" y="46" width="10" height="7" rx="3" fill="${SKIN[skin]}"/><rect x="27" y="46" width="10" height="3" fill="rgba(0,0,0,.12)"/>
+        <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}
+      </g></g></svg>`;
   }
   root.Avatars={count:FACES.length,hats:HATS.length-1,hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat)=>face+100*hat,svg,female:f=>f>=10};
 })(window);
