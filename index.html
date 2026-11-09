@@ -7,76 +7,372 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/garage.css">
 <style>
-:root{
-  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --sea:#5fc3b0;
-  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
-  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
-  color-scheme:dark;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--display);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:48px 40px}
-.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
-.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
-h1{margin:6px 0 10px;font-size:clamp(2.4rem,7vw,4rem);font-weight:800;line-height:1;letter-spacing:-.02em}
-h1 em{font-style:normal;color:var(--amber)}
-p{margin:0;color:var(--muted);line-height:1.55;max-width:60ch}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
-a.game{display:flex;flex-direction:column;gap:10px;padding:20px;border-radius:14px;background:var(--panel);border:1px solid var(--panel-edge);color:inherit;text-decoration:none;transition:border-color .15s,transform .15s}
-a.game:hover{border-color:var(--amber);transform:translateY(-2px)}
-a.game:focus-visible{outline:3px solid var(--sea);outline-offset:3px}
-a.game h2{margin:0;font-size:1.5rem;font-weight:800}
-.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sea)}
-.soon{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:14px;border:1px dashed var(--panel-edge);color:var(--muted)}
-.soon strong{color:var(--ink);font-weight:600}
-@media (prefers-reduced-motion:reduce){a.game{transition:none}}
+/* Layout: Kopfzeile, links das Menü (Beenden ganz unten), rechts der Inhalt des gewählten Punkts */
+:root{--accent:var(--amber)}
+html,body{min-height:100%}
+body{padding-block:24px 32px}
+.app{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px}
+.top .eyebrow{color:var(--amber)}
+.top h1{font-size:clamp(2.2rem,6vw,3.6rem);line-height:1;margin:.15em 0 0;letter-spacing:-.02em}
+.who{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{font-family:var(--mono);font-size:.75rem;letter-spacing:.06em;border:1px solid var(--panel-edge);border-radius:999px;padding:5px 10px;color:var(--muted);display:inline-flex;gap:6px;align-items:center}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.pill.on .dot{background:var(--sea)}.pill.off .dot{background:var(--amber)}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:760px){.layout{grid-template-columns:1fr}}
+nav.menu{display:flex;flex-direction:column;gap:10px;background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:14px;min-height:430px}
+@media (max-width:760px){nav.menu{min-height:0}}
+nav.menu button{appearance:none;text-align:left;border:1px solid transparent;background:transparent;color:var(--ink);font:700 1.15rem var(--display);padding:14px 16px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px}
+nav.menu button small{font:500 .72rem var(--mono);color:var(--muted);letter-spacing:.06em}
+nav.menu button:hover{background:var(--plate)}
+nav.menu button[aria-current="true"]{background:var(--board);border-color:var(--lead);box-shadow:inset 3px 0 0 var(--amber)}
+nav.menu button:disabled{opacity:.4;cursor:default}
+nav.menu .spacer{flex:1}
+nav.menu button.quit{color:var(--rose);border-color:color-mix(in srgb,var(--rose) 45%,transparent)}
+nav.menu button.quit:hover{background:color-mix(in srgb,var(--rose) 12%,transparent)}
+main.content{display:flex;flex-direction:column;gap:16px;min-width:0}
+#screen,#invites,#runBanner{display:flex;flex-direction:column;gap:16px;min-width:0}
+#invites:empty,#runBanner:empty{display:none}
+#startBox{display:flex;flex-direction:column;gap:12px}
+.box{background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.box h2{margin:0;font-size:1.6rem;font-weight:800;text-wrap:balance}
+.box p{margin:0;color:var(--muted);line-height:1.5;max-width:62ch}
+.label{font:600 .72rem var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:6px}
+input[type=text],select{background:var(--board);border:1px solid var(--lead);border-radius:8px;color:var(--ink);font:500 1rem var(--display);padding:10px 12px;min-width:0}
+input.code{font:600 1.4rem var(--mono);letter-spacing:.3em;text-transform:uppercase;width:9ch}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{appearance:none;border:0;border-radius:10px;padding:11px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.4;cursor:default;filter:none}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--panel-edge)}
+.btn.sec:hover{background:var(--plate)}
+.btn.small{padding:6px 12px;font-size:.88rem}
+.btn.danger{background:transparent;color:var(--rose);border:1px solid color-mix(in srgb,var(--rose) 50%,transparent)}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--lead);border-radius:10px;overflow:hidden;align-self:flex-start}
+.seg label{padding:9px 14px;cursor:pointer;color:var(--muted);font-weight:600;position:relative}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--board);color:var(--ink);box-shadow:inset 0 -3px 0 var(--amber)}
+.seg label:has(input:focus-visible){outline:3px solid var(--sea);outline-offset:-3px}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.games label{display:flex;gap:10px;align-items:center;background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:10px 12px;cursor:pointer}
+.games label span{display:flex;flex-direction:column}
+.games label small{font:500 .7rem var(--mono);color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+input[type=checkbox]{width:18px;height:18px;accent-color:var(--amber)}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:12px 14px}
+.item .grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.item strong{font-size:1.05rem;overflow-wrap:anywhere}
+.meta{font:500 .78rem var(--mono);color:var(--muted)}
+.tag{font:600 .7rem var(--mono);letter-spacing:.08em;text-transform:uppercase;border-radius:999px;padding:3px 8px;border:1px solid var(--lead);color:var(--muted)}
+.tag.ok{color:var(--sea);border-color:color-mix(in srgb,var(--sea) 50%,transparent)}
+.tag.run{color:var(--amber);border-color:color-mix(in srgb,var(--amber) 50%,transparent)}
+.tag.host{color:var(--amber)}
+.empty{color:var(--muted);font-style:italic;padding:6px 0}
+.lobby{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+@media (max-width:980px){.lobby{grid-template-columns:1fr}}
+.codebig{font:600 2.4rem var(--mono);letter-spacing:.25em;color:var(--amber)}
+.invite{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;background:color-mix(in srgb,var(--amber) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--amber) 45%,transparent);border-radius:12px;padding:14px 16px}
+.invite .grow{flex:1;min-width:200px}
+.banner{background:color-mix(in srgb,var(--sea) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--sea) 45%,transparent);border-radius:12px;padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+.slider{display:grid;grid-template-columns:150px minmax(0,1fr) 56px;gap:12px;align-items:center}
+@media (max-width:520px){.slider{grid-template-columns:1fr 56px}.slider input{grid-column:1/-1;grid-row:2}}
+.slider output{font:600 1rem var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--amber)}
+.hint{font-size:.9rem;color:var(--muted);line-height:1.45}
+.hint code{font-family:var(--mono);font-size:.85em;color:var(--ink)}
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--board);border:1px solid var(--amber);border-radius:999px;padding:10px 18px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">Lübtheen Garage LAN</div>
-    <h1>Garage <em>Games</em></h1>
-    <p>Die Minispiel-Sammlung für die LAN. Spiel auswählen und loslegen.</p>
-  </header>
-  <div class="grid">
-    <a class="game" href="scherbenwerk/">
-      <span class="tag">Puzzle · 5 Runden</span>
-      <h2>Scherbenwerk</h2>
-      <p>Ein Bild ist in Glasscherben zersprungen. Setz es wieder zusammen, mit jeder Runde mehr Teile.</p>
-    </a>
-    <a class="game" href="rohrleitung/">
-      <span class="tag">Logik · 5 Runden</span>
-      <h2>Rohrleitung</h2>
-      <p>Dreh die Rohre, bis das Wasser von der Pumpe jeden Hahn erreicht und nirgends etwas ausläuft.</p>
-    </a>
-    <a class="game" href="farbfolge/">
-      <span class="tag">Gedächtnis · bis zum Fehler</span>
-      <h2>Farbfolge</h2>
-      <p>Farben und Töne werden immer länger. Wer sich vertut, scheidet aus.</p>
-    </a>
-    <a class="game" href="startampel/">
-      <span class="tag">Reaktion · 5 Runden</span>
-      <h2>Startampel</h2>
-      <p>Klick, sobald das Signal kommt. Wer zu früh klickt, ist raus.</p>
-    </a>
-    <a class="game" href="turmbau/">
-      <span class="tag">Geschick · bis zum Fehler</span>
-      <h2>Turmbau</h2>
-      <p>Blöcke pendeln am Kran. Lass sie fallen und bau den höchsten Turm.</p>
-    </a>
-    <a class="game" href="schubsarena/">
-      <span class="tag">Action · 5 Runden</span>
-      <h2>Schubsarena</h2>
-      <p>Kugeln auf einer schrumpfenden Plattform. Der Letzte oben gewinnt.</p>
-    </a>
-    <div class="soon">
-      <span class="tag">Bald</span>
-      <strong>Weitere Minispiele</strong>
-      <span>Montagsmaler, Bombe entschärfen, Freunde-Quiz und mehr.</span>
+<div class="app">
+  <div class="top">
+    <div>
+      <div class="eyebrow">Lübtheen Garage LAN</div>
+      <h1>Garage <em>Games</em></h1>
+    </div>
+    <div class="who">
+      <span class="pill" id="conn"><span class="dot"></span><span id="connText">Verbinde …</span></span>
+      <span class="pill" id="me" hidden></span>
     </div>
   </div>
+  <div class="layout">
+    <nav class="menu" id="nav" aria-label="Hauptmenü" hidden>
+      <button type="button" data-go="lobby" id="navLobby" hidden>Warteraum <small id="navCode"></small></button>
+      <button type="button" data-go="create" id="navCreate">Spiel erstellen</button>
+      <button type="button" data-go="join" id="navJoin">Spiel beitreten <small id="navOpen"></small></button>
+      <button type="button" data-go="settings">Einstellungen</button>
+      <div class="spacer"></div>
+      <button type="button" data-go="quit" class="quit">Spiel beenden</button>
+    </nav>
+    <main class="content">
+      <div id="invites"></div>
+      <div id="screen"></div>
+    </main>
+  </div>
 </div>
+<div id="toast" hidden></div>
+
+<script src="shared/garage.js"></script>
+<script src="shared/lobby-core.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const GAMES=LobbyCore.GAMES,gameName=id=>(GAMES.find(g=>g.id===id)||{}).name||id;
+const ss={get(k){try{return sessionStorage.getItem(k);}catch(e){return null;}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v);}catch(e){}}};
+const ls={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{localStorage.setItem(k,v);}catch(e){}}};
+
+/* ---------- Verbindung: Server (Vercel + Redis) oder Offline-Modus (nur dieser Browser) ---------- */
+const LocalStore={
+  async get(k){try{const r=JSON.parse(localStorage.getItem('gglocal:'+k)||'null');if(!r)return null;if(r.exp<Date.now()){localStorage.removeItem('gglocal:'+k);return null;}return r.v;}catch(e){return null;}},
+  async set(k,v,ttl){try{localStorage.setItem('gglocal:'+k,JSON.stringify({v,exp:Date.now()+(ttl||3600)*1000}));}catch(e){}},
+  async del(k){try{localStorage.removeItem('gglocal:'+k);}catch(e){}},
+};
+const Net={mode:null,
+  async init(){
+    try{const r=await fetch('api/lobby',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'ping'})});
+      if(r.ok){const j=await r.json();if(j.ok){this.mode='server';return;}}}catch(e){}
+    this.mode='local';
+  },
+  async call(req){
+    const body={pid:S.pid,name:S.name,...req};
+    if(this.mode==='server'){try{const r=await fetch('api/lobby',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});return await r.json();}catch(e){return{error:'Keine Verbindung zum Server.'};}}
+    return LobbyCore.handle(LocalStore,body);
+  }
+};
+
+/* ---------- Zustand (pro Tab, damit man mit zwei Tabs testen kann) ---------- */
+const S={
+  pid:ss.get('gg-pid')||(()=>{const id='p'+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);ss.set('gg-pid',id);return id;})(),
+  name:ss.get('gg-name')||'',   // pro Tab einmal bestätigen, vorausgefüllt mit dem letzten Namen
+  code:ss.get('gg-room'),room:null,online:[],rooms:[],invites:[],screen:'menu',invited:{},lastSeed:ss.get('gg-seed'),
+};
+const inviteCode=(new URLSearchParams(location.search).get('raum')||'').toUpperCase().slice(0,4);
+
+function toast(msg){const t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200);}
+function setRoom(room){S.room=room;S.code=room?room.code:null;ss.set('gg-room',S.code);updateNav();}
+
+/* ---------- Abfrage alle 1,5 Sekunden ---------- */
+async function poll(){
+  if(!S.name)return;
+  const r=await Net.call({action:'poll',code:S.code});
+  if(r.error)return;
+  S.online=r.online;S.rooms=r.rooms;S.invites=r.invites||[];
+  if(S.code){
+    if(!r.room){setRoom(null);toast('Das Spiel gibt es nicht mehr.');if(S.screen==='lobby')show('menu');}
+    else if(r.room.kicked){setRoom(null);toast('Du wurdest aus dem Spiel entfernt.');if(S.screen==='lobby')show('menu');}
+    else{S.room=r.room;maybeLaunch();}
+  }
+  renderInvites();updateNav();refresh();
+}
+function maybeLaunch(){
+  const r=S.room;if(!r||r.status!=='running'||!r.seed)return;
+  if(String(r.seed)===String(S.lastSeed))return;
+  S.lastSeed=String(r.seed);ss.set('gg-seed',S.lastSeed);
+  location.href=`${r.game}/?seed=${r.seed}&raum=${r.code}`;
+}
+
+/* ---------- Navigation ---------- */
+const nav=$('#nav');
+nav.addEventListener('click',e=>{const b=e.target.closest('button[data-go]');if(b&&!b.disabled)show(b.dataset.go);});
+function updateNav(){
+  nav.hidden=!S.name;
+  $('#navLobby').hidden=!S.code;$('#navCode').textContent=S.code||'';
+  $('#navCreate').disabled=!!S.code;$('#navJoin').disabled=!!S.code;
+  $('#navOpen').textContent=S.rooms.length?`${S.rooms.length} offen`:'';
+  nav.querySelectorAll('button[data-go]').forEach(b=>b.setAttribute('aria-current',String(b.dataset.go===S.screen)));
+  const me=$('#me');me.hidden=!S.name;me.textContent=S.name;
+}
+function show(screen){S.screen=screen;updateNav();render();}
+window.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.name&&!['menu','lobby','bye'].includes(S.screen))show(S.code?'lobby':'menu');});
+document.addEventListener('pointerdown',()=>{if(S.screen!=='bye')GG.musicStart();},{once:true});
+document.addEventListener('keydown',()=>{if(S.screen!=='bye')GG.musicStart();},{once:true});
+
+/* ---------- Einladungen ---------- */
+function renderInvites(){
+  const list=S.invites.filter(i=>i.code!==S.code);
+  $('#invites').innerHTML=list.map(i=>`<div class="invite"><div class="grow"><div class="label">Einladung</div><strong>${esc(i.from)}</strong> lädt dich in „${esc(i.title)}“ ein.</div>
+    <div class="row"><button class="btn" data-acc="${esc(i.code)}" type="button">Annehmen</button><button class="btn sec" data-dec="${esc(i.code)}" type="button">Ablehnen</button></div></div>`).join('');
+}
+$('#invites').addEventListener('click',async e=>{
+  const a=e.target.closest('[data-acc]'),d=e.target.closest('[data-dec]');
+  if(a){if(S.code)await leave(true);join(a.dataset.acc);}
+  if(d){await Net.call({action:'decline',code:d.dataset.dec});S.invites=S.invites.filter(i=>i.code!==d.dataset.dec);renderInvites();}
+});
+
+/* ---------- Aktionen ---------- */
+async function join(code){
+  code=String(code||'').trim().toUpperCase();if(code.length!==4){toast('Der Code hat 4 Zeichen.');return;}
+  const r=await Net.call({action:'join',code});if(r.error){toast(r.error);return;}
+  if(r.room.status==='running'){S.lastSeed=String(r.room.seed);ss.set('gg-seed',S.lastSeed);}
+  setRoom(r.room);show('lobby');
+}
+async function leave(silent){if(!S.code)return;await Net.call({action:'leave',code:S.code});setRoom(null);if(!silent){toast('Du hast den Warteraum verlassen.');show('menu');}}
+
+/* ---------- Bildschirme ---------- */
+const screen=$('#screen');
+function render(){
+  const key=S.name?S.screen:'name';
+  const f={name:vName,menu:vMenu,create:vCreate,join:vJoin,lobby:vLobby,settings:vSettings,quit:vQuit,bye:vBye}[key];
+  screen.innerHTML=f();if(bind[key])bind[key]();refresh();
+}
+function refresh(){ // nur die Live-Bereiche neu zeichnen, Eingaben bleiben stehen
+  const el=id=>document.getElementById(id);
+  if(el('openList'))el('openList').innerHTML=openListHtml();
+  if(el('onlineCount'))el('onlineCount').textContent=String(S.online.length);
+  if(S.screen==='lobby'&&S.room)lobbyLive();
+}
+
+function vName(){return`<section class="box"><div class="label">Willkommen</div><h2>Wie heißt du?</h2>
+  <p>Unter diesem Namen sehen dich die anderen im Warteraum.</p>
+  <form id="nameForm" class="row"><input type="text" id="nameIn" maxlength="24" placeholder="Dein Name" value="${esc(ls.get('gg-name')||'')}" autocomplete="nickname" required><button class="btn" type="submit">Weiter</button></form></section>`;}
+function vMenu(){return`<section class="box"><div class="label">Hauptmenü</div><h2>Hallo ${esc(S.name)}!</h2>
+  <p>Erstell ein Spiel und lade die anderen ein, oder tritt einem offenen Spiel bei. Im Warteraum sammeln sich alle, bis der Gastgeber das erste Minispiel startet.</p>
+  <div class="row"><button class="btn" type="button" data-go2="create">Spiel erstellen</button><button class="btn sec" type="button" data-go2="join">Spiel beitreten</button></div>
+  <div class="hint">Gerade online: <strong id="onlineCount">${S.online.length}</strong> weitere Spieler</div></section>${modeHint()}`;}
+function modeHint(){
+  if(Net.mode==='server')return'';
+  return`<section class="box"><div class="label">Offline-Modus</div><p>Es ist noch keine Datenbank verbunden. Spiele und Warteräume sind deshalb nur in diesem Browser sichtbar. Zum Ausprobieren kannst du zwei Tabs öffnen.</p>
+  <p class="hint">Für die LAN: In Vercel unter <code>Storage</code> eine <code>Upstash for Redis</code>-Datenbank mit dem Projekt verbinden und neu deployen. Dann sehen sich alle Rechner.</p></section>`;
+}
+function vCreate(){
+  return`<section class="box"><div class="label">Spiel erstellen</div><h2>Neuer Warteraum</h2>
+  <form id="createForm" class="list" style="gap:18px">
+    <div class="field"><label class="label" for="cTitle">Name des Spiels</label><input type="text" id="cTitle" maxlength="32" value="Garage von ${esc(S.name)}"></div>
+    <div class="field"><span class="label">Wer darf beitreten?</span>
+      <div class="seg" role="radiogroup"><label><input type="radio" name="vis" value="1" checked><span>Offen für alle</span></label><label><input type="radio" name="vis" value="0"><span>Nur mit Einladung</span></label></div>
+      <span class="hint">Offene Spiele stehen in der Liste unter „Spiel beitreten“. Einladungen und der Code funktionieren immer.</span></div>
+    <div class="field"><label class="label" for="cMax">Höchstens Spieler</label><select id="cMax" style="align-self:flex-start">${[2,4,6,8,10,12,14,16].map(n=>`<option${n===16?' selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field"><span class="label">Minispiele</span><div class="games">${GAMES.map(g=>`<label><input type="checkbox" name="g" value="${g.id}" checked><span>${g.name}<small>${g.tag}</small></span></label>`).join('')}</div></div>
+    <div class="row"><button class="btn" type="submit">Warteraum öffnen</button><button class="btn sec" type="button" data-go2="menu">Abbrechen</button></div>
+  </form></section>`;}
+function openListHtml(){
+  if(!S.rooms.length)return`<div class="empty">Gerade gibt es keine offenen Spiele. Erstell selbst eins oder frag nach einem Code.</div>`;
+  return S.rooms.map(r=>`<div class="item"><div class="grow"><strong>${esc(r.title)}</strong><span class="meta">Gastgeber ${esc(r.host)} · Code ${esc(r.code)}</span></div>
+    <span class="tag ${r.status==='running'?'run':'ok'}">${r.status==='running'?`Läuft · ${esc(gameName(r.game))}`:'Wartet'}</span>
+    <span class="meta">${r.players}/${r.max}</span>
+    <button class="btn small" type="button" data-join="${esc(r.code)}"${r.players>=r.max?' disabled':''}>${r.players>=r.max?'Voll':'Beitreten'}</button></div>`).join('');
+}
+function vJoin(){return`<section class="box"><div class="label">Spiel beitreten</div><h2>Offene Spiele</h2>
+  <div class="list" id="openList">${openListHtml()}</div></section>
+  <section class="box"><div class="label">Mit Code</div><p>Für Spiele „nur mit Einladung“: Lass dir den 4-stelligen Code vom Gastgeber geben.</p>
+  <form id="codeForm" class="row"><input type="text" class="code" id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off" aria-label="Code" required><button class="btn" type="submit">Beitreten</button></form></section>`;}
+function vLobby(){
+  const r=S.room;if(!r)return vMenu();
+  const link=`${location.origin}${location.pathname}?raum=${r.code}`;
+  return`<div id="runBanner"></div>
+  <section class="box"><div class="row" style="justify-content:space-between;align-items:flex-start">
+    <div><div class="label" id="lVis">Warteraum</div><h2 id="lTitle">${esc(r.title)}</h2></div>
+    <div style="text-align:right"><div class="label">Code</div><div class="codebig">${esc(r.code)}</div></div></div>
+    <div class="row"><input type="text" id="linkIn" value="${esc(link)}" readonly aria-label="Einladungslink" style="flex:1;min-width:200px;font-family:var(--mono);font-size:.85rem"><button class="btn sec small" type="button" id="copyLink">Einladungslink kopieren</button></div>
+  </section>
+  <div class="lobby">
+    <section class="box"><div class="row" style="justify-content:space-between"><div class="label">Spieler</div><span class="meta" id="readyCount"></span></div>
+      <div class="list" id="players"></div>
+      <div class="row"><button class="btn" type="button" id="readyBtn">Bereit</button><button class="btn danger" type="button" id="leaveBtn">Warteraum verlassen</button></div></section>
+    <section class="box"><div class="label">Minispiele</div><div id="gamesBox"></div><div id="startBox"></div></section>
+  </div>
+  <section class="box"><div class="label">Spieler einladen</div><p>Hier stehen alle, die gerade im Menü sind und noch in keinem Spiel stecken.</p><div class="list" id="inviteList"></div></section>`;
+}
+function lobbyLive(){
+  const r=S.room,isHost=r.host===S.pid,me=r.players.find(p=>p.pid===S.pid)||{},el=id=>document.getElementById(id);if(!el('players'))return;
+  if(el('lTitle').textContent!==r.title)el('lTitle').textContent=r.title;
+  el('lVis').textContent=`Warteraum · ${r.public?'offen für alle':'nur mit Einladung'}`;
+  const ready=r.players.filter(p=>p.ready).length;
+  el('readyCount').textContent=`${ready} von ${r.players.length} bereit · max. ${r.max}`;
+  el('players').innerHTML=r.players.map(p=>`<div class="item"><div class="grow"><strong>${esc(p.name)}${p.pid===S.pid?' (du)':''}</strong></div>
+    ${p.pid===r.host?'<span class="tag host">Gastgeber</span>':''}<span class="tag ${p.ready?'ok':''}">${p.ready?'Bereit':'Wartet'}</span>
+    ${isHost&&p.pid!==S.pid?`<button class="btn danger small" type="button" data-kick="${esc(p.pid)}">Entfernen</button>`:''}</div>`).join('');
+  el('readyBtn').textContent=me.ready?'Doch nicht bereit':'Bereit';el('readyBtn').className=me.ready?'btn sec':'btn';
+  const gKey=JSON.stringify([r.games,isHost]);
+  if(el('gamesBox').dataset.k!==gKey){el('gamesBox').dataset.k=gKey;
+    el('gamesBox').innerHTML=isHost?`<div class="games">${GAMES.map(g=>`<label><input type="checkbox" data-g="${g.id}"${r.games.includes(g.id)?' checked':''}><span>${g.name}<small>${g.tag}</small></span></label>`).join('')}</div>`
+      :`<div class="list">${r.games.map(id=>`<div class="item"><div class="grow"><strong>${esc(gameName(id))}</strong></div></div>`).join('')}</div>`;}
+  const sKey=JSON.stringify([isHost,r.games,r.status,r.game,ready,r.players.length]);
+  if(el('startBox').dataset.k!==sKey){el('startBox').dataset.k=sKey;
+    if(isHost){const prev=el('nextGame')?el('nextGame').value:null,next=r.games.includes(prev)?prev:(r.status==='running'&&r.game&&r.games.includes(r.game)?r.games[(r.games.indexOf(r.game)+1)%r.games.length]:r.games[0]);
+      const notReady=r.players.length-ready;
+      el('startBox').innerHTML=`<div class="field"><label class="label" for="nextGame">Als Nächstes</label><select id="nextGame" style="align-self:flex-start">${r.games.map(id=>`<option value="${id}"${id===next?' selected':''}>${esc(gameName(id))}</option>`).join('')}</select></div>
+        <div class="row"><button class="btn" type="button" id="startBtn">${notReady?`Trotzdem starten (${notReady} nicht bereit)`:'Spiel starten'}</button>${r.status==='running'?'<button class="btn sec" type="button" id="backBtn">Runde beenden</button>':''}</div>
+        <span class="hint">Beim Start öffnet sich das Minispiel bei allen im Warteraum, mit derselben Variante.</span>`;}
+    else el('startBox').innerHTML=`<p class="hint">${r.status==='running'?'Das Spiel läuft gerade.':'Warte, bis der Gastgeber startet. Sag mit „Bereit“ Bescheid, wenn du so weit bist.'}</p>`;}
+  el('runBanner').innerHTML=r.status==='running'?`<div class="banner"><div style="flex:1;min-width:180px"><div class="label">Läuft gerade</div><strong>${esc(gameName(r.game))}</strong> · Runde ${r.round}</div><a class="btn" href="${r.game}/?seed=${r.seed}&raum=${r.code}">Mitspielen</a></div>`:'';
+  const free=S.online.filter(o=>!o.room&&!r.players.some(p=>p.pid===o.pid));
+  el('inviteList').innerHTML=free.length?free.map(o=>`<div class="item"><div class="grow"><strong>${esc(o.name)}</strong><span class="meta">im Menü</span></div>
+    <button class="btn small${S.invited[o.pid]?' sec':''}" type="button" data-inv="${esc(o.pid)}"${S.invited[o.pid]?' disabled':''}>${S.invited[o.pid]?'Eingeladen':'Einladen'}</button></div>`).join('')
+    :`<div class="empty">Gerade ist niemand frei im Menü. Teile den Code oder den Link.</div>`;
+}
+function vSettings(){
+  const s=GG.settings,sl=(id,label,v)=>`<div class="slider"><label for="${id}">${label}</label><input type="range" id="${id}" min="0" max="100" step="5" value="${v}"><output id="${id}Out" for="${id}">${v} %</output></div>`;
+  return`<section class="box"><div class="label">Einstellungen</div><h2>Bild</h2>
+    <div class="field"><label class="label" for="res">Auflösung der Spiele</label><select id="res" style="align-self:flex-start">
+      ${[['auto','Automatisch (Bildschirm)'],['720','1280 × 720'],['1080','1920 × 1080'],['1440','2560 × 1440']].map(([v,t])=>`<option value="${v}"${s.resolution===v?' selected':''}>${t}</option>`).join('')}</select>
+      <span class="hint">Niedriger läuft auf schwachen Rechnern flüssiger. Gilt ab dem nächsten gestarteten Minispiel.</span></div>
+    <div class="row"><button class="btn sec" type="button" id="fsBtn">${document.fullscreenElement?'Vollbild beenden':'Vollbild'}</button></div></section>
+  <section class="box"><h2>Ton</h2>
+    ${sl('vMaster','Gesamtlautstärke',s.master)}${sl('vMusic','Musik',s.music)}${sl('vSfx','Effekte',s.sfx)}
+    <div class="row"><button class="btn sec small" type="button" id="testSfx">Effekt testen</button></div></section>
+  <section class="box"><h2>Name</h2><form id="renameForm" class="row"><input type="text" id="renameIn" maxlength="24" value="${esc(S.name)}" aria-label="Name"><button class="btn sec" type="submit">Speichern</button></form></section>`;
+}
+function vQuit(){return`<section class="box"><div class="label">Spiel beenden</div><h2>Wirklich beenden?</h2>
+  <p>${S.code?'Du verlässt dabei auch den Warteraum. ':''}Die Musik geht aus und das Fenster wird geschlossen, wenn der Browser es erlaubt.</p>
+  <div class="row"><button class="btn danger" type="button" id="quitYes">Ja, beenden</button><button class="btn sec" type="button" data-go2="${S.code?'lobby':'menu'}">Abbrechen</button></div></section>`;}
+function vBye(){return`<section class="box"><div class="label">Beendet</div><h2>Bis zum nächsten Mal!</h2><p>Du kannst das Fenster jetzt schließen.</p><div class="row"><button class="btn sec" type="button" id="backMenu">Zurück zum Menü</button></div></section>`;}
+
+/* ---------- Ereignisse je Bildschirm ---------- */
+screen.addEventListener('click',e=>{const b=e.target.closest('[data-go2]');if(b)show(b.dataset.go2);const j=e.target.closest('[data-join]');if(j&&!j.disabled)join(j.dataset.join);});
+const bind={
+  name(){$('#nameIn').focus();$('#nameForm').addEventListener('submit',e=>{e.preventDefault();const n=$('#nameIn').value.trim().slice(0,24);if(!n)return;S.name=n;ss.set('gg-name',n);ls.set('gg-name',n);
+    if(inviteCode){history.replaceState(null,'',location.pathname);join(inviteCode);}else show('menu');poll();});},
+  create(){$('#createForm').addEventListener('submit',async e=>{e.preventDefault();
+    const games=[...document.querySelectorAll('input[name=g]:checked')].map(i=>i.value);if(!games.length){toast('Wähl mindestens ein Minispiel.');return;}
+    const r=await Net.call({action:'create',title:$('#cTitle').value,public:document.querySelector('input[name=vis]:checked').value==='1',max:$('#cMax').value,games});
+    if(r.error){toast(r.error);return;}setRoom(r.room);show('lobby');});},
+  join(){$('#codeIn').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''));
+    $('#codeForm').addEventListener('submit',e=>{e.preventDefault();join($('#codeIn').value);});},
+  lobby(){
+    if(!S.room)return;
+    $('#copyLink').addEventListener('click',async()=>{const i=$('#linkIn');try{await navigator.clipboard.writeText(i.value);toast('Link kopiert.');}catch(e){i.select();toast('Link markiert – jetzt mit Strg+C kopieren.');}});
+    $('#readyBtn').addEventListener('click',async()=>{const me=S.room.players.find(p=>p.pid===S.pid);const r=await Net.call({action:'ready',code:S.code,ready:!(me&&me.ready)});if(r.room){S.room=r.room;lobbyLive();}});
+    $('#leaveBtn').addEventListener('click',()=>leave());
+    const lob=screen.querySelector('.lobby');
+    lob.addEventListener('click',async e=>{
+      const k=e.target.closest('[data-kick]');if(k){const r=await Net.call({action:'kick',code:S.code,target:k.dataset.kick});if(r.room){S.room=r.room;lobbyLive();}}
+      if(e.target.id==='startBtn'){const r=await Net.call({action:'start',code:S.code,game:$('#nextGame').value});if(r.error)toast(r.error);else{S.room=r.room;maybeLaunch();}}
+      if(e.target.id==='backBtn'){const r=await Net.call({action:'back',code:S.code});if(r.room){S.room=r.room;lobbyLive();}}
+    });
+    lob.addEventListener('change',async e=>{
+      if(!e.target.dataset.g)return;const games=[...document.querySelectorAll('[data-g]:checked')].map(i=>i.dataset.g);
+      if(!games.length){e.target.checked=true;toast('Mindestens ein Minispiel muss dabei sein.');return;}
+      const r=await Net.call({action:'settings',code:S.code,games});if(r.room){S.room=r.room;lobbyLive();}
+    });
+    $('#inviteList').addEventListener('click',async e=>{const b=e.target.closest('[data-inv]');if(!b)return;
+      const r=await Net.call({action:'invite',code:S.code,target:b.dataset.inv});if(r.error){toast(r.error);return;}
+      S.invited[b.dataset.inv]=true;setTimeout(()=>{delete S.invited[b.dataset.inv];},15000);toast('Einladung verschickt.');lobbyLive();});
+  },
+  settings(){
+    $('#res').addEventListener('change',e=>{GG.saveSettings({resolution:e.target.value});toast('Gespeichert. Gilt ab dem nächsten Minispiel.');});
+    $('#fsBtn').addEventListener('click',async e=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(err){toast('Vollbild geht hier nicht. Drück F11.');}setTimeout(()=>{e.target.textContent=document.fullscreenElement?'Vollbild beenden':'Vollbild';},200);});
+    [['vMaster','master'],['vMusic','music'],['vSfx','sfx']].forEach(([id,key])=>$('#'+id).addEventListener('input',e=>{GG.musicStart();$('#'+id+'Out').textContent=e.target.value+' %';GG.saveSettings({[key]:+e.target.value});}));
+    $('#testSfx').addEventListener('click',()=>GG.sfx('win'));
+    $('#renameForm').addEventListener('submit',e=>{e.preventDefault();const n=$('#renameIn').value.trim().slice(0,24);if(!n)return;S.name=n;ss.set('gg-name',n);ls.set('gg-name',n);updateNav();toast('Name gespeichert.');if(S.code)Net.call({action:'join',code:S.code});});
+  },
+  quit(){$('#quitYes').addEventListener('click',async()=>{await leave(true);GG.musicStop();try{window.close();}catch(e){}show('bye');});},
+  bye(){$('#backMenu').addEventListener('click',()=>{GG.musicStart();show('menu');});},
+};
+
+/* ---------- Start ---------- */
+(async()=>{
+  await Net.init();
+  $('#conn').classList.add(Net.mode==='server'?'on':'off');$('#connText').textContent=Net.mode==='server'?'Server verbunden':'Offline-Modus';
+  if(S.code){const r=await Net.call({action:'poll',code:S.code});if(r.room&&!r.room.kicked){S.room=r.room;S.screen='lobby';}else setRoom(null);}
+  if(S.name&&inviteCode&&inviteCode!==S.code){history.replaceState(null,'',location.pathname);if(S.code)await leave(true);await join(inviteCode);}
+  updateNav();render();poll();setInterval(poll,1500);
+})();
+})();
+</script>
 </body>
 </html>

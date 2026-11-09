@@ -41,7 +41,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
 button.go:hover{filter:brightness(1.08)}
 button.go:focus-visible,button.ghost:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
-button.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
+button.ghost,a.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
 .keys{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.88rem}
 kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);background:var(--panel)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -53,9 +53,10 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   <header>
     <div>
       <h1>Scherben<em>werk</em></h1>
-      <div class="sub">Minispiel der LAN-Sammlung · Prototyp, 5 Runden</div>
+      <div class="sub">Minispiel der Garage Games · 5 Runden</div>
     </div>
-    <button class="ghost" id="restart" type="button">Neu starten</button>
+    <div style="display:flex;gap:8px"><a class="ghost" href="../">Menü</a>
+    <button class="ghost" id="restart" type="button">Neu starten</button></div>
   </header>
 
   <div class="stage">
@@ -70,6 +71,7 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   </div>
 </div>
 
+<script src="../shared/garage.js"></script>
 <script>
 (()=>{
 const W=1280,H=720,MW=600,MH=450;
@@ -82,7 +84,7 @@ const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--boa
 const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
 
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-const DPR=Math.min(2,window.devicePixelRatio||1);
+const DPR=GG.DPR;
 cv.width=W*DPR;cv.height=H*DPR;
 
 /* Jede Runde hat mehrere Varianten; pro Spiel wird je Runde eine gezogen, dazu ein Bruchmuster. */
@@ -384,7 +386,7 @@ let playing=false,t0=0,endSecs=0,mistakes=0,total=0,results=[];
 let drag=null,hover=null,toastMsg='',toastT=0;
 
 function newGame(){
-  baseSeed=Math.floor(Math.random()*1e9);
+  baseSeed=GG.newSeed()%1000000000;
   const R0=mkR(baseSeed);
   planRounds(mkR(baseSeed^0x2545f491));
   roundMotifs=[...shuffle(PHOTOS.slice(),R0),...shuffle(MOTIFS.slice(),R0)].slice(0,ROUNDS.length);
@@ -452,7 +454,7 @@ let ac=null;
 function sfx(type){
   try{
     ac=ac||new(window.AudioContext||window.webkitAudioContext)();
-    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);const vg=ac.createGain();vg.gain.value=GG.vol('sfx');g.connect(vg);vg.connect(ac.destination);
     if(type==='ok'){o.type='sine';o.frequency.setValueAtTime(1760,t);o.frequency.exponentialRampToValueAtTime(2640,t+.05);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);}
     else if(type==='err'){o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(130,t+.2);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);}
     else{o.type='sine';o.frequency.setValueAtTime(950,t);g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);}

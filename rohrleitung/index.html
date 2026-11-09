@@ -58,7 +58,7 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
       <div class="sub">Minispiel der Garage Games · 5 Runden</div>
     </div>
     <div class="actions">
-      <a class="ghost" href="../">Alle Spiele</a>
+      <a class="ghost" href="../">Menü</a>
       <button class="ghost" id="restart" type="button">Neu starten</button>
     </div>
   </header>
@@ -75,6 +75,7 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   </div>
 </div>
 
+<script src="../shared/garage.js"></script>
 <script>
 (()=>{
 const W=1280,H=720,BX=340,BY=100,BS=600;
@@ -82,7 +83,7 @@ const css=getComputedStyle(document.documentElement),C=k=>css.getPropertyValue(k
 const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),water:C('--water'),waterHi:C('--water-hi'),steel:C('--steel'),steelDark:C('--steel-dark'),plate:C('--plate'),plateLock:C('--plate-lock')};
 const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-const DPR=Math.min(2,window.devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;
+const DPR=GG.DPR;cv.width=W*DPR;cv.height=H*DPR;
 
 /* Jede Runde hat mehrere Varianten (Form, Größe, Pumpen). Pro Spiel wird je Runde eine gezogen. */
 const ROUND_POOLS=[
@@ -183,7 +184,7 @@ function flow(){
   return{lit,depth,leaks,maxD,ends,endsLit,solved:litN===nAct&&leaks.length===0};
 }
 
-function newGame(){baseSeed=Math.floor(Math.random()*1e9);planRounds(mulberry32(baseSeed^0x2545f491));total=0;results=[];setupRound(0);showStart();}
+function newGame(){baseSeed=GG.newSeed()%1000000000;planRounds(mulberry32(baseSeed^0x2545f491));total=0;results=[];setupRound(0);showStart();}
 function setupRound(i){
   roundIdx=i;round=ROUNDS[i];gw=round.w;gh=round.h;
   cs=Math.min(BS/gw,BS/gh);ox=BX+(BS-gw*cs)/2;oy=BY+(BS-gh*cs)/2;
@@ -234,7 +235,7 @@ let ac=null;
 function sfx(type){
   try{
     ac=ac||new(window.AudioContext||window.webkitAudioContext)();
-    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);const vg=ac.createGain();vg.gain.value=GG.vol('sfx');g.connect(vg);vg.connect(ac.destination);
     if(type==='tick'){o.type='square';o.frequency.setValueAtTime(420,t);g.gain.setValueAtTime(.025,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);}
     else if(type==='lock'){o.type='triangle';o.frequency.setValueAtTime(700,t);o.frequency.exponentialRampToValueAtTime(300,t+.08);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);}
     else if(type==='flow'){o.type='sine';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(420,t+.6);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.7);}

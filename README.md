@@ -2,6 +2,26 @@
 
 Minispiel-Sammlung für die **Lübtheen Garage LAN**.
 
+## Menü und Warteraum
+
+Die Startseite ist das Spielmenü:
+
+- **Spiel erstellen:** Name, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl, Auswahl der Minispiele. Danach öffnet sich der Warteraum.
+- **Spiel beitreten:** Liste der offenen Spiele oder Beitritt mit 4-stelligem Code. Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
+- **Warteraum:** Spielerliste mit Gastgeber und „Bereit“-Status, Code und Einladungslink (`?raum=CODE`), Einladen von Spielern, die gerade im Menü sind. Der Gastgeber wählt die Minispiele, kann Spieler entfernen und startet das nächste Spiel. Beim Start öffnet sich das Minispiel bei allen mit derselben Variante (`?seed=…`).
+- **Einstellungen:** Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name. Gespeichert pro Rechner im Browser.
+- **Spiel beenden:** verlässt den Warteraum, stoppt die Musik und schließt das Fenster, wenn der Browser es erlaubt.
+
+### Server einrichten (für mehrere Rechner)
+
+Der Warteraum läuft über die Vercel-Funktion `api/lobby.js` mit einer Redis-Datenbank von Upstash (kostenloser Tarif reicht):
+
+1. In Vercel das Projekt öffnen → **Storage** → **Create Database** → **Upstash for Redis** → mit dem Projekt verbinden.
+2. Neu deployen. Vercel setzt `KV_REST_API_URL` und `KV_REST_API_TOKEN` automatisch.
+3. Im Menü steht oben rechts dann „Server verbunden“.
+
+Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben Browser sichtbar (zum Testen mit mehreren Tabs).
+
 ## Minispiele
 
 | Spiel | Ordner | Status |
@@ -73,7 +93,7 @@ Gegen 3–6 Bots auf einer schrumpfenden Plattform. Rollen mit WASD/Pfeiltasten,
 
 ## Technik
 
-Die neuen Spiele nutzen gemeinsame Bausteine aus [`shared/`](shared/) (`garage.css` für die Optik, `garage.js` für Canvas, Zufall, Sound und Startkarten). Scherbenwerk und Rohrleitung sind noch eigenständige Dateien.
+Gemeinsame Bausteine liegen in [`shared/`](shared/): `garage.css` (Optik), `garage.js` (Canvas, Zufall, Sound, Einstellungen, Menümusik, Seed aus der URL) und `lobby-core.js` (Logik von Räumen, Einladungen und Online-Liste, läuft auf dem Server und im Offline-Modus).
 
 ## Ideen für weitere Minispiele
 
