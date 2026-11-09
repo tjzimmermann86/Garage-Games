@@ -148,7 +148,7 @@
     const ey=opts.mood==='win'&&!keepEyes?(fem?'lashhappy':'happy'):opts.mood==='sad'&&!keepEyes?(fem?'lash':'dot'):ey0,mo=opts.mood==='win'?'grin':opts.mood==='sad'?'sad':opts.mood==='happy'&&mo0!=='grin'?'smile':mo0;
     // Mit Kopfbedeckung bleibt von der Frisur nur, was unter der Krempe hervorschaut
     const front=frontHair(style,hair);
-    const cut={1:28,2:28.5,5:29,7:24,8:26.5}[h];   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
+    const LIFT=3.5,cut={1:28,2:28.5,5:29,7:24,8:26.5}[h]-(LIFT);   // Kopfbedeckungen sitzen etwas höher, darunter schaut die Frisur heraus   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
     const frontClipped=cut?`<clipPath id="gga${k}"><rect x="0" y="${cut}" width="64" height="40"/></clipPath><g clip-path="url(#gga${k})">${front}</g>`:front;
     // Alles wird auf den Kreis zugeschnitten; die Figur ist etwas kleiner, damit auch Hüte ganz hineinpassen
     return`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}" role="img" aria-label="${fem?'Frau':'Mann'}${h?' mit '+HATS[h].name:''}" style="display:block;flex:none">
@@ -158,7 +158,7 @@
         ${cut?`<g clip-path="url(#gga${k})">${backHair(style,hair)}</g>`:backHair(style,hair)}
         ${shirtSvg(sh,bg,k)}
         <rect x="27" y="46" width="10" height="7" rx="3" fill="${SKIN[skin]}"/><rect x="27" y="46" width="10" height="3" fill="rgba(0,0,0,.12)"/>
-        <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}
+        <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?(cut?`<g transform="translate(0 ${-LIFT})">${hat(h)}</g>`:hat(h)):''}
       </g></g></svg>`;
   }
   root.Avatars={unlockName:x=>typeof x==='object'?(SHIRTS[x.shirt]||{}).name+' (Shirt)':(HATS[x]||{}).name,shirts:SHIRTS.length-1,shirtName:i=>SHIRTS[i]?SHIRTS[i].name:'Passend',shirtColor:i=>SHIRTS[i]?SHIRTS[i].c:null,count:FACES.length,hats:HATS.length-1,backgrounds:BGS,faceBg:f=>FACES[f][0],hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat=0,bg=0,shirt=0)=>face+100*hat+1000*bg+100000*shirt,svg,female:isFem};
