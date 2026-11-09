@@ -84,9 +84,15 @@ window.GG=(()=>{
   function musicStop(){clearInterval(musicTimer);musicTimer=null;if(musicGain){try{musicGain.disconnect();}catch(e){}musicGain=null;}}
   function applyVolume(){if(musicGain&&ac)musicGain.gain.setTargetAtTime(vol('music'),ac.currentTime,.05);}
 
+  /* Jede Karte im Spiel bekommt neben dem Hauptknopf „Spiel verlassen“ (zurück ins Menü bzw. in den Warteraum) */
+  function addLeave(el){
+    const b=el.querySelector('button.go');if(!b||/Warteraum/.test(b.textContent))return;
+    const row=document.createElement('div');row.className='btnrow';b.replaceWith(row);row.append(b);
+    const a=document.createElement('a');a.className='btn-leave';a.href='../';a.textContent=room?'Zum Warteraum':'Spiel verlassen';row.append(a);
+  }
   function overlay(el){
     return{
-      show(html,onGo){el.innerHTML=`<div class="card">${html}</div>`;el.hidden=false;const b=el.querySelector('button.go');if(b){b.addEventListener('click',()=>{audio();onGo&&onGo();});b.focus({preventScroll:true});}},
+      show(html,onGo){el.innerHTML=`<div class="card">${html}</div>`;el.hidden=false;addLeave(el);const b=el.querySelector('button.go');if(b){b.addEventListener('click',()=>{audio();onGo&&onGo();});b.focus({preventScroll:true});}},
       hide(){el.hidden=true;},
       get open(){return !el.hidden;}
     };
@@ -154,5 +160,5 @@ window.GG=(()=>{
 
   const rowsHtml=pairs=>`<div class="rows">${pairs.map(([a,b,cls])=>`<span${cls?` class="${cls}"`:''}>${a}</span><span${cls?` class="${cls}"`:''}>${b}</span>`).join('')}</div>`;
 
-  return{avatarImg,drawAvatar,myAvatar,myName,dark:THEME==='dark',room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
+  return{addLeave,avatarImg,drawAvatar,myAvatar,myName,dark:THEME==='dark',room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
 })();

@@ -628,7 +628,7 @@ function frame(t){
 /* ---------- overlays ---------- */
 const ov=document.getElementById('ov');
 function hideOverlay(){ov.hidden=true;}
-function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
+function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;GG.addLeave(ov);const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
 function showStart(){
   showOverlay(`
     <div class="eyebrow">Minispiel · Puzzle</div>
