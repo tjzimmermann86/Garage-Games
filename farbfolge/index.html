@@ -31,6 +31,8 @@
     <span>Ton an! Ab einer Stufe hilft nur noch das Gehör</span>
   </div>
 </div>
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
 <script src="../shared/garage.js"></script>
 <script>
 (()=>{
@@ -155,10 +157,11 @@ function showStart(){
     <button class="go" type="button">Los geht’s</button>`,begin);
 }
 function showOver(){
+  GG.report(score);
   const f=failInfo;
   ov.show(`<div class="eyebrow">Ausgeschieden · ${f.why}</div><h2>Stufe ${f.level}</h2><div class="big">${GG.num(score)}</div>
     ${GG.rowsHtml([['Geschaffte Stufen',String(f.level-1)],['Richtig wäre',PADS[f.want].name],['Aktive Zusatzregeln',[...active].map(t=>TWISTS[t].name).join(', ')||'keine'],['Dein Rekord',GG.num(best),'total']])}
-    <button class="go" type="button">Nochmal</button>`,()=>{newGame();begin();});
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal'}</button>`,GG.room?GG.backToLobby:()=>{newGame();begin();});
 }
 document.getElementById('restart').addEventListener('click',newGame);
 newGame();

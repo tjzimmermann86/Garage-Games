@@ -31,6 +31,8 @@
     <span>Was übersteht, wird abgeschnitten. Daneben = Turm fertig</span>
   </div>
 </div>
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
 <script src="../shared/garage.js"></script>
 <script>
 (()=>{
@@ -182,9 +184,10 @@ function showStart(){
     <button class="go" type="button">Los geht’s</button>`,()=>{ov.hide();state='play';cur.t0=t;});
 }
 function showOver(score){
+  GG.report(score);
   ov.show(`<div class="eyebrow">Daneben · Turm fertig</div><h2>${height} Etagen</h2><div class="big">${GG.num(score)}</div>
     ${GG.rowsHtml([['Etagen × 10',`+${height*10}`],['Perfekt × 5',`+${perfects*5}`],['Dein Rekord',`${best} Etagen`,'total']])}
-    <button class="go" type="button">Neuer Turm</button>`,()=>{newGame();ov.hide();state='play';cur.t0=t;});
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Neuer Turm'}</button>`,GG.room?GG.backToLobby:()=>{newGame();ov.hide();state='play';cur.t0=t;});
 }
 document.getElementById('restart').addEventListener('click',newGame);
 newGame();

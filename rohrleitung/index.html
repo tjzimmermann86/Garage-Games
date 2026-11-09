@@ -75,6 +75,8 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   </div>
 </div>
 
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
 <script src="../shared/garage.js"></script>
 <script>
 (()=>{
@@ -464,13 +466,14 @@ function showSummary(){
     <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
 }
 function showFinal(){
+  GG.report(total);
   const rows=results.map((r,i)=>`<span>${i+1}. ${r.name} · ${fmt(r.secs)} · ${r.mistakes} F.</span><span>${r.pts.toLocaleString('de-DE')}</span>`).join('');
   showOverlay(`
     <div class="eyebrow">Alle ${ROUNDS.length} Runden geschafft</div>
     <h2>Gesamtpunkte</h2>
     <div class="big">${total.toLocaleString('de-DE')}</div>
     <div class="rows">${rows}</div>
-    <button class="go" type="button">Nochmal mit neuen Netzen</button>`,()=>newGame());
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal mit neuen Netzen'}</button>`,GG.room?GG.backToLobby:()=>newGame());
 }
 document.getElementById('restart').addEventListener('click',()=>newGame());
 

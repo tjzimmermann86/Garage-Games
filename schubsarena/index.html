@@ -32,6 +32,8 @@
     <span>Am Handy: Finger halten zum Rollen, doppelt tippen zum Rammen</span>
   </div>
 </div>
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
 <script src="../shared/garage.js"></script>
 <script>
 (()=>{
@@ -217,9 +219,10 @@ function showSummary(){
     <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{setupRound(ri+1);begin();});
 }
 function showFinal(){
+  GG.report(total);
   ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden gespielt</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
     ${GG.rowsHtml(results.map((r,i)=>[`${i+1}. ${r.shape} · Platz ${r.place}/${r.n}`,`+${r.pts}`]))}
-    <button class="go" type="button">Nochmal</button>`,newGame);
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal'}</button>`,GG.room?GG.backToLobby:newGame);
 }
 document.getElementById('restart').addEventListener('click',newGame);
 newGame();

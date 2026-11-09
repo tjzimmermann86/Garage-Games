@@ -95,7 +95,32 @@ window.GG=(()=>{
     ctx.fillStyle=COL.ink;ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;ctx.textBaseline='alphabetic';
   }
   function loop(fn){let last=performance.now();const f=now=>{const dt=Math.min(.05,(now-last)/1000);last=now;fn(dt,now);requestAnimationFrame(f);};requestAnimationFrame(f);}
+  /* Turnier: Ergebnis an den Warteraum melden und dem Gastgeber folgen */
+  const qp=new URLSearchParams(location.search);
+  const room=qp.get('raum')&&qp.get('r')!==null?{code:qp.get('raum').toUpperCase().slice(0,4),idx:parseInt(qp.get('r'),10)}:null;
+  let reported=false;
+  function report(score){
+    if(!room||reported||!window.GGNet)return;reported=true;
+    GGNet.call({action:'result',code:room.code,idx:room.idx,score:Math.max(0,Math.round(score||0))});
+  }
+  const backToLobby=()=>{location.href='../';};
+  function notice(msg){let d=document.getElementById('ggNotice');if(!d){d=document.createElement('div');d.id='ggNotice';d.style.cssText='position:fixed;left:50%;top:16px;transform:translateX(-50%);z-index:50;background:#0a1013;border:1px solid #f0b24a;color:#ece4d4;border-radius:999px;padding:10px 18px;font:600 15px '+DISPLAY+';max-width:calc(100% - 32px)';document.body.appendChild(d);}d.textContent=msg;}
+  function watchRoom(){
+    if(!room||!window.GGNet)return;
+    const rs=document.getElementById('restart');if(rs)rs.hidden=true;
+    GGNet.remember(room.code);
+    let leaving=false;
+    setInterval(async()=>{
+      if(leaving)return;
+      const r=await GGNet.call({action:'poll',code:room.code}),rm=r&&r.room;
+      if(!r||r.error)return;
+      if(!rm||rm.kicked){leaving=true;notice('Das Turnier gibt es nicht mehr. Zurück zum Menü …');setTimeout(backToLobby,2000);return;}
+      if(rm.status!=='running'||!rm.current||rm.current.idx!==room.idx){leaving=true;notice(rm.status==='running'?'Der Gastgeber hat das nächste Spiel gestartet …':'Zurück in den Warteraum …');setTimeout(backToLobby,2000);}
+    },3000);
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',watchRoom);else setTimeout(watchRoom,0);
+
   const rowsHtml=pairs=>`<div class="rows">${pairs.map(([a,b,cls])=>`<span${cls?` class="${cls}"`:''}>${a}</span><span${cls?` class="${cls}"`:''}>${b}</span>`).join('')}</div>`;
 
-  return{settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
+  return{room,report,backToLobby,settings,saveSettings,vol,musicStart,musicStop,W,H,COL,DISPLAY,MONO,DPR,canvas,clear,local,rr,panel,label,value,text,wrap,hr,fmt,num,rng,newSeed,audio,tone,sfx,overlay,toast,drawToast,loop,rowsHtml};
 })();

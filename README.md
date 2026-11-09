@@ -6,11 +6,23 @@ Minispiel-Sammlung für die **Lübtheen Garage LAN**.
 
 Die Startseite ist das Spielmenü:
 
-- **Spiel erstellen:** Name, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl, Auswahl der Minispiele. Danach öffnet sich der Warteraum.
+- **Start:** Name und Avatar wählen (16 Gesichter über den runden Avatar-Knopf). Jeder Name ist nur einmal vergeben, ein belegter Name wird sofort angezeigt. War man vorher in einem Turnier (z. B. nach einem Absturz), erscheint **„Wieder beitreten“**.
+- **Spiel erstellen:** Name des Spiels, „Offen für alle“ oder „Nur mit Einladung“, maximale Spielerzahl.
 - **Spiel beitreten:** Liste der offenen Spiele oder Beitritt mit 4-stelligem Code. Einladungen erscheinen oben im Menü mit „Annehmen“ / „Ablehnen“.
-- **Warteraum:** Spielerliste mit Gastgeber und „Bereit“-Status, Code und Einladungslink (`?raum=CODE`), Einladen von Spielern, die gerade im Menü sind. Der Gastgeber wählt die Minispiele, kann Spieler entfernen und startet das nächste Spiel. Beim Start öffnet sich das Minispiel bei allen mit derselben Variante (`?seed=…`).
-- **Einstellungen:** Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name. Gespeichert pro Rechner im Browser.
+- **Einstellungen:** Auflösung der Spiele, Vollbild, Gesamt-, Musik- und Effektlautstärke, Name und Avatar.
 - **Spiel beenden:** verlässt den Warteraum, stoppt die Musik und schließt das Fenster, wenn der Browser es erlaubt.
+
+### Turnier im Warteraum
+
+Der Gastgeber stellt ein:
+
+| Einstellung | Möglichkeiten |
+|---|---|
+| Modus | **Abstimmung:** Jeder hat so viele Stimmen, wie Spiele gespielt werden, und verteilt sie frei (auch mehrere auf ein Spiel). Die Spiele mit den meisten Stimmen werden gespielt, bei Gleichstand entscheidet der Zufall.<br>**Gastgeber wählt:** Der Gastgeber hakt die Spiele selbst an.<br>**Zufall:** Vor jeder Runde wird ein zufälliges Spiel gezogen (nie zweimal dasselbe direkt hintereinander). |
+| Anzahl Spiele | 1–6 bei Abstimmung, 1–10 bei Zufall |
+| Wertung | **Turnier: Punkte addieren:** Die Punkte aller Spiele werden zusammengezählt.<br>**Platzwertung:** Pro Spiel 10, 8, 6, 5, 4, 3, 2, 1 Punkte nach Platz, jedes Spiel zählt gleich. |
+
+Ablauf: Warteraum → (Abstimmung) → Zwischenstand → Gastgeber startet das nächste Spiel → 3-Sekunden-Countdown bei allen → Minispiel mit derselben Variante → Ergebnis wird automatisch gemeldet → zurück zum Zwischenstand. Der Gastgeber entscheidet, wann es weitergeht. Wer noch spielt, wird beim nächsten Start mitgenommen. Am Ende zeigt das **Siegerpodest** die Plätze 1–3, die übrigen darunter, plus die Tabelle aller Ergebnisse.
 
 ### Server einrichten (für mehrere Rechner)
 
@@ -93,7 +105,7 @@ Gegen 3–6 Bots auf einer schrumpfenden Plattform. Rollen mit WASD/Pfeiltasten,
 
 ## Technik
 
-Gemeinsame Bausteine liegen in [`shared/`](shared/): `garage.css` (Optik), `garage.js` (Canvas, Zufall, Sound, Einstellungen, Menümusik, Seed aus der URL) und `lobby-core.js` (Logik von Räumen, Einladungen und Online-Liste, läuft auf dem Server und im Offline-Modus).
+Gemeinsame Bausteine liegen in [`shared/`](shared/): `garage.css` (Optik), `garage.js` (Canvas, Zufall, Sound, Einstellungen, Menümusik, Seed aus der URL) und `lobby-core.js` (Räume, Einladungen, Online-Liste, Abstimmung, Wertung; läuft auf dem Server und im Offline-Modus), `net.js` (Verbindung und Spieler-Identität) und `avatars.js` (Gesichter).
 
 ## Ideen für weitere Minispiele
 

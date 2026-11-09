@@ -31,6 +31,8 @@
     <span>Bei „Zielscheibe“ zählt nur der Klick aufs Ziel</span>
   </div>
 </div>
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
 <script src="../shared/garage.js"></script>
 <script>
 (()=>{
@@ -162,15 +164,17 @@ function showSummary(){
     <button class="go" type="button">Runde ${ri+2} starten</button>`,()=>{ri++;startRound();});
 }
 function showFinal(){
+  GG.report(total);
   const all=results.flatMap(r=>r.times);
   ov.show(`<div class="eyebrow">Alle ${ROUNDS.length} Runden ohne Fehlstart</div><h2>Gesamtpunkte</h2><div class="big">${GG.num(total)}</div>
     ${GG.rowsHtml([...results.map((r,i)=>[`${i+1}. ${nameOf(r.type)}`,`Ø ${Math.round(r.times.reduce((a,b)=>a+b.ms,0)/r.times.length)} ms`]),['Bestzeit',`${Math.min(...all.map(t=>t.ms))} ms`,'total']])}
-    <button class="go" type="button">Nochmal</button>`,()=>{newGame();});
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal'}</button>`,GG.room?GG.backToLobby:()=>{newGame();});
 }
 function showOut(){
+  GG.report(total);
   ov.show(`<div class="eyebrow">Fehlstart in Runde ${out.round} · ${TYPES[out.type].name}</div><h2>Raus!</h2><div class="big">${GG.num(total)}</div>
     <p>Du hast vor dem Signal reagiert. Deine Punkte bis hierhin zählen.</p>
-    <button class="go" type="button">Nochmal</button>`,()=>{newGame();});
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal'}</button>`,GG.room?GG.backToLobby:()=>{newGame();});
 }
 document.getElementById('restart').addEventListener('click',newGame);
 newGame();
