@@ -122,7 +122,7 @@ function draw(dt,now){
     const id=slots[k],on=lit===id&&now<litUntil,isFail=phase==='over'&&failInfo&&failInfo.want===id&&Math.floor(now/250)%2===0;
     const mid=wedge(k,RI,RO);
     ctx.save();if(on||isFail){ctx.shadowColor=PADS[id].col;ctx.shadowBlur=40;}
-    ctx.globalAlpha=on||isFail?1:(GG.dark?.32:.5);ctx.fillStyle=PADS[id].col;ctx.fill();ctx.restore();
+    ctx.globalAlpha=on||isFail?1:(GG.dark?.32:.8);ctx.fillStyle=PADS[id].col;ctx.fill();ctx.restore();
     if(on){wedge(k,RI,RO);ctx.fillStyle='rgba(255,255,255,.25)';ctx.fill();}
     const lx=CX+Math.cos(mid)*(RO-34),ly=CY+Math.sin(mid)*(RO-34);
     GG.text(ctx,String(k+1),lx,ly+6,{font:MONO,weight:600,size:16,align:'center',color:on?'#111':COL.ink});
