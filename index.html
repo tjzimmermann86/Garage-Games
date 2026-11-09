@@ -110,6 +110,10 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .hats button[aria-pressed="true"]{border-color:var(--amber)}
 .hats button.locked{cursor:default;opacity:.7;border-style:dashed}
 .hats button.locked svg{filter:grayscale(1);opacity:.7}
+.bgrow{display:flex;flex-wrap:wrap;gap:8px}
+.bgsw{appearance:none;width:36px;height:36px;border-radius:50%;border:3px solid var(--panel);background:var(--c);box-shadow:0 0 0 1px var(--lead);cursor:pointer;padding:0}
+.bgsw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--amber-ink)}
+.bgsw.auto{width:auto;border-radius:999px;padding:0 12px;font:600 .72rem var(--mono);letter-spacing:.06em;text-transform:uppercase;color:#283047}
 .avgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:8px;max-width:520px}
 .avgrid button{appearance:none;border:2px solid transparent;border-radius:50%;padding:2px;background:none;cursor:pointer;display:grid;place-items:center}
 .avgrid button[aria-pressed="true"]{border-color:var(--amber-ink)}
@@ -188,7 +192,7 @@ const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>
 const{GAMES,MODES,SCORING}=LobbyCore,gameName=id=>(GAMES.find(g=>g.id===id)||{}).name||id;
 const Net=GGNet,me=Net.me,av=(id,size=40)=>Avatars.svg(id??0,size);
 if(me.avatar==null)me.avatar=Math.floor(Math.random()*Avatars.count);
-{const a=Avatars.split(me.avatar);if(!GGProgress.unlocked(a.hat))me.avatar=a.face;}   // gesperrte Kopfbedeckung wieder abnehmen
+{const a=Avatars.split(me.avatar);if(!GGProgress.unlocked(a.hat))me.avatar=Avatars.make(a.face,0,a.bg);}   // gesperrte Kopfbedeckung wieder abnehmen
 
 const S={
   code:Net.ss.get('gg-room'),room:null,online:[],rooms:[],invites:[],screen:'menu',invited:{},
@@ -293,12 +297,14 @@ function refresh(){
   if(S.screen==='lobby'&&S.room)lobbyLive();
 }
 function pickerInner(){
-  const{face,hat}=Avatars.split(me.avatar),st=GGProgress.status(),open=st.filter(x=>x.open).length;
+  const{face,hat,bg}=Avatars.split(me.avatar),st=GGProgress.status(),open=st.filter(x=>x.open).length;
   const faces=Array.from({length:Avatars.count},(_,k)=>k);
   const card=h=>{const u=st.find(x=>x.hat===h),lock=h&&!u.open;
-    return`<button type="button" class="hat${lock?' locked':''}" data-hat="${h}" aria-pressed="${h===hat}"${lock?' disabled':''}>${av(Avatars.make(face,h),44)}
+    return`<button type="button" class="hat${lock?' locked':''}" data-hat="${h}" aria-pressed="${h===hat}"${lock?' disabled':''}>${av(Avatars.make(face,h,bg),44)}
       <span><strong>${Avatars.hatName(h)}</strong>${lock?`<small>${esc(u.text)} · ${u.have}/${u.need}</small>`:h?'<small>freigespielt</small>':'<small>keine</small>'}</span></button>`;};
-  return`<div class="label">Gesicht</div><div class="avgrid">${faces.map(k=>`<button type="button" data-face="${k}" aria-pressed="${k===face}" aria-label="${Avatars.female(k)?'Frau':'Mann'} ${k+1}">${av(Avatars.make(k,hat),48)}</button>`).join('')}</div>
+  const bgs=Avatars.backgrounds;
+  return`<div class="label">Gesicht · ${Avatars.count} Charaktere</div><div class="avgrid">${faces.map(k=>`<button type="button" data-face="${k}" aria-pressed="${k===face}" aria-label="${Avatars.female(k)?'Frau':'Mann'} ${k+1}">${av(Avatars.make(k,hat,bg),48)}</button>`).join('')}</div>
+    <div class="label">Hintergrund</div><div class="bgrow"><button type="button" class="bgsw auto" data-bg="0" aria-pressed="${bg===0}" title="Passend zum Gesicht" style="--c:${Avatars.faceBg(face)}"><span>passend</span></button>${bgs.map((c,i)=>`<button type="button" class="bgsw" data-bg="${i+1}" aria-pressed="${bg===i+1}" aria-label="Hintergrund ${i+1}" style="--c:${c}"></button>`).join('')}</div>
     <div class="label">Kopfbedeckung · ${open} von ${Avatars.hats} freigespielt</div><div class="hats">${Array.from({length:Avatars.hats+1},(_,h)=>card(h)).join('')}</div>`;
 }
 function avatarPicker(id){return`<div class="avpick" id="${id}" role="group" aria-label="Avatar wählen" hidden>${pickerInner()}</div>`;}
@@ -306,8 +312,8 @@ function bindPicker(btnId,gridId,onPick){
   const b=$('#'+btnId),g=$('#'+gridId);
   b.addEventListener('click',()=>{g.hidden=!g.hidden;b.setAttribute('aria-expanded',String(!g.hidden));});
   g.addEventListener('click',e=>{
-    const f=e.target.closest('[data-face]'),h=e.target.closest('[data-hat]');if(!f&&!(h&&!h.disabled))return;
-    const cur=Avatars.split(me.avatar);me.avatar=Avatars.make(f?+f.dataset.face:cur.face,h?+h.dataset.hat:cur.hat);
+    const f=e.target.closest('[data-face]'),h=e.target.closest('[data-hat]'),c=e.target.closest('[data-bg]');if(!f&&!c&&!(h&&!h.disabled))return;
+    const cur=Avatars.split(me.avatar);me.avatar=Avatars.make(f?+f.dataset.face:cur.face,h?+h.dataset.hat:cur.hat,c?+c.dataset.bg:cur.bg);
     b.innerHTML=av(me.avatar,72);g.innerHTML=pickerInner();updateNav();onPick&&onPick();});
 }
 

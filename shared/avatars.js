@@ -1,9 +1,9 @@
-/* Avatare der Garage Games: 20 Gesichter (10 Männer, 10 Frauen) als SVG und 8 freischaltbare Kopfbedeckungen.
-   Eine Avatar-Nummer enthält beides: Gesicht + 100 × Kopfbedeckung (0 = ohne). */
+/* Avatare der Garage Games: 30 Charaktere (15 Männer, 15 Frauen) als SVG, 8 freischaltbare Kopfbedeckungen, 12 Hintergründe.
+   Eine Avatar-Nummer enthält alles: Gesicht + 100 × Kopfbedeckung (0 = ohne) + 1000 × Hintergrund (0 = passend zum Gesicht). */
 (function(root){
   const SKIN=['#f2c9a0','#e0a878','#b9784b','#8a5a3a','#ffdcb8'];
   const HAIR=['#2b1d14','#6b4423','#c98b3a','#1b1b1b','#9aa1a6','#c0392b'];
-  // Hintergrund, Haut, Frisur, Haarfarbe, Augen, Mund, Extra
+  // Hintergrund, Haut, Frisur, Haarfarbe, Augen, Mund, Extra (Nr. 0–9 und 20–24 Männer, 10–19 und 25–29 Frauen)
   const FACES=[
     ['#ffcf7a',0,'short',0,'dot','smile','none'],
     ['#ffa3ab',1,'curly',0,'happy','grin','none'],
@@ -25,7 +25,19 @@
     ['#b8c2cc',1,'bob',3,'sun','smile','earring'],
     ['#f7b98a',3,'ponytail',2,'lash','smile','blush'],
     ['#a7e3f0',2,'bun',0,'glasses','grin','earring'],
+    ['#f7d6a0',2,'spiky',0,'dot','grin','none'],
+    ['#bfe3c9',1,'curly',3,'sun','smile','beard'],
+    ['#d6c8ff',4,'side',3,'glasses','o','none'],
+    ['#ffc9b0',3,'short',1,'happy','smile','mustache'],
+    ['#c4e3f7',0,'spiky',5,'wink','grin','freckles'],
+    ['#ffd1e8',2,'wavy',1,'lash','smile','earring'],
+    ['#d9f0b5',0,'pixie',2,'lashhappy','grin','freckles'],
+    ['#ffe2a8',3,'wavy',3,'lashwink','tongue','earring'],
+    ['#c8d7ff',1,'pixie',0,'glasses','smile','blush'],
+    ['#bfeee4',4,'afro',1,'lash','grin','none'],
   ];
+  const BGS=['#ffcf7a','#ffa3ab','#8fdcc8','#9fcdf6','#c9b8ff','#cde98e','#f7b98a','#b8c2cc','#ffb5c9','#a7e3f0','#e7c6f5','#283047'];
+  const isFem=f=>(f>=10&&f<20)||f>=25;
   const HATS=[
     null,
     {name:'Mütze',      color:'#e5626b'},
@@ -43,6 +55,7 @@
 
   function backHair(style,c){
     if(style==='long')return`<path d="M13 34Q12 13 32 12Q52 13 51 34L53 54Q32 59 11 54Z" fill="${c}"/>`;
+    if(style==='wavy')return`<path d="M13 34Q11 13 32 12Q53 13 51 34Q56 40 51 46Q56 52 49 56Q32 61 15 56Q8 52 13 46Q8 40 13 34Z" fill="${c}"/>`;
     if(style==='bob')return`<path d="M13 34Q12 13 32 12Q52 13 51 34L51 45Q46 48 41 45L23 45Q18 48 13 45Z" fill="${c}"/>`;
     if(style==='afro')return`<circle cx="32" cy="29" r="23" fill="${c}"/>`;
     if(style==='ponytail')return`<path d="M44 22Q60 24 55 46Q52 40 47 36Z" fill="${c}"/>`;
@@ -51,6 +64,9 @@
   }
   function frontHair(style,c){
     if(style==='short')return`<path d="M15 31Q16 15 32 15Q48 15 49 31Q44 22 32 22Q20 22 15 31Z" fill="${c}"/>`;
+    if(style==='spiky')return`<path d="M15 30L15.5 20L20 23L21.5 14.5L26.5 19.5L30 11.5L34 18.5L38.5 12.5L41 19.5L45.5 15.5L46.5 22.5L49 21.5L49 30Q44 22 32 22Q20 22 15 30Z" fill="${c}"/>`;
+    if(style==='pixie')return`<path d="M15 31Q14 15 32 14Q50 15 49 28Q45 20 35 23.5Q27 26 21 23.5Q16.5 26 15 31Z" fill="${c}"/>`;
+    if(style==='wavy')return`<path d="M15 32Q15 15 32 15Q49 15 49 32Q47 22 38 21Q31 25 23 22Q17 25 15 32Z" fill="${c}"/>`;
     if(style==='buzz')return dome(17.3,25,c,' opacity=".85"');
     if(style==='curly')return`<g fill="${c}">${[[18,26],[21,20],[27,16.5],[34,16],[40,18.5],[45,23],[47,28]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="5.4"/>`).join('')}</g>`;
     if(style==='side')return`<path d="M15 31Q14 16 31 14.5Q48 14.5 49 29Q41 19 25 22Q18 25 15 31Z" fill="${c}"/>`;
@@ -107,9 +123,9 @@
   // Farbe aufhellen (+) oder abdunkeln (−), für das T-Shirt passend zum Hintergrund
   function shade(hex,amt){const n=parseInt(hex.slice(1),16),f=c=>Math.round(amt<0?c*(1+amt):c+(255-c)*amt);return`rgb(${f(n>>16)},${f(n>>8&255)},${f(n&255)})`;}
   let uid=0;
-  const split=id=>{id=Math.max(0,id|0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%HATS.length};};
+  const split=id=>{id=Math.max(0,id|0);return{face:id%100%FACES.length,hat:Math.floor(id/100)%10%HATS.length,bg:Math.floor(id/1000)%(BGS.length+1)};};
   function svg(id,size=48){
-    const{face,hat:h}=split(id),[bg,skin,style,hc,ey,mo,ex]=FACES[face],hair=HAIR[hc],fem=face>=10,k=++uid;
+    const{face,hat:h,bg:b}=split(id),[faceBg,skin,style,hc,ey,mo,ex]=FACES[face],bg=b?BGS[b-1]:faceBg,hair=HAIR[hc],fem=isFem(face),k=++uid;
     // Mit Kopfbedeckung bleibt von der Frisur nur, was unter der Krempe hervorschaut
     const front=frontHair(style,hair);
     const cut={1:28,2:28.5,5:29,7:24,8:26.5}[h];   // Stirnband, Kopfhörer und Partyhut sitzen auf den Haaren
@@ -125,5 +141,5 @@
         <circle cx="${CX}" cy="${CY}" r="${HR}" fill="${SKIN[skin]}"/>${extra(ex,hair)}${frontClipped}${eyes(ey)}${mouth(mo,fem)}${h?hat(h):''}
       </g></g></svg>`;
   }
-  root.Avatars={count:FACES.length,hats:HATS.length-1,hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat)=>face+100*hat,svg,female:f=>f>=10};
+  root.Avatars={count:FACES.length,hats:HATS.length-1,backgrounds:BGS,faceBg:f=>FACES[f][0],hatName:h=>HATS[h]?HATS[h].name:'Ohne',split,make:(face,hat=0,bg=0)=>face+100*hat+1000*bg,svg,female:isFem};
 })(window);
