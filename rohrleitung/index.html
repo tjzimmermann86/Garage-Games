@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rohrleitung</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: wie Scherbenwerk – Werkbank-Bühne, Rohrnetz in der Mitte, Anleitung links, Anzeigen und Wasser-Knopf rechts */
+:root{
+  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --board:#0a1013; --lead:#33424a;
+  --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --rose:#e5626b; --sea:#5fc3b0;
+  --water:#4aa8ec; --water-hi:#9fd6ff; --steel:#a3b1b5; --steel-dark:#4e5d63; --plate:#1c2830; --plate-lock:#25333c;
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
+h1{font-size:1.7rem;font-weight:800;margin:0;letter-spacing:-.015em}
+h1 em{font-style:normal;color:var(--water)}
+.sub{color:var(--muted);font-size:.92rem}
+.sub a{color:var(--muted)}
+.actions{display:flex;gap:8px}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px rgba(0,0,0,.35)}
+canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
+.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:rgba(10,15,18,.72);backdrop-filter:blur(5px);overflow:auto;padding:12px}
+.card{width:min(470px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--water)}
+.card h2{margin:0;font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
+.card p{margin:0;color:var(--muted);line-height:1.5}
+.card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;line-height:1.45}
+.rows{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-variant-numeric:tabular-nums}
+.rows span:nth-child(even){font-family:var(--mono);text-align:right}
+.rows .total{border-top:1px solid var(--lead);padding-top:8px;font-weight:600}
+.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+.next{background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:10px 12px;font-size:.95rem;line-height:1.4}
+button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
+button.go:hover{filter:brightness(1.08)}
+button.go:focus-visible,button.ghost:focus-visible,a.ghost:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+button.ghost,a.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer;text-decoration:none}
+.keys{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.88rem}
+kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);background:var(--panel)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Rohr<em>leitung</em></h1>
+      <div class="sub">Minispiel der Garage Games · 5 Runden</div>
+    </div>
+    <div class="actions">
+      <a class="ghost" href="../">Alle Spiele</a>
+      <button class="ghost" id="restart" type="button">Neu starten</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <canvas id="cv" aria-label="Rohrnetz-Spielfeld"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+
+  <div class="keys">
+    <span><kbd>Klick</kbd> <kbd>Mausrad</kbd> Rohr drehen</span>
+    <span><kbd>Rechtsklick</kbd> andersrum drehen</span>
+    <span><kbd>F</kbd> <kbd>Mittelklick</kbd> <kbd>lange drücken</kbd> Rohr festschrauben</span>
+    <span><kbd>Leertaste</kbd> Wasser marsch (ab Runde 4)</span>
+  </div>
+</div>
+
+<script>
+(()=>{
+const W=1280,H=720,BX=340,BY=100,BS=600;
+const css=getComputedStyle(document.documentElement),C=k=>css.getPropertyValue(k).trim();
+const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),water:C('--water'),waterHi:C('--water-hi'),steel:C('--steel'),steelDark:C('--steel-dark'),plate:C('--plate'),plateLock:C('--plate-lock')};
+const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const DPR=Math.min(2,window.devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;
+
+const ROUNDS=[
+  {n:5,name:'Gartenschlauch',leaks:true, hidden:false,intro:'Wasser und Lecks werden live angezeigt.'},
+  {n:6,name:'Waschanlage',   leaks:true, hidden:false,intro:'Größeres Netz, Anzeige wie bisher.'},
+  {n:7,name:'Kühlkreislauf', leaks:false,hidden:false,intro:'Ab jetzt keine Leck-Markierung mehr. Das Wasser siehst du noch.'},
+  {n:7,name:'Hydraulik',     leaks:false,hidden:true, intro:'Neu: Das Wasser bleibt unsichtbar. Mit „Wasser marsch“ (Leertaste) prüfst du dein Netz. Jeder Fehlversuch kostet einen Fehler.'},
+  {n:8,name:'Hauptleitung',  leaks:false,hidden:true, intro:'Finale: 8 × 8, Wasser nur auf Knopfdruck.'},
+];
+const DX=[0,1,0,-1],DY=[-1,0,1,0];
+const BTN={x:980,y:612,w:268,h:72};
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const bits=m=>(m&1)+(m>>1&1)+(m>>2&1)+(m>>3&1);
+const rotMask=(m,r)=>{r=((r%4)+4)%4;let o=0;for(let d=0;d<4;d++)if(m>>d&1)o|=1<<((d+r)&3);return o;};
+
+/* ---------- Netz erzeugen: zufälliger Spannbaum (Prim), Pumpe in der Mitte ---------- */
+function genTree(n,rnd){
+  const N=n*n,mask=new Array(N).fill(0),inT=new Array(N).fill(false);
+  const c=Math.floor(n/2)*n+Math.floor(n/2);inT[c]=true;let cnt=1;const fr=[];
+  const push=i=>{const x=i%n,y=(i/n)|0;for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=n||ny>=n)continue;const j=ny*n+nx;if(!inT[j])fr.push([i,d,j]);}};
+  push(c);
+  while(cnt<N){
+    const k=Math.floor(rnd()*fr.length),[i,d,j]=fr[k];
+    if(inT[j]){fr[k]=fr[fr.length-1];fr.pop();continue;}
+    if(bits(mask[i])>=3&&rnd()<0.85)continue; // Kreuzungen selten halten
+    fr[k]=fr[fr.length-1];fr.pop();
+    mask[i]|=1<<d;mask[j]|=1<<((d+2)&3);inT[j]=true;cnt++;push(j);
+  }
+  return{mask,src:c};
+}
+
+/* ---------- Spielzustand ---------- */
+let baseSeed,roundIdx=0,round=ROUNDS[0],n=5,cs=120,tiles=[],src=0,F=null;
+let playing=false,t0=0,endSecs=0,mistakes=0,total=0,results=[],check=null,wonAt=0,hover=-1,toastMsg='',toastT=0;
+
+function flow(){
+  const N=n*n,lit=new Uint8Array(N),depth=new Int16Array(N).fill(-1),q=[src],leaks=[];
+  lit[src]=1;depth[src]=0;
+  for(let h=0;h<q.length;h++){
+    const i=q[h],m=rotMask(tiles[i].base,tiles[i].rotT),x=i%n,y=(i/n)|0;
+    for(let d=0;d<4;d++){
+      if(!(m>>d&1))continue;
+      const nx=x+DX[d],ny=y+DY[d];
+      if(nx<0||ny<0||nx>=n||ny>=n){leaks.push([i,d]);continue;}
+      const j=ny*n+nx;
+      if(!(rotMask(tiles[j].base,tiles[j].rotT)>>((d+2)&3)&1)){leaks.push([i,d]);continue;}
+      if(!lit[j]){lit[j]=1;depth[j]=depth[i]+1;q.push(j);}
+    }
+  }
+  let litN=0,ends=0,endsLit=0,maxD=0;
+  for(let i=0;i<N;i++){litN+=lit[i];maxD=Math.max(maxD,depth[i]);if(i!==src&&bits(tiles[i].base)===1){ends++;if(lit[i])endsLit++;}}
+  return{lit,depth,leaks,maxD,ends,endsLit,solved:litN===N&&leaks.length===0};
+}
+
+function newGame(){baseSeed=Math.floor(Math.random()*1e9);total=0;results=[];setupRound(0);showStart();}
+function setupRound(i){
+  roundIdx=i;round=ROUNDS[i];n=round.n;cs=BS/n;
+  const rnd=mulberry32((baseSeed+i*7919)>>>0);
+  const{mask,src:s}=genTree(n,rnd);src=s;
+  tiles=mask.map(m=>{const r=Math.floor(rnd()*4);return{base:m,rotT:r,ang:r*Math.PI/2,locked:false,wet:0,shake:0};});
+  F=flow();
+  let guard=0;while(F.solved&&guard++<20){tiles.forEach(t=>{t.rotT+=1+Math.floor(rnd()*3);t.ang=t.rotT*Math.PI/2;});F=flow();}
+  tiles.forEach((t,k)=>t.wet=(!round.hidden&&F.lit[k])?1:0);
+  mistakes=0;endSecs=0;playing=false;check=null;wonAt=0;hover=-1;
+}
+function begin(){hideOverlay();playing=true;t0=performance.now();}
+const secsNow=()=>playing?(performance.now()-t0)/1000:endSecs;
+
+function afterChange(){
+  F=flow();
+  if(!round.hidden&&F.solved)win();
+}
+function rotate(i,dir){
+  if(!playing||check||i<0)return;
+  const t=tiles[i];
+  if(t.locked){t.shake=1;toast('Festgeschraubt – mit F oder Mittelklick lösen');return;}
+  t.rotT+=dir;sfx('tick');afterChange();
+}
+function toggleLock(i){if(!playing||check||i<0)return;tiles[i].locked=!tiles[i].locked;sfx('lock');}
+function waterCheck(){
+  if(!playing||check||!round.hidden)return;
+  const f=flow(),dur=f.maxD*0.07+0.9;
+  check={t0:performance.now(),F:f,dur};sfx('flow');
+  setTimeout(()=>{
+    if(f.solved){check=null;win();return;}
+    mistakes++;sfx('err');toast(`Undicht: ${f.leaks.length} ${f.leaks.length===1?'Leck':'Lecks'} · 1 Fehler`);
+    setTimeout(()=>{check=null;},900);
+  },dur*1000);
+}
+function win(){
+  playing=false;endSecs=(performance.now()-t0)/1000;wonAt=performance.now();sfx('win');
+  const N=n*n,par=Math.round(N*(round.hidden?3.5:2.5)),base=N*4,pen=mistakes*25,bonus=Math.max(0,Math.round((par-endSecs)*3));
+  const pts=Math.max(0,base-pen+bonus);total+=pts;
+  results.push({name:round.name,n,secs:endSecs,mistakes,base,pen,bonus,par,pts});
+  setTimeout(showSummary,1500);
+}
+function toast(m){toastMsg=m;toastT=2.4;}
+
+/* ---------- Sound ---------- */
+let ac=null;
+function sfx(type){
+  try{
+    ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    if(type==='tick'){o.type='square';o.frequency.setValueAtTime(420,t);g.gain.setValueAtTime(.025,t);g.gain.exponentialRampToValueAtTime(.001,t+.05);}
+    else if(type==='lock'){o.type='triangle';o.frequency.setValueAtTime(700,t);o.frequency.exponentialRampToValueAtTime(300,t+.08);g.gain.setValueAtTime(.08,t);g.gain.exponentialRampToValueAtTime(.001,t+.12);}
+    else if(type==='flow'){o.type='sine';o.frequency.setValueAtTime(180,t);o.frequency.exponentialRampToValueAtTime(420,t+.6);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.7);}
+    else if(type==='err'){o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(120,t+.22);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.28);}
+    else{o.type='sine';o.frequency.setValueAtTime(880,t);o.frequency.setValueAtTime(1320,t+.1);o.frequency.setValueAtTime(1760,t+.2);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);}
+    o.start(t);o.stop(t+.8);
+  }catch(e){}
+}
+
+/* ---------- Eingabe ---------- */
+function toLocal(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+function tileAt(p){if(p.x<BX||p.y<BY||p.x>=BX+BS||p.y>=BY+BS)return -1;return Math.floor((p.y-BY)/cs)*n+Math.floor((p.x-BX)/cs);}
+const inBtn=p=>p.x>=BTN.x&&p.x<=BTN.x+BTN.w&&p.y>=BTN.y&&p.y<=BTN.y+BTN.h;
+let press=null,lastWheel=0;
+cv.addEventListener('pointerdown',e=>{
+  if(!playing)return;
+  const p=toLocal(e);
+  if(round.hidden&&inBtn(p)&&e.button===0){waterCheck();return;}
+  const i=tileAt(p);if(i<0)return;
+  e.preventDefault();
+  press={i,btn:e.button,id:e.pointerId,done:false};
+  if(e.pointerType!=='mouse'){const pr=press;pr.timer=setTimeout(()=>{if(press===pr){pr.done=true;toggleLock(pr.i);}},450);}
+});
+cv.addEventListener('pointermove',e=>{
+  const p=toLocal(e),i=tileAt(p);
+  if(press&&press.id===e.pointerId&&i!==press.i){clearTimeout(press.timer);press=null;}
+  hover=playing?i:-1;
+  cv.style.cursor=playing&&(i>=0||(round.hidden&&inBtn(p)))?'pointer':'default';
+});
+cv.addEventListener('pointerleave',()=>{hover=-1;});
+cv.addEventListener('pointerup',e=>{
+  if(!press||press.id!==e.pointerId)return;
+  const pr=press;press=null;clearTimeout(pr.timer);
+  if(pr.done)return;
+  if(pr.btn===1)toggleLock(pr.i);else if(pr.btn===2)rotate(pr.i,-1);else rotate(pr.i,1);
+});
+cv.addEventListener('pointercancel',()=>{if(press){clearTimeout(press.timer);press=null;}});
+cv.addEventListener('auxclick',e=>e.preventDefault());
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{
+  if(!playing)return;const i=tileAt(toLocal(e));if(i<0)return;e.preventDefault();
+  const now=performance.now();if(now-lastWheel<110)return;lastWheel=now;rotate(i,e.deltaY>0?1:-1);
+},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(!playing)return;
+  if(e.key==='f'||e.key==='F')toggleLock(hover);
+  else if(e.key==='r'||e.key==='R')rotate(hover,1);
+  else if(e.key===' '||e.code==='Space'){if(round.hidden){e.preventDefault();waterCheck();}}
+});
+
+/* ---------- Zeichnen ---------- */
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+const fmt=s=>{s=Math.floor(s);return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+function wrapText(txt,x,y,maxW,lh){const words=txt.split(' ');let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){ctx.fillText(line,x,y);y+=lh;line=w;}else line=t;}if(line){ctx.fillText(line,x,y);y+=lh;}return y;}
+function screw(x,y,r){ctx.fillStyle=COL.steel;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();ctx.strokeStyle=COL.steelDark;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x-r*.6,y-r*.6);ctx.lineTo(x+r*.6,y+r*.6);ctx.stroke();}
+
+function wetness(i,now){
+  if(wonAt)return 1;
+  if(check){const el=(now-check.t0)/1000;return check.F.lit[i]&&el>check.F.depth[i]*0.07?1:0;}
+  return round.hidden?0:tiles[i].wet;
+}
+function drawTile(i,now){
+  const t=tiles[i],x=BX+(i%n)*cs,y=BY+((i/n)|0)*cs,cx=x+cs/2,cy=y+cs/2;
+  const sh=t.shake>0?Math.sin(t.shake*40)*3*t.shake:0;
+  ctx.fillStyle=t.locked?COL.plateLock:COL.plate;ctx.fillRect(x+1.5,y+1.5,cs-3,cs-3);
+  if(t.locked){const o=cs*.11,r=Math.max(2.5,cs*.035);screw(x+o,y+o,r);screw(x+cs-o,y+o,r);screw(x+o,y+cs-o,r);screw(x+cs-o,y+cs-o,r);}
+  const pw=cs*.27,L=cs/2,wet=wetness(i,now),isEnd=i!==src&&bits(t.base)===1;
+  ctx.save();ctx.translate(cx+sh,cy);ctx.rotate(t.ang);
+  const arms=g=>{for(let d=0;d<4;d++)if(t.base>>d&1){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(DX[d]*L,DY[d]*L);ctx.stroke();}};
+  ctx.lineCap='butt';
+  ctx.strokeStyle=COL.steelDark;ctx.lineWidth=pw+5;arms();
+  ctx.fillStyle=COL.steelDark;ctx.beginPath();ctx.arc(0,0,(pw+5)/2*1.15,0,7);ctx.fill();
+  ctx.strokeStyle=COL.steel;ctx.lineWidth=pw;arms();
+  ctx.fillStyle=COL.steel;ctx.beginPath();ctx.arc(0,0,pw/2*1.15,0,7);ctx.fill();
+  // Flansche am Rand
+  ctx.fillStyle=COL.steelDark;
+  for(let d=0;d<4;d++)if(t.base>>d&1){ctx.save();ctx.rotate(d*Math.PI/2);ctx.fillRect(-pw*.72,-L,pw*1.44,Math.max(3,cs*.05));ctx.restore();}
+  // Wasser
+  ctx.strokeStyle=COL.board;ctx.lineWidth=pw*.46;arms();
+  if(wet>0){ctx.globalAlpha=wet;ctx.strokeStyle=COL.water;ctx.lineWidth=pw*.46;arms();ctx.globalAlpha=1;}
+  ctx.restore();
+  if(i===src){
+    const s=cs*.6;rr(cx-s/2,cy-s/2,s,s,s*.18);ctx.fillStyle=COL.amber;ctx.fill();ctx.strokeStyle='#7a5413';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(cx,cy,s*.32,0,7);ctx.fill();
+    const a=-Math.PI*.75+(F.ends?F.endsLit/F.ends:0)*Math.PI*1.5*(round.hidden&&!wonAt?0:1)+Math.sin(now/300)*.04;
+    ctx.strokeStyle=COL.rose;ctx.lineWidth=2.2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(a-Math.PI/2)*s*.26,cy+Math.sin(a-Math.PI/2)*s*.26);ctx.stroke();
+    ctx.fillStyle=COL.ink;ctx.beginPath();ctx.arc(cx,cy,2.5,0,7);ctx.fill();
+  }else if(isEnd){
+    const r=cs*.2;ctx.fillStyle=COL.steelDark;ctx.beginPath();ctx.arc(cx,cy,r+3,0,7);ctx.fill();
+    ctx.fillStyle=wet>0?COL.water:COL.board;ctx.beginPath();ctx.arc(cx,cy,r,0,7);ctx.fill();
+    if(wet>0){ctx.globalAlpha=wet;ctx.fillStyle=COL.waterHi;ctx.beginPath();ctx.arc(cx-r*.3,cy-r*.3,r*.3,0,7);ctx.fill();ctx.globalAlpha=1;}
+  }
+  if(i===hover&&playing&&!check){ctx.strokeStyle=COL.amber;ctx.lineWidth=2;ctx.strokeRect(x+2.5,y+2.5,cs-5,cs-5);}
+}
+function drawLeaks(list,now){
+  const pulse=.6+.4*Math.sin(now/160);
+  for(const[i,d]of list){
+    const cx=BX+(i%n)*cs+cs/2+DX[d]*cs*.5,cy=BY+((i/n)|0)*cs+cs/2+DY[d]*cs*.5,r=Math.max(5,cs*.09);
+    ctx.globalAlpha=pulse;ctx.fillStyle=COL.rose;
+    ctx.beginPath();ctx.arc(cx,cy+r*.3,r,0,Math.PI);ctx.lineTo(cx,cy-r*1.4);ctx.closePath();ctx.fill();
+    ctx.globalAlpha=1;
+  }
+}
+function panel(x,y,w,h){rr(x,y,w,h,12);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=1;ctx.stroke();}
+function label(t,x,y,align='left'){ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign=align;ctx.textBaseline='alphabetic';ctx.fillText(t,x,y);}
+
+function draw(now){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);
+
+  // Kopfzeile
+  ctx.textBaseline='alphabetic';ctx.textAlign='left';
+  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.water;ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,BX,44);
+  ctx.font=`800 34px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(round.name,BX,82);
+  const tw=ctx.measureText(round.name).width;ctx.font=`500 15px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText(`${n} × ${n}`,BX+tw+14,82);
+  ctx.textAlign='right';label('ZEIT',BX+BS,44,'right');
+  ctx.font=`600 34px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(fmt(secsNow()),BX+BS,82);
+
+  // Brett
+  ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;ctx.fillStyle=COL.board;ctx.fillRect(BX,BY,BS,BS);ctx.restore();
+  for(let i=0;i<n*n;i++)drawTile(i,now);
+  ctx.strokeStyle=COL.lead;ctx.lineWidth=6;ctx.strokeRect(BX-3,BY-3,BS+6,BS+6);
+  if(playing&&round.leaks&&!check)drawLeaks(F.leaks,now);
+  if(check&&(now-check.t0)/1000>check.dur)drawLeaks(check.F.leaks,now);
+
+  // Linke Tafel: Anleitung
+  panel(16,100,300,600);
+  label('SO GEHT’S',36,132);
+  ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';
+  let y=160;
+  y=wrapText('Dreh die Rohre so, dass das Wasser von der Pumpe in der Mitte jeden Hahn erreicht.',36,y,260,21)+8;
+  y=wrapText('Fertig ist das Netz, wenn alle Rohre verbunden sind und nirgends Wasser austritt.',36,y,260,21)+16;
+  ctx.strokeStyle=COL.edge;ctx.beginPath();ctx.moveTo(36,y-8);ctx.lineTo(296,y-8);ctx.stroke();y+=14;
+  const legend=[['pump','Pumpe'],['tap','Hahn'],['lock','Festgeschraubt'],['leak','Leck']];
+  for(const[k,txt]of legend){
+    const ix=52,iy=y-5;
+    if(k==='pump'){rr(ix-11,iy-11,22,22,4);ctx.fillStyle=COL.amber;ctx.fill();ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(ix,iy,6,0,7);ctx.fill();}
+    else if(k==='tap'){ctx.fillStyle=COL.steelDark;ctx.beginPath();ctx.arc(ix,iy,10,0,7);ctx.fill();ctx.fillStyle=COL.water;ctx.beginPath();ctx.arc(ix,iy,7.5,0,7);ctx.fill();}
+    else if(k==='lock'){ctx.fillStyle=COL.plateLock;ctx.fillRect(ix-12,iy-12,24,24);screw(ix-7,iy-7,3);screw(ix+7,iy+7,3);screw(ix+7,iy-7,3);screw(ix-7,iy+7,3);}
+    else{ctx.fillStyle=COL.rose;ctx.beginPath();ctx.arc(ix,iy+2,6,0,Math.PI);ctx.lineTo(ix,iy-9);ctx.closePath();ctx.fill();}
+    ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.fillText(txt,76,y);y+=34;
+  }
+  y+=4;ctx.strokeStyle=COL.edge;ctx.beginPath();ctx.moveTo(36,y-8);ctx.lineTo(296,y-8);ctx.stroke();y+=18;
+  label('DIESE RUNDE',36,y);y+=26;
+  const flags=[['Leck-Anzeige',round.leaks?'an':'aus',round.leaks],['Wasser',round.hidden?'auf Knopfdruck':'live',!round.hidden]];
+  for(const[a,b,on]of flags){ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';ctx.fillText(a,36,y);ctx.font=`600 14px ${MONO}`;ctx.fillStyle=on?COL.sea:COL.amber;ctx.textAlign='right';ctx.fillText(b,296,y);y+=26;}
+
+  // Rechte Tafel: Anzeigen
+  panel(964,100,300,600);
+  label('PUNKTE',984,132);ctx.font=`600 30px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.fillText(total.toLocaleString('de-DE'),984,168);
+  label('FEHLVERSUCHE',984,212);ctx.font=`600 30px ${MONO}`;ctx.fillStyle=mistakes?COL.rose:COL.ink;ctx.fillText(String(mistakes),984,248);
+  label('HÄHNE MIT WASSER',984,292);
+  const showProg=!round.hidden||wonAt;
+  ctx.font=`600 30px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(showProg?`${F.endsLit} / ${F.ends}`:`? / ${F.ends}`,984,328);
+  rr(984,342,260,8,4);ctx.fillStyle=COL.board;ctx.fill();
+  if(showProg&&F.ends){rr(984,342,260*F.endsLit/F.ends,8,4);ctx.fillStyle=COL.water;ctx.fill();}
+  label('FESTGESCHRAUBT',984,394);ctx.font=`600 30px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(`${tiles.filter(t=>t.locked).length}`,984,430);
+
+  if(round.hidden){
+    const busy=!!check,hov=!busy&&playing&&hover<0;
+    rr(BTN.x,BTN.y,BTN.w,BTN.h,12);ctx.fillStyle=busy?COL.board:COL.water;ctx.fill();
+    ctx.font=`800 22px ${DISPLAY}`;ctx.fillStyle=busy?COL.muted:'#06223a';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(busy?'Wasser läuft …':'Wasser marsch',BTN.x+BTN.w/2,BTN.y+BTN.h/2-7);
+    ctx.font=`500 12px ${MONO}`;ctx.fillText(busy?'':'LEERTASTE · Fehlversuch = 1 Fehler',BTN.x+BTN.w/2,BTN.y+BTN.h/2+16);
+    ctx.textBaseline='alphabetic';
+  }else{
+    ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';
+    wrapText('Das Wasser fließt automatisch. Die Runde endet, sobald das Netz dicht ist.',984,640,260,21);
+  }
+
+  // Hinweis
+  if(toastT>0){
+    ctx.globalAlpha=Math.min(1,toastT*2);ctx.font=`600 16px ${DISPLAY}`;ctx.textAlign='center';ctx.textBaseline='middle';
+    const w=ctx.measureText(toastMsg).width+36,cx=BX+BS/2,cy=BY+BS-34;
+    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle='rgba(10,16,19,.92)';ctx.fill();ctx.strokeStyle=COL.amber;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=COL.ink;ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;ctx.textBaseline='alphabetic';
+  }
+}
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const k=Math.min(1,dt*18);
+  for(let i=0;i<tiles.length;i++){
+    const t=tiles[i];t.ang+=(t.rotT*Math.PI/2-t.ang)*k;
+    const target=F&&F.lit[i]?1:0;t.wet+=(target-t.wet)*Math.min(1,dt*8);
+    if(t.shake>0)t.shake=Math.max(0,t.shake-dt*2.5);
+  }
+  if(toastT>0)toastT-=dt;
+  draw(now);requestAnimationFrame(frame);
+}
+
+/* ---------- Karten ---------- */
+const ov=document.getElementById('ov');
+function hideOverlay(){ov.hidden=true;}
+function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
+function showStart(){
+  showOverlay(`
+    <div class="eyebrow">Minispiel · Logik</div>
+    <h2>Rohrleitung</h2>
+    <p>Die Pumpe in der Mitte läuft, aber die Rohre sind verdreht. Bring das Wasser zu jedem Hahn, ohne dass irgendwo etwas ausläuft.</p>
+    <ul>
+      <li>Klick dreht ein Rohr rechtsrum, Rechtsklick linksrum.</li>
+      <li>Rohre, die sicher richtig liegen, kannst du mit F oder Mittelklick festschrauben (am Handy: lange drücken).</li>
+      <li>Mit jeder Runde wird das Netz größer. Ab Runde 3 fehlt die Leck-Anzeige, ab Runde 4 siehst du das Wasser nur noch, wenn du „Wasser marsch“ drückst.</li>
+    </ul>
+    <div class="next"><strong>Runde 1 · ${ROUNDS[0].name}:</strong> ${ROUNDS[0].n} × ${ROUNDS[0].n}. ${ROUNDS[0].intro}</div>
+    <button class="go" type="button">Runde 1 starten</button>`,begin);
+}
+function showSummary(){
+  const r=results[results.length-1];
+  if(roundIdx>=ROUNDS.length-1){showFinal();return;}
+  const nx=ROUNDS[roundIdx+1];
+  showOverlay(`
+    <div class="eyebrow">Runde ${roundIdx+1} geschafft · ${r.name}</div>
+    <h2>${fmt(r.secs)} Minuten</h2>
+    <div class="rows">
+      <span>${r.n * r.n} Rohre × 4</span><span>+${r.base}</span>
+      <span>${r.mistakes} Fehlversuche × 25</span><span>−${r.pen}</span>
+      <span>Zeitbonus (Ziel ${fmt(r.par)})</span><span>+${r.bonus}</span>
+      <span class="total">Runde</span><span class="total">${r.pts.toLocaleString('de-DE')}</span>
+      <span>Gesamt</span><span>${total.toLocaleString('de-DE')}</span>
+    </div>
+    <div class="next"><strong>Runde ${roundIdx+2} · ${nx.name}:</strong> ${nx.n} × ${nx.n}. ${nx.intro}</div>
+    <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
+}
+function showFinal(){
+  const rows=results.map((r,i)=>`<span>${i+1}. ${r.name} · ${fmt(r.secs)} · ${r.mistakes} F.</span><span>${r.pts.toLocaleString('de-DE')}</span>`).join('');
+  showOverlay(`
+    <div class="eyebrow">Alle ${ROUNDS.length} Runden geschafft</div>
+    <h2>Gesamtpunkte</h2>
+    <div class="big">${total.toLocaleString('de-DE')}</div>
+    <div class="rows">${rows}</div>
+    <button class="go" type="button">Nochmal mit neuen Netzen</button>`,()=>newGame());
+}
+document.getElementById('restart').addEventListener('click',()=>newGame());
+
+newGame();
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
