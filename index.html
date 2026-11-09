@@ -123,6 +123,8 @@ input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;bac
 .solo .game{display:flex;flex-direction:column;gap:6px;background:var(--board);border:1px solid var(--lead);border-radius:12px;padding:14px;color:var(--ink);text-decoration:none}
 .solo .game:hover{border-color:var(--amber-ink)}
 .solo .game strong{font-size:1.15rem}
+.ghead{display:flex;gap:10px;align-items:center}.ghead>span{display:flex;flex-direction:column;gap:2px}
+.zufall{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--board);border:1px dashed var(--lead);font:700 .9rem var(--mono);color:var(--muted);flex:none}
 .solo .score{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--lead);padding-top:6px}
 .solo .score b{font:600 1.3rem var(--mono);color:var(--amber-ink)}
 .solo .btn{align-self:flex-start;margin-top:4px}
@@ -204,6 +206,7 @@ table.stand td.tot{color:var(--amber-ink);font-weight:600;font-size:1.05rem}
 <script src="shared/net.js"></script>
 <script src="shared/avatars.js"></script>
 <script src="shared/progress.js"></script>
+<script src="shared/gameart.js"></script>
 <script>
 (()=>{
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -370,7 +373,7 @@ function vSolo(){
   const st=GGProgress.stats(),best=st.best||{},cnt=id=>+st.played[id]||0;
   return`<section class="box"><div class="label">Einzelspieler</div><h2>Üben und Highscores jagen</h2>
     <p>Jedes Minispiel kommt jedes Mal mit einer neuen Variante. Dein bester Wert wird auf diesem Rechner gespeichert.</p>
-    <div class="solo">${GAMES.map(g=>`<a class="game" href="${g.id}/"><span class="label">${esc(g.tag)}</span><strong>${esc(g.name)}</strong>
+    <div class="solo">${GAMES.map(g=>`<a class="game" href="${g.id}/" data-game-tip="${g.id}"><span class="ghead">${GameArt.icon(g.id,40)}<span><span class="label">${esc(g.tag)}</span><strong>${esc(g.name)}</strong></span></span>
       <span class="score"><span class="meta">Highscore</span><b>${best[g.id]!=null?GG.num(best[g.id]):'–'}</b></span><span class="meta">${cnt(g.id)?`${cnt(g.id)}× gespielt`:'noch nicht gespielt'}</span><span class="btn small">Spielen</span></a>`).join('')}</div>
     <div class="hint">Insgesamt ${GG.num(st.games)} Minispiele gespielt. Gespielte Spiele zählen auch für die Kopfbedeckungen.</div></section>`;
 }
@@ -434,7 +437,7 @@ function standingsHtml(r){
 function playlistHtml(r){
   const n=total(r),idx=r.results.length;
   return`<div class="list">${Array.from({length:n},(_,i)=>{const g=r.playlist[i],done=i<idx-(r.status==='running'?1:0),cur=r.status==='running'&&r.current&&r.current.idx===i,next=!cur&&i===idx&&r.status!=='final';
-    return`<div class="item ${done?'done':''} ${next?'nextup':''}"><span class="meta">${i+1}.</span><div class="grow"><strong>${g?esc(gameName(g)):'Zufall'}</strong></div>${cur?'<span class="tag run">Läuft</span>':done?'<span class="tag ok">Gespielt</span>':next?'<span class="tag">Als Nächstes</span>':''}</div>`;}).join('')}</div>`;
+    return`<div class="item ${done?'done':''} ${next?'nextup':''}"${g?` data-game-tip="${g}"`:''}><span class="meta">${i+1}.</span>${g?GameArt.icon(g,30):'<span class="zufall" aria-hidden="true">?</span>'}<div class="grow"><strong>${g?esc(gameName(g)):'Zufall'}</strong></div>${cur?'<span class="tag run">Läuft</span>':done?'<span class="tag ok">Gespielt</span>':next?'<span class="tag">Als Nächstes</span>':''}</div>`;}).join('')}</div>`;
 }
 function setupHtml(r,isHost){
   const dis=isHost?'':' disabled',radio=(name,obj,val)=>Object.entries(obj).map(([k,t])=>`<label><input type="radio" name="${name}" value="${k}"${k===val?' checked':''}${dis}><span>${t}</span></label>`).join('');
@@ -442,7 +445,7 @@ function setupHtml(r,isHost){
   const modeText={vote:`Jeder bekommt ${r.count} Stimmen und verteilt sie auf die Spiele. Die ${r.count} Spiele mit den meisten Stimmen werden gespielt.`,host:'Der Gastgeber wählt die Spiele selbst aus. Gespielt wird in der angezeigten Reihenfolge.',random:'Vor jeder Runde wird ein zufälliges Spiel gezogen.'}[r.mode];
   return`<section class="box"><div class="label">Turnier einstellen</div>${isHost?'':'<p class="hint">Das stellt der Gastgeber ein.</p>'}
     <div class="field"><span class="label">Modus</span><div class="seg" role="radiogroup" aria-label="Modus">${radio('mode',MODES,r.mode)}</div><span class="hint">${modeText}</span></div>
-    ${r.mode==='host'?`<div class="field"><span class="label">Spiele (${r.games.length})</span><div class="games">${GAMES.map(g=>`<label><input type="checkbox" data-g="${g.id}"${r.games.includes(g.id)?' checked':''}${dis}><span>${g.name}<small>${g.tag}</small></span></label>`).join('')}</div></div>`
+    ${r.mode==='host'?`<div class="field"><span class="label">Spiele (${r.games.length})</span><div class="games">${GAMES.map(g=>`<label data-game-tip="${g.id}"><input type="checkbox" data-g="${g.id}"${r.games.includes(g.id)?' checked':''}${dis}>${GameArt.icon(g.id,30)}<span>${g.name}<small>${g.tag}</small></span></label>`).join('')}</div></div>`
       :`<div class="field"><label class="label" for="sCount">Anzahl Spiele</label><select id="sCount"${dis}>${counts.map(n=>`<option${n===r.count?' selected':''}>${n}</option>`).join('')}</select></div>`}
     <div class="field"><span class="label">Wertung</span><div class="seg" role="radiogroup" aria-label="Wertung">${radio('scoring',SCORING,r.scoring)}</div>
       <span class="hint">${r.scoring==='place'?'Pro Spiel gibt es Platzpunkte (10, 8, 6, 5 …). Jedes Spiel zählt gleich viel.':'Die Punkte aller Spiele werden addiert. Spiele mit vielen Punkten zählen stärker.'} Am Ende zeigt das Siegerpodest die Plätze 1 bis 3.</span></div>
@@ -478,7 +481,7 @@ function renderPhase(){
 function renderVotes(){
   const r=S.room,used=Object.values(S.myVotes).reduce((a,b)=>a+b,0),left=r.count-used,el=$('#voteList');if(!el)return;
   $('#votesLeft').textContent=`noch ${left} von ${r.count}`;
-  el.innerHTML=GAMES.map(g=>{const n=S.myVotes[g.id]||0;return`<div class="vote"><div class="grow"><strong>${g.name}</strong> <small class="meta">${g.tag}</small></div>
+  el.innerHTML=GAMES.map(g=>{const n=S.myVotes[g.id]||0;return`<div class="vote" data-game-tip="${g.id}">${GameArt.icon(g.id,32)}<div class="grow"><strong>${g.name}</strong> <small class="meta">${g.tag}</small></div>
     <button type="button" data-vm="${g.id}" aria-label="Eine Stimme weniger für ${g.name}"${n?'':' disabled'}>−</button><span class="n">${n}</span><button type="button" data-vp="${g.id}" aria-label="Eine Stimme mehr für ${g.name}"${left?'':' disabled'}>+</button></div>`;}).join('');
 }
 function podiumHtml(r,isHost){
@@ -615,6 +618,7 @@ const bind={
 
 /* ---------- Start ---------- */
 (async()=>{
+  GameArt.wire();
   await Net.init();
   $('#conn').classList.add(Net.mode==='server'?'on':'off');$('#connText').textContent=Net.mode==='server'?'Server verbunden':'Offline-Modus';
   if(S.named&&S.code){const r=await Net.call({action:'poll',code:S.code});if(r.room&&!r.room.kicked){S.room=r.room;S.screen='lobby';}else setRoom(null);}
