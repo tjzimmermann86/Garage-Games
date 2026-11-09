@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grillmeister</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: Kühlbox links, Grill mit Warmhalterost in der Mitte, Bestellzettel rechts, HUD auf dem Canvas */
+:root{
+  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --board:#0a1013; --lead:#33424a;
+  --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --rose:#e5626b; --sea:#5fc3b0; --ember:#ff7a2f;
+  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+body{margin:0}
+html,body{background:var(--bg);color:var(--ink)}
+[hidden]{display:none!important}
+body{font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 28px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
+h1{font-size:1.7rem;font-weight:800;margin:0;letter-spacing:-.015em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--amber)}
+.sub{color:var(--muted);font-size:.92rem}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px rgba(0,0,0,.35)}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:rgba(10,15,18,.72);backdrop-filter:blur(5px);overflow:auto;padding:12px}
+.card{width:min(500px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.card h2{margin:0;font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
+.card p{margin:0;color:var(--muted);line-height:1.5}
+.card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;line-height:1.45}
+.rows{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-variant-numeric:tabular-nums}
+.rows span:nth-child(even){font-family:var(--mono);text-align:right}
+.rows .total{border-top:1px solid var(--lead);padding-top:8px;font-weight:600;color:var(--ink)}
+.rows .bad{color:var(--rose)}
+.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+.next{background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:.95rem;line-height:1.4}
+button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
+button.go:hover{filter:brightness(1.08)}
+button.go:focus-visible,button.ghost:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+button.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
+.keys{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.88rem}
+kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);background:var(--panel)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Grill<em>meister</em></h1>
+      <div class="sub">Minispiel der LAN-Sammlung · Prototyp, 5 Runden</div>
+    </div>
+    <button class="ghost" id="restart" type="button">Neu starten</button>
+  </header>
+
+  <div class="stage">
+    <canvas id="cv" aria-label="Grill-Spielfeld"></canvas>
+    <div class="overlay" id="ov"></div>
+  </div>
+
+  <div class="keys">
+    <span><kbd>Ziehen</kbd> auflegen, verschieben, servieren</span>
+    <span><kbd>Klick</kbd> <kbd>F</kbd> wenden bzw. Wurst weiterrollen</span>
+    <span><kbd>Rechtsklick</kbd> <kbd>Mausrad</kbd> <kbd>R</kbd> Steak um 90° drehen (Rautenmuster)</span>
+    <span><kbd>Leertaste</kbd> <kbd>T</kbd> <kbd>Mittelklick</kbd> halten: Thermometer</span>
+  </div>
+</div>
+
+<script>
+(()=>{
+const W=1280,H=720;
+const COOL={x:16,y:16,w:244,h:688};
+const ORD={x:1020,y:16,w:244,h:688};
+const GRILL={x:280,y:122,w:720,h:540};
+const RACK={x:300,y:138,w:680,h:78};
+const GRATE={x:300,y:228,w:680,h:418};
+const BAR=17,SLOT=78,TK=80;
+const css=getComputedStyle(document.documentElement);
+const C=k=>css.getPropertyValue(k).trim();
+const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),ember:C('--ember')};
+const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
+
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const DPR=Math.min(2,window.devicePixelRatio||1);
+cv.width=W*DPR;cv.height=H*DPR;
+
+/* ---------- helpers ---------- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function mkR(seed){const r=mulberry32(seed);const R=(a,b)=>a+r()*(b-a);R.pick=a=>a[Math.floor(r()*a.length)];R.raw=r;return R;}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=t=>t<=0?0:t>=1?1:t*t*(3-2*t);
+const ease=t=>1-Math.pow(1-t,3);
+const hex2rgb=h=>{const n=parseInt(h.slice(1),16);return[n>>16,n>>8&255,n&255];};
+const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+const rgb=(c,a=1)=>`rgba(${c[0]|0},${c[1]|0},${c[2]|0},${a})`;
+const fmt=s=>{s=Math.floor(s);return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;};
+const sgn=n=>n<0?`−${Math.abs(n)}`:`+${n}`;
+const de=n=>n.toLocaleString('de-DE');
+
+/* ---------- Grillgut ----------
+   core: °C pro Sekunde bei voller Hitze, sear: Bräunung pro Sekunde bei voller Hitze (wächst mit Hitze²).
+   Bräunung 0,85–1,3 je Seite ist ideal, ab 2 ist die Seite verkohlt. */
+const TYPES={
+  wurst: {name:'Bratwurst',    flat:false,w:104,h:26,core:1.6,sear:.11, range:[72,80],fat:.5,raw:'#d9a08c',cook:'#c9783f',over:{at:92,msg:'Wurst geplatzt!',short:'geplatzt',pen:15}},
+  spiess:{name:'Hähnchenspieß',flat:false,w:128,h:30,core:1.7,sear:.15, range:[74,82],fat:.2,raw:'#ecc08c',cook:'#d48a3a',rawMin:68},
+  mais:  {name:'Maiskolben',   flat:false,w:110,h:36,core:1.5,sear:.09, range:[60,95],fat:0, raw:'#f2d14a',cook:'#e0a531'},
+  steak: {name:'Rindersteak',  flat:true, w:112,h:72,core:1.4,sear:.07, range:null,   fat:.4,raw:'#b5343c',cook:'#9a4e2c'},
+  nacken:{name:'Nackensteak',  flat:true, w:106,h:74,core:1.5,sear:.065,range:[68,74],fat:.7,raw:'#df9a8a',cook:'#b8743f'},
+  kaese: {name:'Grillkäse',    flat:true, w:84, h:54,core:2.0,sear:.12, range:[45,70],fat:.1,raw:'#f1e9d6',cook:'#e2b871',over:{at:80,msg:'Käse zerlaufen!',short:'zerlaufen',pen:15}},
+};
+for(const k in TYPES){const T=TYPES[k];T.key=k;const c=hex2rgb(T.cook);T.stops=[[0,hex2rgb(T.raw)],[.55,c],[1,c.map(v=>v*.6)],[1.45,[61,36,20]],[1.95,[22,16,14]]];}
+const DONENESS={
+  rare:{name:'englisch',   range:[48,52]},
+  mr:  {name:'medium rare',range:[53,57]},
+  med: {name:'medium',     range:[58,62]},
+  wd:  {name:'well done',  range:[64,70]},
+};
+function colorAt(T,s){const st=T.stops;if(s<=0)return st[0][1];for(let i=1;i<st.length;i++){if(s<=st[i][0]){const[a,ca]=st[i-1],[b,cb]=st[i];return mix(ca,cb,(s-a)/(b-a));}}return st[st.length-1][1];}
+const sideS=sd=>sd.o?sd.o[0]+sd.o[1]:sd.s;
+const searQ=s=>s<=.85?Math.pow(s/.85,1.5):s<=1.3?1:s<=1.8?1-(s-1.3)/.5:0;
+
+/* ---------- Runden ---------- */
+const COALS={
+  links: {name:'Glut links',      desc:'Links liegt die Glut (direkte Hitze), rechts ist es mild (indirekt).'},
+  rechts:{name:'Glut rechts',     desc:'Rechts liegt die Glut (direkte Hitze), links ist es mild (indirekt).'},
+  mitte: {name:'Glut in der Mitte',desc:'Die Glut liegt in der Mitte, am Rand ist es mild.'},
+  flecken:{name:'Glutnester',     desc:'Die Glut liegt in ungleichmäßigen Nestern. Schau genau hin, wo es heiß ist.'},
+};
+const HELP=[
+  {core:true, under:true, flare:false,text:'Kerntemperatur und Unterseite werden angezeigt.'},
+  {core:true, under:true, flare:false,text:'Kerntemperatur und Unterseite werden angezeigt.'},
+  {core:false,under:true, flare:false,text:'Neu: Keine Temperaturanzeige mehr. Thermometer benutzen (Leertaste halten)!'},
+  {core:false,under:false,flare:true, text:'Neu: Die Unterseite siehst du nur noch beim Wenden. Fett tropft in die Glut, Stichflammen möglich!'},
+  {core:false,under:false,flare:true, text:'Finale: keine Anzeigen, Stichflammen und Nachbestellungen.'},
+];
+const ROUND_POOLS=[
+  [{name:'Feierabendwurst', coals:'links', orders:['wurst','wurst','wurst']},
+   {name:'Nackensteak-Duo', coals:'links', orders:['nacken','nacken']},
+   {name:'Käse & Wurst',    coals:'rechts',orders:['wurst','wurst','kaese']}],
+  [{name:'Steakabend',      coals:'links', orders:['steak:mr','steak:med','wurst','wurst']},
+   {name:'Vereinsfest',     coals:'rechts',orders:['wurst','wurst','wurst','nacken','nacken']},
+   {name:'Hähnchen-Grillen',coals:'mitte', orders:['spiess','spiess','mais','wurst']}],
+  [{name:'Familienfeier',   coals:'mitte', orders:['steak:rare','steak:med','wurst','wurst','mais','kaese']},
+   {name:'Gartenparty',     coals:'links', orders:['nacken','nacken','spiess','spiess','wurst','kaese']},
+   {name:'Glutnester',      coals:'flecken',orders:['steak:mr','wurst','wurst','wurst','mais']}],
+  [{name:'Fußballabend',    coals:'rechts',orders:['wurst','wurst','wurst','steak:med','nacken'],later:[{at:30,orders:['wurst','spiess']}]},
+   {name:'Grillclub',       coals:'flecken',orders:['steak:rare','steak:mr','steak:wd','kaese','mais'],later:[{at:35,orders:['steak:med']}]},
+   {name:'Dorffest',        coals:'mitte', orders:['spiess','spiess','spiess','wurst','wurst'],later:[{at:25,orders:['nacken','kaese']}]}],
+  [{name:'Garagen-Finale',  coals:'flecken',orders:['steak:mr','steak:med','nacken','wurst','wurst','spiess'],later:[{at:30,orders:['wurst','kaese']}]},
+   {name:'Großes Grillen',  coals:'links', orders:['steak:rare','steak:wd','nacken','nacken','spiess','mais'],later:[{at:25,orders:['wurst']},{at:50,orders:['steak:med']}]},
+   {name:'Meisterprüfung',  coals:'mitte', orders:['steak:mr','steak:mr','steak:med','wurst','wurst','spiess','kaese','mais']}],
+];
+let ROUNDS=ROUND_POOLS.map(p=>p[0]);
+function planRounds(R){ROUNDS=ROUND_POOLS.map(pool=>R.pick(pool));}
+function orderName(spec){const[t,d]=spec.split(':');return TYPES[t].name+(d?` ${DONENESS[d].name}`:'');}
+function orderList(r){
+  const all=[...r.orders,...(r.later||[]).flatMap(l=>l.orders)],cnt={};
+  all.forEach(s=>{const n=orderName(s);cnt[n]=(cnt[n]||0)+1;});
+  return Object.entries(cnt).map(([n,c])=>`${c}× ${n}`).join(', ');
+}
+const totalOrders=r=>r.orders.length+(r.later||[]).reduce((a,l)=>a+l.orders.length,0);
+const roundText=(r,i)=>`<strong>${r.name}</strong> · ${orderList(r)}${r.later?' (ein Teil kommt als Nachbestellung)':''}. ${COALS[r.coals].desc} ${HELP[i].text}`;
+
+/* ---------- Hitzeverteilung ---------- */
+const CELL=20,GW=Math.ceil(GRATE.w/CELL),GH=Math.ceil(GRATE.h/CELL);
+const heat=new Float32Array(GW*GH);
+const coalCv=document.createElement('canvas'),glowCv=document.createElement('canvas');
+coalCv.width=GRATE.w*DPR;coalCv.height=GRATE.h*DPR;glowCv.width=GW;glowCv.height=GH;
+function buildHeat(layout,R){
+  const spots=[];for(let k=0;k<4;k++)spots.push({x:R(.12,.88)*GRATE.w,y:R(.15,.85)*GRATE.h,s:R(70,105)});
+  for(let j=0;j<GH;j++)for(let i=0;i<GW;i++){
+    const u=(i+.5)/GW,v=(j+.5)/GH;let h;
+    if(layout==='links')h=lerp(1,.3,smooth((u-.38)/.24));
+    else if(layout==='rechts')h=lerp(1,.3,smooth((.62-u)/.24));
+    else if(layout==='mitte'){const d=Math.hypot((u-.5)/.26,(v-.5)/.42);h=lerp(1,.3,smooth((d-.8)/.6));}
+    else{const x=u*GRATE.w,y=v*GRATE.h;h=.28;spots.forEach(s=>{h+=.85*Math.exp(-((x-s.x)**2+(y-s.y)**2)/(2*s.s*s.s));});h=Math.min(1.1,h);}
+    h*=.86+.14*Math.min(1,Math.min(v,1-v)*7);
+    heat[j*GW+i]=h;
+  }
+  // Glühen
+  const gg=glowCv.getContext('2d'),img=gg.createImageData(GW,GH);
+  for(let k=0;k<GW*GH;k++){const a=clamp((heat[k]-.3)*1.1,0,1);img.data[k*4]=255;img.data[k*4+1]=90+a*40;img.data[k*4+2]=30;img.data[k*4+3]=a*150;}
+  gg.putImageData(img,0,0);
+  // Kohlen
+  const g=coalCv.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);
+  g.fillStyle='#0a0b0c';g.fillRect(0,0,GRATE.w,GRATE.h);
+  for(let j=0;j<GH;j++)for(let i=0;i<GW;i++){
+    const h=heat[j*GW+i],n=Math.floor(h*2.2+R.raw()*.9);
+    for(let k=0;k<n;k++){
+      const cx=(i+R.raw())*CELL,cy=(j+R.raw())*CELL,r=R(5,9.5),hot=clamp((h-.4)*1.4,0,1)*Math.pow(R.raw(),1.6);
+      g.beginPath();for(let q=0;q<7;q++){const a=q/7*Math.PI*2,rr=r*R(.75,1.1);q?g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):g.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}g.closePath();
+      const gr=g.createRadialGradient(cx,cy,0,cx,cy,r);
+      gr.addColorStop(0,hot>.05?rgb(mix([58,50,46],[255,140,50],hot*.85)):'#45403d');gr.addColorStop(.55,hot>.05?rgb(mix([40,34,32],[190,60,22],hot*.7)):'#332e2b');gr.addColorStop(1,'#1d1a19');
+      g.fillStyle=gr;g.fill();
+    }
+  }
+}
+function heatAt(x,y){
+  const fx=clamp((x-GRATE.x)/CELL-.5,0,GW-1),fy=clamp((y-GRATE.y)/CELL-.5,0,GH-1);
+  const i=Math.floor(fx),j=Math.floor(fy),i2=Math.min(GW-1,i+1),j2=Math.min(GH-1,j+1),a=fx-i,b=fy-j;
+  return lerp(lerp(heat[j*GW+i],heat[j*GW+i2],a),lerp(heat[j2*GW+i],heat[j2*GW+i2],a),b);
+}
+const dims=(it,rot=it.rot)=>rot&1?[it.T.h,it.T.w]:[it.T.w,it.T.h];
+function itemHeat(it){const[w,h]=dims(it);const ax=w>h,d=(ax?w:h)*.32;return ax?(heatAt(it.tx-d,it.ty)+heatAt(it.tx,it.ty)+heatAt(it.tx+d,it.ty))/3:(heatAt(it.tx,it.ty-d)+heatAt(it.tx,it.ty)+heatAt(it.tx,it.ty+d))/3;}
+
+/* ---------- Spielzustand ---------- */
+let baseSeed,roundIdx=0,round=ROUNDS[0],help=HELP[0],items=[],tickets=[],pending=[],flares=[],smoke=[];
+let playing=false,t0=0,endSecs=0,total=0,results=[],rngR=mkR(1),uid=0,flareTold=false;
+let drag=null,hover=null,mouse={x:-99,y:-99},probeKey=false,probeBtn=false,probeIt=null,probeVal=0,probeT=0,toastMsg='',toastT=0;
+
+function newGame(){
+  baseSeed=Math.floor(Math.random()*1e9);
+  planRounds(mkR(baseSeed^0x2545f491));
+  total=0;results=[];
+  setupRound(0);showStart();
+}
+function setupRound(i){
+  roundIdx=i;round=ROUNDS[i];help=HELP[i];
+  const seed=(baseSeed+i*7919)>>>0;rngR=mkR(seed^0x5bd1e995);
+  buildHeat(round.coals,mkR(seed));
+  items=[];tickets=[];flares=[];smoke=[];flareTold=false;
+  addOrders(round.orders);
+  pending=(round.later||[]).map(l=>({...l}));
+  endSecs=0;playing=false;drag=null;hover=null;probeIt=null;
+}
+function addOrders(list){
+  list.forEach(spec=>{
+    const[type,done]=spec.split(':');
+    tickets.push({type,done:done||null,item:null,pts:0,verdict:'',appear:0});
+    const it=makeItem(type);placeInTray(it);it.x=it.tx-80;it.y=it.ty;items.push(it);
+  });
+}
+function makeItem(type){
+  const T=TYPES[type],R=rngR;
+  const it={id:uid++,type,T,state:'cool',x:0,y:0,tx:0,ty:0,rot:0,ang:0,angT:0,down:0,core:6+R.raw()*3,sides:[],burst:false,burntTold:false,flipT:1,shake:0,appear:0,sc:.68,slot:-1,searRate:0,smokeAcc:0,from:null};
+  for(let i=0;i<(T.flat?2:4);i++)it.sides.push(T.flat?{o:[0,0]}:{s:0});
+  if(type==='steak'||type==='nacken'){
+    const ph=R.raw()*6,pts=[];
+    for(let i=0;i<18;i++){const a=i/18*Math.PI*2,k=(1+.06*Math.sin(a*3+ph)+.04*Math.sin(a*5+ph*2)+(R.raw()-.5)*.03)*.95;pts.push([Math.cos(a)*T.w/2*k,Math.sin(a)*T.h/2*k]);}
+    it.blob=pts;
+    it.marb=[0,1,2].map(()=>({x:R(-.3,.3)*T.w,y:R(-.25,.25)*T.h,a:R(0,Math.PI),l:R(.2,.4)*T.w}));
+  }
+  return it;
+}
+function slotPos(i){return{x:COOL.x+COOL.w/2,y:COOL.y+52+i*SLOT+SLOT/2-6};}
+function freeSlot(){for(let i=0;i<8;i++)if(!items.some(o=>o.state==='cool'&&o.slot===i))return i;return 7;}
+function placeInTray(it){
+  if(it.rot&1){it.rot=0;it.angT+=Math.PI/2;}
+  it.state='cool';it.slot=freeSlot();const p=slotPos(it.slot);it.tx=p.x;it.ty=p.y;
+}
+function begin(){hideOverlay();playing=true;t0=performance.now();}
+function secsNow(){return playing?(performance.now()-t0)/1000:endSecs;}
+
+/* ---------- Platz auf dem Rost ---------- */
+function overlaps(it,x,y,w,h){
+  return items.some(o=>{
+    if(o===it||(o.state!=='grill'&&o.state!=='rack'))return false;
+    const[ow,oh]=dims(o);return Math.abs(x-o.tx)<(w+ow)/2+4&&Math.abs(y-o.ty)<(h+oh)/2+4;
+  });
+}
+function freeSpot(it,x,y,rot,zone){
+  const Z=zone==='rack'?RACK:GRATE,[w,h]=dims(it,rot);
+  if(w>Z.w-6||h>Z.h-6)return null;
+  for(let r=0;r<=200;r+=7){
+    const steps=r?Math.max(8,Math.round(r/3)):1;
+    for(let k=0;k<steps;k++){
+      const a=k/steps*Math.PI*2;
+      const cx=clamp(x+Math.cos(a)*r,Z.x+w/2+3,Z.x+Z.w-w/2-3),cy=clamp(y+Math.sin(a)*r,Z.y+h/2+3,Z.y+Z.h-h/2-3);
+      if(!overlaps(it,cx,cy,w,h))return{x:cx,y:cy};
+    }
+  }
+  return null;
+}
+const inRect=(p,Rc)=>p.x>=Rc.x&&p.x<=Rc.x+Rc.w&&p.y>=Rc.y&&p.y<=Rc.y+Rc.h;
+function zoneAt(p){
+  if(inRect(p,ORD))return'serve';
+  if(inRect(p,COOL))return'cool';
+  if(inRect(p,GRILL))return p.y<(RACK.y+RACK.h+GRATE.y)/2?'rack':'grill';
+  return null;
+}
+function putOn(it,zone,s){
+  it.state=zone;it.tx=s.x;it.ty=s.y;it.slot=-1;
+  if(zone==='grill')sfx('sizzle');else sfx('tick');
+}
+function back(it){
+  const f=it.from;
+  if(!f||f.state==='cool'){placeInTray(it);return;}
+  if(f.rot!==it.rot){it.rot=f.rot;}
+  const s=freeSpot(it,f.tx,f.ty,it.rot,f.state);
+  if(s){it.state=f.state;it.tx=s.x;it.ty=s.y;}else placeInTray(it);
+}
+function drop(it,p){
+  const z=zoneAt(p);
+  if(z==='serve'){if(serve(it,p))return;}
+  else if(z==='cool'){placeInTray(it);return;}
+  else if(z==='grill'||z==='rack'){
+    const s=freeSpot(it,it.x,it.y,it.rot,z);
+    if(s){putOn(it,z,s);return;}
+    toast(z==='rack'?'Kein Platz auf dem Warmhalterost':'Kein Platz auf dem Rost');
+  }
+  back(it);
+}
+
+/* ---------- Aktionen ---------- */
+function flip(it,dir=1){
+  if(!it||(it.state!=='grill'&&it.state!=='rack'))return;
+  if(it.T.flat){it.down^=1;}else{it.down=(it.down+dir+4)%4;}
+  it.flipT=0;sfx(it.state==='grill'?'flip':'tick');
+}
+function turn(it,dir=1){
+  if(!it||(it.state!=='grill'&&it.state!=='rack'))return;
+  if(!it.T.flat){flip(it,dir);return;}
+  const nr=it.rot^1,s=freeSpot(it,it.tx,it.ty,nr,it.state);
+  if(!s){it.shake=1;toast('Zum Drehen ist hier kein Platz');return;}
+  it.rot=nr;it.angT+=Math.PI/2*dir;it.tx=s.x;it.ty=s.y;sfx('tick');
+}
+function rangesFor(type){
+  if(TYPES[type].range)return[TYPES[type].range];
+  const rs=tickets.filter(t=>t.type===type&&!t.item).map(t=>DONENESS[t.done].range);
+  return rs.filter((r,i)=>rs.findIndex(q=>q[0]===r[0])===i);
+}
+function ticketRect(i){return{x:ORD.x+10,y:ORD.y+44+i*TK,w:ORD.w-20,h:TK-8};}
+function serve(it,p){
+  const open=tickets.map((t,i)=>({t,i})).filter(o=>o.t.type===it.type&&!o.t.item);
+  if(!open.length){toast(`Keiner hat ${it.T.name} bestellt`);return false;}
+  let pick=open.find(o=>inRect(p,ticketRect(o.i)));
+  if(!pick){
+    const mid=o=>{const r=o.t.done?DONENESS[o.t.done].range:it.T.range;return Math.abs((r[0]+r[1])/2-it.core);};
+    pick=open.slice().sort((a,b)=>mid(a)-mid(b))[0];
+  }
+  const tk=pick.t,ev=evaluate(it,tk);
+  tk.item=it;tk.pts=ev.pts;tk.verdict=ev.verdict;tk.ev=ev;tk.appear=0;
+  it.state='served';it.slot=-1;
+  sfx(ev.pts>=70?'ok':ev.pts>=35?'tick':'err');
+  checkEnd();
+  return true;
+}
+function evaluate(it,tk){
+  const T=it.T,range=tk.done?DONENESS[tk.done].range:T.range,c=it.core;
+  const coreQ=c>=range[0]&&c<=range[1]?1:Math.max(0,1-(c<range[0]?range[0]-c:c-range[1])/10);
+  const ss=it.sides.map(sideS),sq=ss.map(searQ),searAvg=sq.reduce((a,b)=>a+b,0)/sq.length;
+  let bonus=0;
+  if(T.flat){it.sides.forEach((sd,i)=>{if(Math.min(sd.o[0],sd.o[1])>=.28&&sq[i]>=.8)bonus+=5;});}
+  else{const spread=Math.max(...ss)-Math.min(...ss);bonus=Math.round(10*clamp(1-(spread-.25)/.5,0,1)*Math.min(1,searAvg/.6));}
+  let pts=Math.round(50*coreQ+40*searAvg+bonus);
+  const burnt=ss.some(s=>s>2),raw=T.rawMin&&c<T.rawMin;
+  if(burnt)pts-=25;
+  if(it.burst)pts-=T.over.pen;
+  if(raw)pts=Math.min(pts,0)-20;
+  pts=Math.max(-40,pts);
+  const avgS=ss.reduce((a,b)=>a+b,0)/ss.length;
+  let verdict;
+  if(raw)verdict='Roh serviert!';
+  else if(burnt)verdict='Verkohlt';
+  else if(it.burst)verdict=T.over.short[0].toUpperCase()+T.over.short.slice(1);
+  else if(coreQ===1&&searAvg>=.9)verdict=bonus>=8?'Meisterhaft':'Perfekt';
+  else if(c<range[0]-1)verdict='Zu roh';
+  else if(c>range[1]+1)verdict='Zu durch';
+  else if(searAvg<.75)verdict=avgS<.85?'Zu blass':'Zu dunkel';
+  else verdict='Gut';
+  return{pts,verdict,coreQ,searAvg,bonus,core:c,burnt};
+}
+function checkEnd(){if(!pending.length&&tickets.every(t=>t.item))endRound();}
+function endRound(){
+  playing=false;endSecs=(performance.now()-t0)/1000;
+  // Zeitbonus zählt nur so viel, wie das Essen taugt: roh durchhetzen lohnt sich nicht.
+  const n=tickets.length,par=45+n*11,food=tickets.reduce((a,t)=>a+t.pts,0),quality=clamp(food/(n*100),0,1);
+  const bonus=Math.max(0,Math.round((par-endSecs)*2*quality)),pts=Math.max(0,food+bonus);
+  total+=pts;
+  results.push({name:round.name,secs:endSecs,par,bonus,food,pts,quality,tickets:tickets.map(t=>({name:orderName(t.type+(t.done?':'+t.done:'')),pts:t.pts,verdict:t.verdict,core:t.ev.core}))});
+  setTimeout(showSummary,900);
+}
+function toast(m){toastMsg=m;toastT=2.4;}
+
+/* ---------- Simulation ---------- */
+function update(dt){
+  if(!playing)return;
+  const t=secsNow();
+  while(pending.length&&t>=pending[0].at){
+    const l=pending.shift();addOrders(l.orders);sfx('bell');
+    toast(`Nachbestellung: ${l.orders.map(orderName).join(', ')}`);
+  }
+  flares.forEach(f=>f.t-=dt);flares=flares.filter(f=>f.t>0);
+  for(const it of items){
+    if(it.state!=='grill'&&it.state!=='rack'){it.searRate=0;continue;}
+    const T=it.T,onGrill=it.state==='grill';
+    const h=onGrill?itemHeat(it):.2;
+    let boost=1;
+    if(onGrill)for(const f of flares)if(Math.hypot(f.x-it.tx,f.y-it.ty)<f.r+Math.max(T.w,T.h)*.3)boost=2.4;
+    it.core=Math.min(110,it.core+T.core*h*(boost>1?1.3:1)*dt*clamp((118-it.core)/60,.25,1));
+    const ds=onGrill?T.sear*h*h*boost*dt:0,sd=it.sides[it.down];
+    if(T.flat)sd.o[it.rot&1]+=ds;else sd.s+=ds;
+    it.searRate=ds/dt;
+    if(T.over&&!it.burst&&it.core>=T.over.at){it.burst=true;toast(T.over.msg);sfx('err');}
+    if(!it.burntTold&&sideS(sd)>2){it.burntTold=true;toast(`${T.name} verkohlt!`);sfx('err');}
+    if(help.flare&&onGrill&&T.fat&&h>.7&&rngR.raw()<.03*T.fat*dt*boost&&!flares.some(f=>Math.hypot(f.x-it.tx,f.y-it.ty)<90)){
+      flares.push({x:it.tx+rngR(-20,20),y:it.ty+rngR(-8,8),t:rngR(4.5,7),r:46,seed:rngR.raw()*100});
+      if(!flareTold){flareTold=true;toast('Stichflamme! Grillgut schnell wegziehen');}
+      sfx('whoosh');
+    }
+    if(onGrill){
+      it.smokeAcc+=dt*(.8+it.searRate*35);
+      while(it.smokeAcc>1){it.smokeAcc-=1;const dark=sideS(sd)>1.5;
+        smoke.push({x:it.tx+rngR(-T.w,T.w)*.35,y:it.ty+rngR(-8,8),vx:rngR(-6,6),vy:rngR(-34,-22),r:rngR(6,10),a:dark?.32:.11,c:dark?'40,34,30':'225,225,225'});}
+    }
+  }
+  for(const s of smoke){s.x+=s.vx*dt;s.y+=s.vy*dt;s.r+=dt*9;s.a-=dt*.16;}
+  smoke=smoke.filter(s=>s.a>0&&s.y>-20);
+  if(smoke.length>400)smoke.splice(0,smoke.length-400);
+}
+
+/* ---------- Sound ---------- */
+let ac=null,noiseBuf=null;
+function sfx(type){
+  try{
+    ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const t=ac.currentTime;
+    if(type==='sizzle'||type==='flip'||type==='whoosh'){
+      if(!noiseBuf){noiseBuf=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(Math.random()<.25?1:.3);}
+      const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();s.buffer=noiseBuf;
+      f.type=type==='whoosh'?'lowpass':'highpass';f.frequency.value=type==='whoosh'?900:2800;
+      const dur=type==='sizzle'?.9:type==='whoosh'?.6:.35,vol=type==='sizzle'?.16:type==='whoosh'?.25:.09;
+      g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
+      s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t);s.stop(t+dur);return;
+    }
+    const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    if(type==='ok'){o.type='sine';o.frequency.setValueAtTime(1320,t);o.frequency.exponentialRampToValueAtTime(1980,t+.06);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);}
+    else if(type==='err'){o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(130,t+.2);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);}
+    else if(type==='bell'){o.type='sine';o.frequency.setValueAtTime(1568,t);o.frequency.setValueAtTime(2093,t+.12);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);}
+    else{o.type='sine';o.frequency.setValueAtTime(950,t);g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+.08);}
+    o.start(t);o.stop(t+.55);
+  }catch(e){}
+}
+
+/* ---------- Eingabe ---------- */
+function toLocal(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
+function pick(p){
+  for(let i=items.length-1;i>=0;i--){
+    const it=items[i];if(!['cool','grill','rack'].includes(it.state)||it.appear<.5)continue;
+    const[w,h]=dims(it),s=it.sc;if(Math.abs(p.x-it.x)<=w*s/2+3&&Math.abs(p.y-it.y)<=h*s/2+3)return it;
+  }
+  return null;
+}
+cv.addEventListener('mousedown',e=>{if(e.button===1)e.preventDefault();});
+cv.addEventListener('pointerdown',e=>{
+  if(!playing)return;
+  const p=toLocal(e);
+  if(e.pointerType==='mouse'&&e.button===1){e.preventDefault();probeBtn=true;return;}
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  const it=pick(p);if(!it)return;
+  e.preventDefault();cv.setPointerCapture(e.pointerId);
+  drag={it,id:e.pointerId,sx:p.x,sy:p.y,ox:it.x-p.x,oy:it.y-p.y,moved:false};
+});
+cv.addEventListener('pointermove',e=>{
+  const p=toLocal(e);mouse=p;
+  if(drag&&e.pointerId===drag.id){
+    const it=drag.it;
+    if(!drag.moved&&Math.hypot(p.x-drag.sx,p.y-drag.sy)>6){
+      drag.moved=true;it.from={state:it.state,tx:it.tx,ty:it.ty,rot:it.rot};it.state='drag';it.slot=-1;
+      items.splice(items.indexOf(it),1);items.push(it);
+    }
+    if(drag.moved){it.x=it.tx=p.x+drag.ox;it.y=it.ty=p.y+drag.oy;}
+    cv.style.cursor='grabbing';
+  }else{hover=playing?pick(p):null;cv.style.cursor=hover?'grab':'default';}
+});
+function endDrag(e,cancel){
+  if(e.pointerType==='mouse'&&e.button===1)probeBtn=false;
+  if(!drag||e.pointerId!==drag.id)return;
+  const{it,moved}=drag;drag=null;
+  if(!moved){if(!cancel){if(it.state==='cool')toast('Ziehen, um es auf den Grill zu legen');else flip(it);}}
+  else if(cancel)back(it);
+  else drop(it,toLocal(e));
+  cv.style.cursor='default';
+}
+cv.addEventListener('pointerup',e=>endDrag(e,false));
+cv.addEventListener('pointercancel',e=>endDrag(e,true));
+cv.addEventListener('pointerleave',()=>{probeBtn=false;});
+cv.addEventListener('contextmenu',e=>{e.preventDefault();if(!playing||drag)return;turn(pick(toLocal(e)),-1);});
+cv.addEventListener('wheel',e=>{if(!playing||drag)return;const it=pick(toLocal(e));if(it&&(it.state==='grill'||it.state==='rack')){e.preventDefault();turn(it,e.deltaY>0?1:-1);}},{passive:false});
+window.addEventListener('keydown',e=>{
+  if(!playing)return;
+  if(e.key===' '||e.key==='t'||e.key==='T'){e.preventDefault();probeKey=true;}
+  else if(e.key==='r'||e.key==='R')turn(hover);
+  else if(e.key==='f'||e.key==='F')flip(hover);
+});
+window.addEventListener('keyup',e=>{if(e.key===' '||e.key==='t'||e.key==='T')probeKey=false;});
+window.addEventListener('blur',()=>{probeKey=probeBtn=false;});
+
+/* ---------- Zeichnen ---------- */
+function rrp(x,y,w,h,r){ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function rr(x,y,w,h,r){ctx.beginPath();rrp(x,y,w,h,r);}
+function shapePath(it){
+  const T=it.T,w=T.w,h=T.h;ctx.beginPath();
+  if(it.type==='wurst')rrp(-w/2,-h/2,w,h,h/2);
+  else if(it.type==='mais')rrp(-w/2+14,-h/2,w-14,h,h/2);
+  else if(it.type==='kaese')rrp(-w/2,-h/2,w,h,9);
+  else if(it.type==='spiess'){const n=4,cw=(w-26)/n;for(let i=0;i<n;i++){const o=i%2?1.5:0;rrp(-w/2+13+i*cw+1.5,-h/2+o,cw-3,h-o*2,7);}}
+  else{const b=it.blob,n=b.length,m=(p,q)=>[(p[0]+q[0])/2,(p[1]+q[1])/2],s=m(b[n-1],b[0]);ctx.moveTo(s[0],s[1]);for(let i=0;i<n;i++){const e=m(b[i],b[(i+1)%n]);ctx.quadraticCurveTo(b[i][0],b[i][1],e[0],e[1]);}ctx.closePath();}
+}
+function topSide(it){return it.T.flat?it.sides[1-it.down]:it.sides[(it.down+2)%4];}
+function stripes(T,o,st,dir){
+  if(o<.03)return;
+  const c=colorAt(T,Math.min(2.4,st*.6+o*1.05+.1)),a=Math.min(1,o*2.4);
+  ctx.beginPath();
+  if(dir==='v'){for(let x=-T.w/2+9;x<T.w/2;x+=BAR){ctx.moveTo(x,-T.h/2);ctx.lineTo(x,T.h/2);}}
+  else{for(let y=-T.h/2+9;y<T.h/2;y+=BAR){ctx.moveTo(-T.w/2,y);ctx.lineTo(T.w/2,y);}}
+  ctx.lineCap='butt';ctx.strokeStyle=rgb(c,a*.35);ctx.lineWidth=8;ctx.stroke();
+  ctx.strokeStyle=rgb(c,a*.9);ctx.lineWidth=4;ctx.stroke();
+}
+function drawItem(it,x,y,sc,ang,squash=1){
+  const T=it.T,w=T.w,h=T.h,top=topSide(it),st=sideS(top);
+  ctx.save();ctx.translate(x,y);ctx.rotate(ang);ctx.scale(sc,sc*squash);
+  if(it.type==='spiess'){ctx.strokeStyle=rgb(mix([214,184,140],[60,40,25],clamp(st/2,0,1)));ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-w/2-4,0);ctx.lineTo(w/2+8,0);ctx.stroke();}
+  if(it.type==='mais'){
+    ctx.fillStyle=rgb(mix([196,186,120],[70,55,30],clamp(st/2.2,0,1)));
+    ctx.beginPath();ctx.moveTo(-w/2+20,-h/2+2);ctx.quadraticCurveTo(-w/2-4,-h/2-4,-w/2-10,-2);ctx.quadraticCurveTo(-w/2+2,2,-w/2+20,0);ctx.fill();
+    ctx.beginPath();ctx.moveTo(-w/2+20,h/2-2);ctx.quadraticCurveTo(-w/2-2,h/2+5,-w/2-8,5);ctx.quadraticCurveTo(-w/2+2,1,-w/2+20,0);ctx.fill();
+  }
+  shapePath(it);ctx.fillStyle=rgb(colorAt(T,st*.6));ctx.fill();
+  ctx.save();shapePath(it);ctx.clip();
+  if(it.type==='steak'){ctx.save();ctx.beginPath();ctx.rect(-w/2,-h/2,w,h*.38);ctx.clip();shapePath(it);ctx.lineWidth=10;ctx.strokeStyle=rgb(mix([240,226,200],[150,95,50],clamp(st/1.4,0,1)));ctx.stroke();ctx.restore();}
+  if(it.marb){ctx.strokeStyle=`rgba(255,240,228,${.32*(1-clamp(st/1.6,0,1))})`;ctx.lineWidth=1.6;it.marb.forEach(m=>{ctx.beginPath();ctx.moveTo(m.x-Math.cos(m.a)*m.l/2,m.y-Math.sin(m.a)*m.l/2);ctx.quadraticCurveTo(m.x+6,m.y-6,m.x+Math.cos(m.a)*m.l/2,m.y+Math.sin(m.a)*m.l/2);ctx.stroke();});}
+  if(it.type==='mais'){ctx.strokeStyle='rgba(90,60,10,.22)';ctx.lineWidth=1;ctx.beginPath();for(let x=-w/2+18;x<w/2;x+=7){ctx.moveTo(x,-h/2);ctx.lineTo(x,h/2);}for(let yy=-h/2+6;yy<h/2;yy+=6){ctx.moveTo(-w/2,yy);ctx.lineTo(w/2,yy);}ctx.stroke();}
+  if(!T.flat){
+    const a=it.sides[(it.down+1)%4],b=it.sides[(it.down+3)%4];
+    ctx.fillStyle=rgb(colorAt(T,a.s*.6),.85);ctx.fillRect(-w/2,-h/2,w,h*.24);
+    ctx.fillStyle=rgb(colorAt(T,b.s*.6),.85);ctx.fillRect(-w/2,h/2-h*.24,w,h*.24);
+    stripes(T,top.s,top.s,'v');
+  }else{stripes(T,top.o[0],st,'v');stripes(T,top.o[1],st,'h');}
+  if(!T.flat){const g=ctx.createLinearGradient(0,-h/2,0,h/2);g.addColorStop(0,'rgba(0,0,0,.3)');g.addColorStop(.3,'rgba(255,255,255,.12)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.42)');ctx.fillStyle=g;ctx.fillRect(-w/2,-h/2,w,h);}
+  else{const g=ctx.createLinearGradient(0,-h/2,0,h/2);g.addColorStop(0,'rgba(255,255,255,.1)');g.addColorStop(1,'rgba(0,0,0,.22)');ctx.fillStyle=g;ctx.fillRect(-w/2,-h/2,w,h);}
+  if(it.burst){ctx.strokeStyle='#f3c3b6';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-w*.3,0);for(let k=1;k<=8;k++)ctx.lineTo(-w*.3+k*w*.075,k%2?-3:3);ctx.stroke();}
+  if(it.type==='kaese'&&it.burst){ctx.fillStyle='rgba(250,240,215,.7)';ctx.beginPath();ctx.ellipse(w*.2,h*.3,w*.3,h*.25,0,0,Math.PI*2);ctx.fill();}
+  ctx.restore();
+  shapePath(it);ctx.strokeStyle='rgba(0,0,0,.35)';ctx.lineWidth=1;ctx.stroke();
+  ctx.restore();
+}
+function drawFlare(f,t){
+  const life=clamp(f.t/1.2,0,1);
+  ctx.save();ctx.globalCompositeOperation='lighter';
+  for(let k=0;k<9;k++){
+    const a=f.seed+k*1.9,ox=Math.sin(a)*f.r*.8,hgt=(44+24*Math.sin(t*9+a*3))*life,bw=12+5*Math.sin(a*2);
+    const g=ctx.createLinearGradient(0,f.y+ox*.2,0,f.y+ox*.2-hgt-20);
+    g.addColorStop(0,'rgba(255,110,25,.6)');g.addColorStop(.6,'rgba(255,190,60,.4)');g.addColorStop(1,'rgba(255,230,120,0)');
+    ctx.fillStyle=g;ctx.beginPath();const bx=f.x+ox,by=f.y+ox*.2+10;
+    ctx.moveTo(bx-bw,by);ctx.quadraticCurveTo(bx-bw*.4,by-hgt*.6,bx+Math.sin(t*7+a)*6,by-hgt-20);ctx.quadraticCurveTo(bx+bw*.4,by-hgt*.6,bx+bw,by);ctx.fill();
+  }
+  ctx.restore();
+}
+function drawPanel(P,title,count){
+  rr(P.x,P.y,P.w,P.h,12);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.edge;ctx.lineWidth=1;ctx.stroke();
+  ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textBaseline='middle';ctx.textAlign='left';ctx.fillText(title,P.x+16,P.y+22);
+  ctx.textAlign='right';ctx.fillText(count,P.x+P.w-16,P.y+22);
+  ctx.strokeStyle=COL.edge;ctx.beginPath();ctx.moveTo(P.x+12,P.y+38);ctx.lineTo(P.x+P.w-12,P.y+38);ctx.stroke();
+}
+function draw(t){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  ctx.fillStyle=COL.bg;ctx.fillRect(0,0,W,H);
+
+  // Kühlbox
+  const cool=items.filter(i=>i.state==='cool');
+  drawPanel(COOL,'KÜHLBOX',`${cool.length} roh`);
+  ctx.fillStyle='rgba(120,190,220,.05)';for(let i=0;i<8;i++){const p=slotPos(i);rr(COOL.x+12,p.y-SLOT/2+8,COOL.w-24,SLOT-6,10);ctx.fill();}
+  // Bestellungen
+  const served=tickets.filter(tk=>tk.item).length;
+  drawPanel(ORD,'BESTELLUNGEN',`${served} / ${tickets.length + pending.reduce((a,l)=>a+l.orders.length,0)}`);
+  const dragIt=drag&&drag.moved?drag.it:null;
+  tickets.forEach((tk,i)=>{
+    const Rc=ticketRect(i),T=TYPES[tk.type],a=ease(Math.min(1,tk.appear));
+    ctx.save();ctx.globalAlpha=a;ctx.translate((1-a)*40,0);
+    const match=dragIt&&!tk.item&&dragIt.type===tk.type,hov=match&&inRect(mouse,Rc);
+    rr(Rc.x,Rc.y,Rc.w,Rc.h,10);ctx.fillStyle=tk.item?'rgba(10,16,19,.55)':hov?'#24333c':COL.board;ctx.fill();
+    ctx.strokeStyle=match?COL.amber:COL.lead;ctx.lineWidth=match?2:1;ctx.stroke();
+    // Zettel-Lochung
+    ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(Rc.x+Rc.w/2,Rc.y,4,0,Math.PI*2);ctx.fill();
+    const sc=Math.min(.5,52/T.w);
+    if(tk.item)drawItem(tk.item,Rc.x+34,Rc.y+Rc.h/2,sc,0);
+    else{ctx.globalAlpha=a*.45;drawItem({...dummy(tk.type)},Rc.x+34,Rc.y+Rc.h/2,sc,0);ctx.globalAlpha=a;}
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.font=`600 14px ${DISPLAY}`;ctx.fillStyle=tk.item?COL.muted:COL.ink;ctx.fillText(T.name,Rc.x+66,Rc.y+24);
+    const r=tk.done?DONENESS[tk.done].range:T.range;
+    ctx.font=`500 11.5px ${MONO}`;ctx.fillStyle=tk.done?COL.amber:COL.muted;
+    ctx.fillText(tk.done?`${DONENESS[tk.done].name} ${r[0]}–${r[1]}°`:`Kern ${r[0]}–${r[1]} °C`,Rc.x+66,Rc.y+42);
+    if(tk.item){
+      ctx.font=`600 12px ${DISPLAY}`;ctx.fillStyle=tk.pts>=70?COL.sea:tk.pts>=35?COL.ink:COL.rose;
+      ctx.fillText(`${tk.verdict} · ${Math.round(tk.ev.core)}°`,Rc.x+66,Rc.y+60);
+      ctx.textAlign='right';ctx.font=`600 17px ${MONO}`;ctx.fillStyle=tk.pts>=70?COL.amber:tk.pts>=0?COL.ink:COL.rose;
+      ctx.fillText(tk.pts,Rc.x+Rc.w-12,Rc.y+26);
+    }
+    ctx.restore();
+  });
+  if(pending.length){const Rc=ticketRect(tickets.length);ctx.font=`500 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('weitere Bestellungen folgen …',Rc.x+4,Rc.y+20);}
+
+  // Grill
+  ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=10;
+  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,18);ctx.fillStyle='#1b1f22';ctx.fill();ctx.restore();
+  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,18);ctx.strokeStyle='#30373c';ctx.lineWidth=2;ctx.stroke();
+  // Warmhalterost
+  rr(RACK.x,RACK.y,RACK.w,RACK.h,8);ctx.fillStyle='#121517';ctx.fill();
+  ctx.strokeStyle='#3c4247';ctx.lineWidth=2;ctx.beginPath();
+  for(let x=RACK.x+10;x<RACK.x+RACK.w;x+=12){ctx.moveTo(x,RACK.y+4);ctx.lineTo(x,RACK.y+RACK.h-4);}ctx.stroke();
+  ctx.strokeStyle='#4a5157';ctx.lineWidth=3;ctx.strokeRect(RACK.x+2,RACK.y+2,RACK.w-4,RACK.h-4);
+  ctx.font=`600 10.5px ${MONO}`;ctx.fillStyle='rgba(143,157,159,.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText('WARMHALTEROST · KEINE BRÄUNUNG',RACK.x+RACK.w-4,RACK.y-5);
+  // Glut und Rost
+  ctx.drawImage(coalCv,GRATE.x,GRATE.y,GRATE.w,GRATE.h);
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;ctx.globalAlpha=.5+.1*Math.sin(t*2.1)+.05*Math.sin(t*5.3);
+  ctx.drawImage(glowCv,GRATE.x,GRATE.y,GRATE.w,GRATE.h);ctx.restore();
+  ctx.fillStyle='rgba(0,0,0,.25)';
+  for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-1,GRATE.y,6,GRATE.h);
+  ctx.fillStyle='#33383c';for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,6,GRATE.h);
+  ctx.fillStyle='rgba(255,255,255,.16)';for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,1.5,GRATE.h);
+  ctx.strokeStyle='#3d4347';ctx.lineWidth=6;ctx.strokeRect(GRATE.x+1,GRATE.y+1,GRATE.w-2,GRATE.h-2);
+  ctx.fillStyle='#3d4347';ctx.fillRect(GRATE.x,GRATE.y+GRATE.h/2-3,GRATE.w,6);
+
+  // Grillgut
+  for(const it of items){
+    if(it.state==='served'||it.state==='drag')continue;
+    const onG=it.state==='grill'||it.state==='rack',sq=.25+.75*ease(Math.min(1,it.flipT));
+    const sx=it.shake>0?Math.sin(it.shake*40)*5*it.shake:0;
+    const[w,h]=dims(it);
+    ctx.save();ctx.globalAlpha=Math.min(1,it.appear);
+    if(onG){ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(it.x+3,it.y+5,w/2,h/2,0,0,Math.PI*2);ctx.fill();}
+    drawItem(it,it.x+sx,it.y,it.sc,it.ang,sq);
+    if(hover===it&&!drag){ctx.strokeStyle='rgba(240,178,74,.7)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.strokeRect(it.x-w*it.sc/2-5,it.y-h*it.sc/2-5,w*it.sc+10,h*it.sc+10);ctx.setLineDash([]);}
+    ctx.restore();
+    if(it.state==='cool'){ctx.font=`500 11px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(it.T.name.toUpperCase(),it.x,it.y+h*it.sc/2+15);}
+    if(onG&&(help.core||help.under))drawGauge(it,w,h);
+  }
+  flares.forEach(f=>drawFlare(f,t));
+  // Rauch
+  for(const s of smoke){const g=ctx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r);g.addColorStop(0,`rgba(${s.c},${Math.max(0,s.a)})`);g.addColorStop(1,`rgba(${s.c},0)`);ctx.fillStyle=g;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}
+
+  // HUD oben
+  const hx=GRILL.x+4;
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.amber;ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,hx,40);
+  ctx.font=`800 32px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(round.name,hx,78);
+  ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;
+  ctx.fillText([COALS[round.coals].name,help.core?'Temperatur sichtbar':'nur Thermometer',help.under?'Unterseite sichtbar':'',help.flare?'Stichflammen':''].filter(Boolean).join(' · '),hx,104);
+  const rx=GRILL.x+GRILL.w-4;ctx.textAlign='right';
+  ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText('ZEIT',rx,40);
+  ctx.font=`600 34px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(fmt(secsNow()),rx,78);
+  ctx.font=`500 14px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText(`${de(total)} Pkt gesamt`,rx,104);
+
+  // Status unten
+  const by=GRILL.y+GRILL.h+30;
+  ctx.font=`500 13px ${MONO}`;ctx.textAlign='left';ctx.fillStyle=COL.muted;
+  ctx.fillText('Klick wenden · Rechtsklick drehen · Leertaste Thermometer · auf Bestellzettel ziehen = servieren',GRILL.x+4,by);
+
+  // Gezogenes Teil
+  if(dragIt){
+    const[w,h]=dims(dragIt);
+    ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetY=12;
+    drawItem(dragIt,dragIt.x,dragIt.y-4,1.05,dragIt.ang);ctx.restore();
+    const z=zoneAt(mouse);
+    if(z==='grill'&&help.core){const hv=itemHeatAt(dragIt);ctx.font=`600 12px ${MONO}`;ctx.textAlign='center';ctx.fillStyle=hv>.7?COL.ember:hv>.45?COL.amber:COL.sea;ctx.fillText(hv>.7?'DIREKTE HITZE':hv>.45?'MITTLERE HITZE':'INDIREKT',dragIt.x,dragIt.y-h/2-14);}
+  }
+
+  // Thermometer
+  if(probeIt)drawProbe(probeIt);
+
+  if(toastT>0){
+    ctx.globalAlpha=Math.min(1,toastT*2);ctx.font=`600 16px ${DISPLAY}`;ctx.textAlign='center';
+    const w=ctx.measureText(toastMsg).width+36,cx=GRILL.x+GRILL.w/2,cy=GRATE.y+30;
+    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle='rgba(10,16,19,.92)';ctx.fill();ctx.strokeStyle=COL.amber;ctx.lineWidth=1;ctx.stroke();
+    ctx.fillStyle=COL.ink;ctx.textBaseline='middle';ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;
+  }
+}
+const dummies={};
+function dummy(type){if(!dummies[type]){const s=rngR;rngR=mkR(type.length*977);dummies[type]=makeItem(type);rngR=s;}return dummies[type];}
+const itemHeatAt=it=>itemHeat(it);
+function drawGauge(it,w,h){
+  const y=it.y+h/2+9,bw=58;let x=it.x-(help.core?bw/2+8:0);
+  if(help.core){
+    const rs=rangesFor(it.type),toX=v=>x+clamp(v/100,0,1)*bw;
+    rr(x,y,bw,6,3);ctx.fillStyle='rgba(10,16,19,.85)';ctx.fill();
+    ctx.fillStyle='rgba(240,178,74,.55)';rs.forEach(r=>ctx.fillRect(toX(r[0]),y,Math.max(2,toX(r[1])-toX(r[0])),6));
+    const c=it.core,inR=rs.some(r=>c>=r[0]&&c<=r[1]),over=rs.length&&rs.every(r=>c>r[1]);
+    ctx.fillStyle=inR?COL.sea:over?COL.rose:COL.ink;ctx.fillRect(toX(c)-1.5,y-3,3,12);
+    ctx.font=`600 11px ${MONO}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=inR?COL.sea:over?COL.rose:COL.ink;
+    ctx.fillText(`${Math.round(c)}°`,x+bw+5,y+3);
+    x+=bw+34;
+  }
+  if(help.under){
+    const sd=it.sides[it.down],s=sideS(sd),c=colorAt(it.T,Math.min(2.2,s*.6+(s>.05?.15:0)));
+    ctx.beginPath();ctx.arc(x,y+3,6,0,Math.PI*2);ctx.fillStyle=rgb(c);ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle=s>1.3?COL.rose:s>=.85?COL.sea:'rgba(236,228,212,.5)';ctx.stroke();
+    ctx.font=`600 9px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('U',x+9,y+3.5);
+  }
+}
+function drawProbe(it){
+  const[w,h]=dims(it),x=it.x,y=it.y,bx=x+w/2+12,byy=y-h/2-40;
+  ctx.strokeStyle='#c9ced2';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+4,y);ctx.lineTo(bx+4,byy+28);ctx.stroke();
+  rr(bx-4,byy,78,30,8);ctx.fillStyle='#0b1114';ctx.fill();ctx.strokeStyle=COL.sea;ctx.lineWidth=1.5;ctx.stroke();
+  const shown=probeT<.35?'…':`${Math.round(probeVal)} °C`;
+  ctx.font=`600 16px ${MONO}`;ctx.fillStyle=COL.sea;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(shown,bx+35,byy+16);
+}
+
+let last=performance.now();
+function frame(t){
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  update(dt);
+  const k=Math.min(1,dt*14),ka=Math.min(1,dt*16);
+  for(const it of items){
+    if(it.state!=='drag'){it.x+=(it.tx-it.x)*k;it.y+=(it.ty-it.y)*k;}
+    it.ang+=(it.angT-it.ang)*ka;
+    if(it.appear<1)it.appear=Math.min(1,it.appear+dt*3);
+    it.sc+=((it.state==='cool'?.68:1)-it.sc)*k;
+    if(it.flipT<1)it.flipT=Math.min(1,it.flipT+dt*5);
+    if(it.shake>0)it.shake=Math.max(0,it.shake-dt*2.5);
+  }
+  tickets.forEach(tk=>{if(tk.appear<1)tk.appear=Math.min(1,tk.appear+dt*3);});
+  // Thermometer
+  const want=playing&&(probeKey||probeBtn)&&!drag?pick(mouse):null;
+  if(want!==probeIt){probeIt=want;probeT=0;probeVal=20;}
+  if(probeIt){probeT+=dt;if(probeT>.35)probeVal+=(probeIt.core-probeVal)*Math.min(1,dt*9);}
+  if(toastT>0)toastT-=dt;
+  draw(t/1000);requestAnimationFrame(frame);
+}
+
+/* ---------- Overlays ---------- */
+const ov=document.getElementById('ov');
+function hideOverlay(){ov.hidden=true;}
+function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
+function showStart(){
+  showOverlay(`
+    <div class="eyebrow">Minispiel · Geschick</div>
+    <h2>Grillmeister</h2>
+    <p>Die Gäste haben Hunger. Grill jede Bestellung auf den Punkt: richtige Kerntemperatur, schöne Grillstreifen, nichts verkohlt.</p>
+    <ul>
+      <li>Grillgut aus der Kühlbox auf den Rost ziehen. Über der Glut ist es heiß (direkte Hitze), am Rand mild (indirekt).</li>
+      <li>Direkte Hitze bräunt schnell, indirekte gart in Ruhe durch. Erst scharf anbraten, dann zum Garziehen zur Seite legen.</li>
+      <li>Klick wendet, Würste und Spieße rollen weiter. Jede Seite will Streifen, aber nicht schwarz.</li>
+      <li>Steaks nach halber Zeit pro Seite um 90° drehen (Rechtsklick) gibt das Rautenmuster und Bonuspunkte.</li>
+      <li>Fertiges Grillgut auf den passenden Bestellzettel ziehen. Der Warmhalterost oben hält warm, ohne zu bräunen.</li>
+      <li>Ab Runde 3 hilft nur noch das Thermometer: Maus aufs Grillgut, Leertaste halten.</li>
+    </ul>
+    <p>Pro Teil bis zu 100 Punkte: 50 für die Kerntemperatur, 40 für die Bräunung, 10 für Rautenmuster bzw. gleichmäßiges Rollen. Verkohlt, geplatzt oder rohes Hähnchen kostet Abzug. Schneller fertig gibt einen Zeitbonus, aber nur so viel, wie das Essen taugt.</p>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0],0)}</div>
+    <button class="go" type="button" id="go">Grill anheizen</button>`,begin);
+}
+function showSummary(){
+  const r=results[results.length-1],last=roundIdx>=ROUNDS.length-1;
+  if(last){showFinal();return;}
+  const nx=ROUNDS[roundIdx+1];
+  const rows=r.tickets.map(t=>`<span${t.pts<0?' class="bad"':''}>${t.name} · ${Math.round(t.core)} °C · ${t.verdict}</span><span${t.pts<0?' class="bad"':''}>${sgn(t.pts)}</span>`).join('');
+  showOverlay(`
+    <div class="eyebrow">Runde ${roundIdx+1} serviert · ${r.name}</div>
+    <h2>${fmt(r.secs)} Minuten</h2>
+    <div class="rows">
+      ${rows}
+      <span>Zeitbonus (Ziel ${fmt(r.par)}, × ${Math.round(r.quality*100)} % Qualität)</span><span>+${r.bonus}</span>
+      <span class="total">Runde</span><span class="total">${de(r.pts)}</span>
+      <span>Gesamt</span><span>${de(total)}</span>
+    </div>
+    <div class="next">Runde ${roundIdx+2} · ${roundText(nx,roundIdx+1)}</div>
+    <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
+}
+function showFinal(){
+  const rows=results.map((r,i)=>`<span>${i+1}. ${r.name} · ${fmt(r.secs)}</span><span>${de(r.pts)}</span>`).join('');
+  showOverlay(`
+    <div class="eyebrow">Alle ${ROUNDS.length} Runden serviert</div>
+    <h2>Gesamtpunkte</h2>
+    <div class="big">${de(total)}</div>
+    <div class="rows">${rows}</div>
+    <button class="go" type="button">Nochmal grillen</button>`,()=>{newGame();});
+}
+document.getElementById('restart').addEventListener('click',()=>newGame());
+
+newGame();requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
