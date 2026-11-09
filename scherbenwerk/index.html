@@ -85,13 +85,30 @@ const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const DPR=Math.min(2,window.devicePixelRatio||1);
 cv.width=W*DPR;cv.height=H*DPR;
 
-const ROUNDS=[
-  {n:8, outlines:true, rotate:false,intro:'Die Umrisse der Teile sind auf dem Brett vorgezeichnet.'},
-  {n:14,outlines:true, rotate:false,intro:'Mehr Teile. Die Umrisse helfen noch.'},
-  {n:22,outlines:false,rotate:false,intro:'Ab jetzt keine Umrisse mehr. Nur noch die Vorlage oben hilft.'},
-  {n:28,outlines:false,rotate:true, intro:'Neu: Die Teile liegen verdreht. Klick, Rechtsklick, Mausrad oder R dreht sie um 90°.'},
-  {n:38,outlines:false,rotate:true, intro:'Finale: 38 Teile, verdreht und ohne Umrisse.'},
+/* Jede Runde hat mehrere Varianten; pro Spiel wird je Runde eine gezogen, dazu ein Bruchmuster. */
+const ROUND_POOLS=[
+  [{n:8, outlines:true, rotate:false,intro:'Die Umrisse der Teile sind auf dem Brett vorgezeichnet.'}],
+  [{n:14,outlines:true, rotate:false,intro:'Mehr Teile. Die Umrisse helfen noch.'},
+   {n:16,outlines:true, rotate:false,intro:'16 Teile, die Umrisse helfen noch.'}],
+  [{n:22,outlines:false,rotate:false,intro:'Ab jetzt keine Umrisse mehr. Nur noch die Vorlage oben hilft.'},
+   {n:20,outlines:false,rotate:false,previewSecs:30,intro:'Keine Umrisse, und die Vorlage verschwindet nach 30 Sekunden.'}],
+  [{n:28,outlines:false,rotate:true, intro:'Neu: Die Teile liegen verdreht. Klick, Rechtsklick, Mausrad oder R dreht sie um 90°.'},
+   {n:30,outlines:false,rotate:false,previewSecs:15,intro:'Die Vorlage verschwindet schon nach 15 Sekunden. Merk dir das Bild gut!'}],
+  [{n:38,outlines:false,rotate:true, intro:'Finale: 38 Teile, verdreht und ohne Umrisse.'},
+   {n:34,outlines:false,rotate:true, previewSecs:40,intro:'Finale: verdreht, und die Vorlage verschwindet nach 40 Sekunden.'},
+   {n:44,outlines:false,rotate:false,previewSecs:25,intro:'Finale: 44 Teile, und die Vorlage ist nach 25 Sekunden weg.'}],
 ];
+const PATTERNS=[
+  {id:'voronoi',  name:'Klassischer Bruch',desc:'Unregelmäßige Scherben in allen Größen.'},
+  {id:'einschlag',name:'Einschlag',        desc:'Kleine Splitter rund um den Einschlag, große Scherben am Rand.'},
+  {id:'streifen', name:'Längsbruch',       desc:'Lange, schmale Scherben.'},
+];
+let ROUNDS=ROUND_POOLS.map(p=>({...p[0],pattern:PATTERNS[0]}));
+function planRounds(R){
+  ROUNDS=ROUND_POOLS.map(pool=>({...R.pick(pool),pattern:R.pick(PATTERNS)}));
+  ROUNDS.forEach(r=>{r.rotate=!!r.rotate;r.outlines=!!r.outlines;r.previewSecs=r.previewSecs||0;});
+}
+const roundText=r=>`<strong>${r.pattern.name}</strong> · ${r.n} Teile. ${r.pattern.desc} ${r.intro}`;
 
 /* ---------- random ---------- */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -205,7 +222,52 @@ function motifReef(g,R){
   for(let i=0;i<9;i++){const x=R(40,MW-40),y=R(40,330),s=R(10,22),dir=R.raw()<.5?1:-1,[a,b]=R.pick(fc);drawFish(g,x,y,s,dir,a,b);}
   g.strokeStyle='rgba(220,250,255,.6)';g.lineWidth=1.2;for(let i=0;i<30;i++){g.beginPath();g.arc(R(0,MW),R(0,370),R(2,6),0,7);g.stroke();}
 }
-const MOTIFS=[{name:'Abendsee',fn:motifSee},{name:'Leuchtturm',fn:motifLight},{name:'Rosette',fn:motifRose},{name:'Ballonfest',fn:motifBalloon},{name:'Korallenriff',fn:motifReef}];
+function motifSkyline(g,R){
+  let gr=g.createLinearGradient(0,0,0,MH);gr.addColorStop(0,'#0b1030');gr.addColorStop(.6,'#3b2a6b');gr.addColorStop(1,'#d0607a');g.fillStyle=gr;g.fillRect(0,0,MW,MH);
+  for(let i=0;i<90;i++){g.fillStyle=`rgba(255,255,255,${R(.2,.8)})`;g.fillRect(R(0,MW),R(0,200),1.5,1.5);}
+  g.fillStyle='#fde9b0';g.beginPath();g.arc(R(60,540),R(50,110),R(18,28),0,7);g.fill();
+  [[ '#1a1838',150,260],['#121027',90,200],['#0a0918',40,140]].forEach(([c,lo,hi],layer)=>{
+    let x=-10;
+    while(x<MW){
+      const w=R(30,80),h=R(lo,hi),top=MH-60-h+layer*30;
+      g.fillStyle=c;g.fillRect(x,top,w,MH-top);
+      if(R.raw()<.3){g.fillRect(x+w/2-2,top-R(15,40),4,40);}
+      if(layer>0){for(let wy=top+8;wy<MH-70;wy+=12)for(let wx=x+5;wx<x+w-6;wx+=9){if(R.raw()<.45){g.fillStyle=R.pick(['#ffd36b','#ffb84a','#9fd6ff','#ff8fb1']);g.fillRect(wx,wy,4,6);}}g.fillStyle=c;}
+      x+=w+R(2,10);
+    }
+  });
+  g.fillStyle='#07060f';g.fillRect(0,MH-60,MW,60);
+  for(let i=0;i<14;i++){const x=R(0,MW),y=R(MH-50,MH-10);g.fillStyle=R.raw()<.5?'#ff4d4d':'#fff2c0';g.beginPath();g.arc(x,y,R(1.5,3),0,7);g.fill();g.globalAlpha=.25;g.fillRect(x-30,y-1,30,2);g.globalAlpha=1;}
+}
+function motifAurora(g,R){
+  let gr=g.createLinearGradient(0,0,0,MH);gr.addColorStop(0,'#03101f');gr.addColorStop(.55,'#0b2a3e');gr.addColorStop(1,'#052033');g.fillStyle=gr;g.fillRect(0,0,MW,MH);
+  for(let i=0;i<140;i++){g.fillStyle=`rgba(230,245,255,${R(.2,.9)})`;g.beginPath();g.arc(R(0,MW),R(0,260),R(.4,1.4),0,7);g.fill();}
+  const bands=[['rgba(80,255,170,',0],['rgba(120,200,255,',1],['rgba(200,120,255,',2]];
+  bands.forEach(([c,k])=>{const y0=R(60,150)+k*25,amp=R(20,45),f=R(.008,.016),ph=R(0,6);
+    for(let x=0;x<MW;x+=3){const y=y0+Math.sin(x*f+ph)*amp+Math.sin(x*f*2.7+ph)*amp*.3,h=R(60,130);const lg=g.createLinearGradient(0,y-h,0,y);lg.addColorStop(0,c+'0)');lg.addColorStop(1,c+'.38)');g.fillStyle=lg;g.fillRect(x,y-h,3,h);}});
+  const ridge=(c,base,amp)=>{g.fillStyle=c;g.beginPath();g.moveTo(0,base);let x=0;while(x<=MW){g.lineTo(x,base-R(0,amp));x+=R(20,60);}g.lineTo(MW,base);g.lineTo(MW,MH);g.lineTo(0,MH);g.fill();};
+  ridge('#16324a',300,110);ridge('#0d2134',310,60);
+  g.fillStyle='#071827';g.fillRect(0,310,MW,MH-310);
+  for(let y=316;y<MH;y+=6){g.fillStyle=`rgba(80,255,170,${.18*(1-(y-310)/140)})`;g.fillRect(R(0,MW*.6),y,R(40,200),2);}
+  g.fillStyle='#04101a';for(let i=0;i<22;i++){const x=R(0,MW),h=R(30,80),b=MH-R(0,20);g.beginPath();g.moveTo(x,b-h);g.lineTo(x-h*.22,b);g.lineTo(x+h*.22,b);g.fill();}
+}
+function motifForest(g,R){
+  let gr=g.createLinearGradient(0,0,0,MH);gr.addColorStop(0,'#f6c27a');gr.addColorStop(.5,'#f39a5c');gr.addColorStop(1,'#6b3b2a');g.fillStyle=gr;g.fillRect(0,0,MW,MH);
+  g.fillStyle='rgba(255,240,200,.85)';g.beginPath();g.arc(R(150,450),R(80,140),40,0,7);g.fill();
+  const cols=['#c2401f','#e0752b','#f0b13a','#8a2d1c','#d95d39','#a8b23a'];
+  for(let layer=0;layer<3;layer++){
+    const n=10+layer*5,base=260+layer*70;
+    for(let i=0;i<n;i++){
+      const x=R(-20,MW+20),r=R(26,48)*(0.7+layer*.25),y=base-R(0,40);
+      g.fillStyle='#3b2416';g.fillRect(x-r*.1,y,r*.2,MH-y);
+      for(let k=0;k<5;k++){g.fillStyle=R.pick(cols);g.globalAlpha=0.75+layer*.08;g.beginPath();g.arc(x+R(-r*.6,r*.6),y-R(0,r*.8),r*R(.5,.8),0,7);g.fill();}
+      g.globalAlpha=1;
+    }
+  }
+  g.fillStyle='#6b3b2a';g.fillRect(0,MH-40,MW,40);
+  for(let i=0;i<120;i++){g.fillStyle=R.pick(cols);g.beginPath();g.ellipse(R(0,MW),R(MH-60,MH),R(2,5),R(1,3),R(0,3),0,7);g.fill();}
+}
+const MOTIFS=[{name:'Abendsee',fn:motifSee},{name:'Leuchtturm',fn:motifLight},{name:'Rosette',fn:motifRose},{name:'Ballonfest',fn:motifBalloon},{name:'Korallenriff',fn:motifReef},{name:'Skyline',fn:motifSkyline},{name:'Polarlicht',fn:motifAurora},{name:'Herbstwald',fn:motifForest}];
 function makeMotif(m,seed){
   const c=document.createElement('canvas');c.width=MW*DPR;c.height=MH*DPR;const g=c.getContext('2d');g.scale(DPR,DPR);
   if(m.img){const iw=m.img.naturalWidth,ih=m.img.naturalHeight,k=Math.max(MW/iw,MH/ih);g.drawImage(m.img,(MW-iw*k)/2,(MH-ih*k)/2,iw*k,ih*k);}
@@ -252,24 +314,27 @@ function makePiece(id,poly,motif){
   return{id,poly,c,rel,sp,sw,sh,ox,oy,rot:0,ang:0,angT:0,state:'hidden',x:0,y:0,tx:0,ty:0,home:null,appear:1,flash:0,glow:0,shake:0};
 }
 const MAXW=270; // groesste erlaubte Breite eines Teils, damit es in eine Ablage passt (beim Drehen auch Hoehe)
-function voronoi(n,R,spread){
-  const base=Math.sqrt(MW*MH/n);const pts=[];let scale=0.92,tries=0;
+function voronoi(n,R,spread,mode){
+  const sy=mode==='streifen'?0.6:1,H2=MH*sy;            // Laengsbruch: in gestauchtem Raum rechnen, dann strecken
+  const ix=R(MW*.3,MW*.7),iy=R(H2*.3,H2*.7),maxD=Math.hypot(MW,H2)*.55;
+  const base=Math.sqrt(MW*H2/n)*(mode==='einschlag'?0.8:1);const pts=[];let scale=0.92,tries=0;
   while(pts.length<n){
     tries++;if(tries%500===0)scale*=0.95;
-    const p=[R(6,MW-6),R(6,MH-6),base*R(1-spread,1+spread*0.5)];
+    const p=[R(6,MW-6),R(6,H2-6),base*R(1-spread,1+spread*0.5)];
+    if(mode==='einschlag'){const d=Math.min(1,Math.hypot(p[0]-ix,p[1]-iy)/maxD);if(R.raw()>1-0.7*d&&tries%500>50)continue;p[2]*=0.45+1.2*d;}
     if(pts.every(q=>Math.hypot(q[0]-p[0],q[1]-p[1])>=(q[2]+p[2])/2*scale))pts.push(p);
   }
   return pts.map((p,i)=>{
-    let poly=[[0,0],[MW,0],[MW,MH],[0,MH]];
+    let poly=[[0,0],[MW,0],[MW,H2],[0,H2]];
     pts.forEach((q,j)=>{if(j===i)return;const a=q[0]-p[0],b=q[1]-p[1];poly=clip(poly,a,b,a*(p[0]+q[0])/2+b*(p[1]+q[1])/2);});
-    return poly;
+    return poly.map(([x,y])=>[x,y/sy]);
   });
 }
 function fitsTray(poly,rotate){let a=1e9,b=-1e9,c=1e9,d=-1e9;poly.forEach(([x,y])=>{a=Math.min(a,x);b=Math.max(b,x);c=Math.min(c,y);d=Math.max(d,y);});return b-a<=MAXW&&(!rotate||d-c<=MAXW);}
-function buildPieces(n,motif,R,rotate){
+function buildPieces(n,motif,R,rotate,mode){
   let polys=null;
   for(let t=0;t<200;t++){
-    const cand=voronoi(n,R,t<100?0.5:0.25);
+    const cand=voronoi(n,R,t<100?0.5:0.25,t<150?mode:'voronoi');
     if(cand.every(pl=>fitsTray(pl,rotate))){polys=cand;break;}
   }
   if(!polys){ // Notfall: gleichmaessiges Raster, passt immer
@@ -321,6 +386,7 @@ let drag=null,hover=null,toastMsg='',toastT=0;
 function newGame(){
   baseSeed=Math.floor(Math.random()*1e9);
   const R0=mkR(baseSeed);
+  planRounds(mkR(baseSeed^0x2545f491));
   roundMotifs=[...shuffle(PHOTOS.slice(),R0),...shuffle(MOTIFS.slice(),R0)].slice(0,ROUNDS.length);
   total=0;results=[];
   setupRound(0);showStart();
@@ -329,7 +395,7 @@ function setupRound(i){
   roundIdx=i;round=ROUNDS[i];
   const seed=(baseSeed+i*7919)>>>0,R=mkR(seed^0x5bd1e995);
   const m=roundMotifs[i];motifName=m.name;motif=makeMotif(m,seed);
-  pieces=shuffle(buildPieces(round.n,motif,R,round.rotate),R);
+  pieces=shuffle(buildPieces(round.n,motif,R,round.rotate,round.pattern.id),R);
   if(round.rotate)pieces.forEach(p=>{p.rot=R.raw()<.85?1+Math.floor(R.raw()*3):0;p.ang=p.angT=p.rot*Math.PI/2;});
   refill();
   mistakes=0;endSecs=0;playing=false;drag=null;hover=null;
@@ -374,7 +440,7 @@ function rotatePiece(pc){
 }
 function endRound(){
   playing=false;endSecs=(performance.now()-t0)/1000;
-  const par=round.n*(round.rotate?9:6),base=round.n*10,pen=mistakes*15,bonus=Math.max(0,Math.round((par-endSecs)*3));
+  const par=round.n*(round.rotate?9:6)+(round.previewSecs?round.n:0),base=round.n*10,pen=mistakes*15,bonus=Math.max(0,Math.round((par-endSecs)*3));
   const pts=Math.max(0,base-pen+bonus);total+=pts;
   results.push({name:motifName,n:round.n,secs:endSecs,mistakes,base,pen,bonus,par,pts});
   setTimeout(showSummary,800);
@@ -484,7 +550,11 @@ function draw(){
 
   // HUD top
   const px=BOARD.x,py=20,pw=160,ph=120;
-  ctx.drawImage(motif,px,py,pw,ph);ctx.strokeStyle=COL.lead;ctx.lineWidth=3;ctx.strokeRect(px-1.5,py-1.5,pw+3,ph+3);
+  const pvLeft=round.previewSecs&&playing?round.previewSecs-secsNow():Infinity;
+  if(pvLeft>0){ctx.drawImage(motif,px,py,pw,ph);}
+  else{ctx.fillStyle=COL.board;ctx.fillRect(px,py,pw,ph);ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('VORLAGE WEG',px+pw/2,py+ph/2-10);}
+  ctx.strokeStyle=COL.lead;ctx.lineWidth=3;ctx.strokeRect(px-1.5,py-1.5,pw+3,ph+3);
+  if(pvLeft>0&&pvLeft<Infinity){ctx.fillStyle=pvLeft<6?COL.rose:'rgba(10,16,19,.85)';ctx.fillRect(px+pw-52,py,52,22);ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(`${Math.ceil(pvLeft)} s`,px+pw-26,py+11);}
   ctx.fillStyle='rgba(10,16,19,.78)';ctx.fillRect(px,py+ph-20,64,20);
   ctx.font=`600 11px ${MONO}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('VORLAGE',px+8,py+ph-10);
 
@@ -493,14 +563,12 @@ function draw(){
   ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,tx,46);
   ctx.font=`800 34px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(motifName,tx,86);
   ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;
-  ctx.fillText(`${round.n} Teile · ${round.outlines?'mit Umrissen':'ohne Umrisse'} · ${round.rotate?'Drehen nötig':'nicht gedreht'}`,tx,114);
+  ctx.fillText([`${round.n} Teile`,round.pattern.name,round.outlines?'mit Umrissen':'ohne Umrisse',round.rotate?'verdreht':'',round.previewSecs?`Vorlage ${round.previewSecs} s`:''].filter(Boolean).join(' · '),tx,114);
 
   const rx=BOARD.x+BOARD.w;ctx.textAlign='right';
   ctx.font=`600 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText('ZEIT',rx,46);
   ctx.font=`600 34px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(fmt(secsNow()),rx,84);
   ctx.font=`500 14px ${MONO}`;
-  ctx.fillStyle=mistakes?COL.rose:COL.muted;const ftxt=`${mistakes} Fehler`;ctx.fillText(ftxt,rx,114);
-  const fw=ctx.measureText(ftxt).width;ctx.fillStyle=COL.muted;ctx.fillText(`${total.toLocaleString('de-DE')} Pkt · `,rx-fw,114);
 
   // bottom
   const placedN=pieces.filter(p=>p.state==='placed').length,hidden=pieces.filter(p=>p.state==='hidden').length;
@@ -510,9 +578,10 @@ function draw(){
   ctx.font=`500 14px ${MONO}`;ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.fillStyle=COL.ink;
   ctx.fillText(`${placedN} / ${pieces.length} gelegt`,BOARD.x,by+34);
   ctx.textAlign='right';ctx.fillStyle=hidden?COL.sea:COL.muted;
-  ctx.fillText(hidden?`Stapel: ${hidden} Teile warten auf Platz`:'Stapel leer',BOARD.x+BOARD.w,by+34);
+  ctx.fillText(hidden?`Stapel: ${hidden} Teile`:'Stapel leer',BOARD.x+BOARD.w,by+34);
+  ctx.textAlign='left';ctx.fillStyle=COL.muted;let mx=BOARD.x+ctx.measureText(`${placedN} / ${pieces.length} gelegt`).width;const ptxt=` · ${total.toLocaleString('de-DE')} Pkt · `;ctx.fillText(ptxt,mx,by+34);mx+=ctx.measureText(ptxt).width;ctx.fillStyle=mistakes?COL.rose:COL.muted;ctx.fillText(`${mistakes} Fehler`,mx,by+34);
   if(hidden){
-    const ix=BOARD.x+BOARD.w-ctx.measureText(`Stapel: ${hidden} Teile warten auf Platz`).width-30,iy=by+28;
+    const ix=BOARD.x+BOARD.w-ctx.measureText(`Stapel: ${hidden} Teile`).width-30,iy=by+28;
     ctx.fillStyle=COL.sea;for(let k=2;k>=0;k--){ctx.globalAlpha=1-k*.3;ctx.beginPath();ctx.moveTo(ix-9+k*3,iy-k*3+4);ctx.lineTo(ix+2+k*3,iy-k*3-6);ctx.lineTo(ix+10+k*3,iy-k*3+2);ctx.lineTo(ix+k*3,iy-k*3+7);ctx.closePath();ctx.fill();}
     ctx.globalAlpha=1;
   }
@@ -554,11 +623,12 @@ function showStart(){
     <ul>
       <li>Teile aus den Ablagen links und rechts aufs Brett ziehen.</li>
       <li>Passen nicht alle in die Ablagen, warten die übrigen im Stapel und tauchen auf, sobald Platz frei wird.</li>
-      <li>Mit jeder Runde kommen mehr Teile. Ab Runde 3 fehlen die Umrisse, ab Runde 4 liegen die Teile verdreht.</li>
+      <li>Mit jeder Runde kommen mehr Teile. Ab Runde 3 fehlen die Umrisse, später liegen die Teile verdreht oder die Vorlage verschwindet.</li>
+      <li>Jedes Spiel mischt Motive, Bruchmuster und Zusatzregeln neu.</li>
       <li>Ein Teil an der falschen Stelle aufs Brett gelegt kostet einen Fehler.</li>
     </ul>
     <p>${PHOTOS.length?`${PHOTOS.length} Spielmotive geladen.`:'Keine eigenen Bilder gefunden, es werden die eingebauten Motive verwendet.'}</p>
-    <div class="next"><strong>Runde 1:</strong> ${ROUNDS[0].n} Teile. ${ROUNDS[0].intro}</div>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
     <button class="go" type="button" id="go">Runde 1 starten</button>`,begin);
 }
 function showSummary(){
@@ -575,7 +645,7 @@ function showSummary(){
       <span class="total">Runde</span><span class="total">${r.pts.toLocaleString('de-DE')}</span>
       <span>Gesamt</span><span>${total.toLocaleString('de-DE')}</span>
     </div>
-    <div class="next"><strong>Runde ${roundIdx+2}:</strong> ${nx.n} Teile. ${nx.intro}</div>
+    <div class="next">Runde ${roundIdx+2} · ${roundText(nx)}</div>
     <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
 }
 function showFinal(){

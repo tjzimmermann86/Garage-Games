@@ -85,13 +85,34 @@ const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex 
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
 const DPR=Math.min(2,window.devicePixelRatio||1);cv.width=W*DPR;cv.height=H*DPR;
 
-const ROUNDS=[
-  {n:5,name:'Gartenschlauch',leaks:true, hidden:false,intro:'Wasser und Lecks werden live angezeigt.'},
-  {n:6,name:'Waschanlage',   leaks:true, hidden:false,intro:'Größeres Netz, Anzeige wie bisher.'},
-  {n:7,name:'Kühlkreislauf', leaks:false,hidden:false,intro:'Ab jetzt keine Leck-Markierung mehr. Das Wasser siehst du noch.'},
-  {n:7,name:'Hydraulik',     leaks:false,hidden:true, intro:'Neu: Das Wasser bleibt unsichtbar. Mit „Wasser marsch“ (Leertaste) prüfst du dein Netz. Jeder Fehlversuch kostet einen Fehler.'},
-  {n:8,name:'Hauptleitung',  leaks:false,hidden:true, intro:'Finale: 8 × 8, Wasser nur auf Knopfdruck.'},
+/* Jede Runde hat mehrere Varianten (Form, Größe, Pumpen). Pro Spiel wird je Runde eine gezogen. */
+const ROUND_POOLS=[
+  {leaks:true, hidden:false,intro:'Wasser und Lecks werden live angezeigt.',variants:[
+    {name:'Gartenschlauch',w:5,h:5,shape:'rect',   pumps:'center'},
+    {name:'Regenrinne',    w:7,h:4,shape:'rect',   pumps:'left'},
+    {name:'Ölwanne',       w:6,h:5,shape:'corners',pumps:'center'}]},
+  {leaks:true, hidden:false,intro:'Größeres Netz, Anzeige wie bisher.',variants:[
+    {name:'Waschanlage',   w:6,h:6,shape:'rect',   pumps:'center'},
+    {name:'Tankstelle',    w:8,h:5,shape:'rect',   pumps:'two'},
+    {name:'Werkbank',      w:7,h:6,shape:'blocks', pumps:'center',blocks:4}]},
+  {leaks:false,hidden:false,intro:'Ab jetzt keine Leck-Markierung mehr. Das Wasser siehst du noch.',variants:[
+    {name:'Kühlkreislauf', w:7,h:7,shape:'rect',   pumps:'center'},
+    {name:'Auspuffstrang', w:9,h:5,shape:'rect',   pumps:'left'},
+    {name:'Ringleitung',   w:7,h:7,shape:'hole',   pumps:'top'}]},
+  {leaks:false,hidden:true, intro:'Neu: Das Wasser bleibt unsichtbar. Mit „Wasser marsch“ (Leertaste) prüfst du dein Netz. Jeder Fehlversuch kostet einen Fehler.',variants:[
+    {name:'Hydraulik',     w:7,h:7,shape:'rect',   pumps:'center'},
+    {name:'Bremsleitung',  w:8,h:6,shape:'rect',   pumps:'two'},
+    {name:'Hebebühne',     w:8,h:7,shape:'blocks', pumps:'center',blocks:6}]},
+  {leaks:false,hidden:true, intro:'Finale: großes Netz, Wasser nur auf Knopfdruck.',variants:[
+    {name:'Hauptleitung',  w:8,h:8,shape:'rect',   pumps:'center'},
+    {name:'Stadtnetz',     w:10,h:6,shape:'rect',  pumps:'two'},
+    {name:'Kreuzung',      w:9,h:9,shape:'corners2',pumps:'center'}]},
 ];
+const SHAPE_TXT={rect:'',corners:'Die Ecken fehlen.',corners2:'Ein Netz in Kreuzform.',hole:'In der Mitte ist ein Loch.',blocks:'Betonblöcke sperren einzelne Felder.'};
+const PUMP_TXT={center:'',left:'Die Pumpe sitzt am Rand.',top:'Die Pumpe sitzt am Rand.',two:'Zwei Pumpen speisen das Netz.'};
+let ROUNDS=ROUND_POOLS.map(p=>({...p,...p.variants[0]}));
+function planRounds(rnd){ROUNDS=ROUND_POOLS.map(p=>({...p,...p.variants[Math.floor(rnd()*p.variants.length)]}));}
+const roundText=r=>`<strong>${r.name}</strong> · ${r.w} × ${r.h}. ${[SHAPE_TXT[r.shape],PUMP_TXT[r.pumps],r.intro].filter(Boolean).join(' ')}`;
 const DX=[0,1,0,-1],DY=[-1,0,1,0];
 const BTN={x:980,y:612,w:268,h:72};
 
@@ -99,51 +120,78 @@ function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a
 const bits=m=>(m&1)+(m>>1&1)+(m>>2&1)+(m>>3&1);
 const rotMask=(m,r)=>{r=((r%4)+4)%4;let o=0;for(let d=0;d<4;d++)if(m>>d&1)o|=1<<((d+r)&3);return o;};
 
-/* ---------- Netz erzeugen: zufälliger Spannbaum (Prim), Pumpe in der Mitte ---------- */
-function genTree(n,rnd){
-  const N=n*n,mask=new Array(N).fill(0),inT=new Array(N).fill(false);
-  const c=Math.floor(n/2)*n+Math.floor(n/2);inT[c]=true;let cnt=1;const fr=[];
-  const push=i=>{const x=i%n,y=(i/n)|0;for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=n||ny>=n)continue;const j=ny*n+nx;if(!inT[j])fr.push([i,d,j]);}};
-  push(c);
-  while(cnt<N){
+/* ---------- Netz erzeugen: Form + zufälliger Spannbaum (Prim) über alle aktiven Felder ---------- */
+function connected(act,w,h){
+  const N=w*h,start=act.indexOf(true);if(start<0)return false;
+  const seen=new Uint8Array(N),q=[start];seen[start]=1;
+  for(let k=0;k<q.length;k++){const i=q[k],x=i%w,y=(i/w)|0;for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(act[j]&&!seen[j]){seen[j]=1;q.push(j);}}}
+  return q.length===act.filter(Boolean).length;
+}
+function makeShape(v,rnd){
+  const{w,h}=v,act=new Array(w*h).fill(true),off=(x,y)=>{if(x>=0&&y>=0&&x<w&&y<h)act[y*w+x]=false;};
+  if(v.shape==='corners'){off(0,0);off(w-1,0);off(0,h-1);off(w-1,h-1);}
+  if(v.shape==='corners2'){for(const[cx,cy]of[[0,0],[w-2,0],[0,h-2],[w-2,h-2]]){off(cx,cy);off(cx+1,cy);off(cx,cy+1);off(cx+1,cy+1);}}
+  if(v.shape==='hole'){const cx=Math.floor(w/2),cy=Math.floor(h/2);for(let y=cy-1;y<=cy+1;y++)for(let x=cx-1;x<=cx+1;x++)off(x,y);}
+  if(v.shape==='blocks'){
+    let placed=0,guard=0;
+    while(placed<v.blocks&&guard++<500){const x=1+Math.floor(rnd()*(w-2)),y=1+Math.floor(rnd()*(h-2)),i=y*w+x;if(!act[i])continue;act[i]=false;if(connected(act,w,h))placed++;else act[i]=true;}
+  }
+  return act;
+}
+function nearestActive(act,w,h,tx,ty){let best=-1,bd=1e9;for(let i=0;i<w*h;i++){if(!act[i])continue;const d=Math.hypot(i%w-tx,((i/w)|0)-ty);if(d<bd){bd=d;best=i;}}return best;}
+function placePumps(v,act){
+  const{w,h}=v,cx=(w-1)/2,cy=(h-1)/2;
+  if(v.pumps==='left')return[nearestActive(act,w,h,0,Math.floor(cy))];
+  if(v.pumps==='top')return[nearestActive(act,w,h,Math.floor(cx),0)];
+  if(v.pumps==='two')return[nearestActive(act,w,h,Math.floor((w-1)*.25),Math.floor(cy)),nearestActive(act,w,h,Math.ceil((w-1)*.75),Math.ceil(cy))];
+  return[nearestActive(act,w,h,Math.floor(cx),Math.floor(cy))];
+}
+function genTree(w,h,act,start,rnd){
+  const N=w*h,mask=new Array(N).fill(0),inT=new Array(N).fill(false),total=act.filter(Boolean).length;
+  inT[start]=true;let cnt=1;const fr=[];
+  const push=i=>{const x=i%w,y=(i/w)|0;for(let d=0;d<4;d++){const nx=x+DX[d],ny=y+DY[d];if(nx<0||ny<0||nx>=w||ny>=h)continue;const j=ny*w+nx;if(act[j]&&!inT[j])fr.push([i,d,j]);}};
+  push(start);
+  while(cnt<total&&fr.length){
     const k=Math.floor(rnd()*fr.length),[i,d,j]=fr[k];
     if(inT[j]){fr[k]=fr[fr.length-1];fr.pop();continue;}
     if(bits(mask[i])>=3&&rnd()<0.85)continue; // Kreuzungen selten halten
     fr[k]=fr[fr.length-1];fr.pop();
     mask[i]|=1<<d;mask[j]|=1<<((d+2)&3);inT[j]=true;cnt++;push(j);
   }
-  return{mask,src:c};
+  return mask;
 }
 
 /* ---------- Spielzustand ---------- */
-let baseSeed,roundIdx=0,round=ROUNDS[0],n=5,cs=120,tiles=[],src=0,F=null;
+let baseSeed,roundIdx=0,round=ROUNDS[0],gw=5,gh=5,cs=120,ox=BX,oy=BY,tiles=[],pumps=[],nAct=0,F=null;
 let playing=false,t0=0,endSecs=0,mistakes=0,total=0,results=[],check=null,wonAt=0,hover=-1,toastMsg='',toastT=0;
 
 function flow(){
-  const N=n*n,lit=new Uint8Array(N),depth=new Int16Array(N).fill(-1),q=[src],leaks=[];
-  lit[src]=1;depth[src]=0;
+  const N=gw*gh,lit=new Uint8Array(N),depth=new Int16Array(N).fill(-1),q=[],leaks=[];
+  for(const pmp of pumps){lit[pmp]=1;depth[pmp]=0;q.push(pmp);}
   for(let h=0;h<q.length;h++){
-    const i=q[h],m=rotMask(tiles[i].base,tiles[i].rotT),x=i%n,y=(i/n)|0;
+    const i=q[h],m=rotMask(tiles[i].base,tiles[i].rotT),x=i%gw,y=(i/gw)|0;
     for(let d=0;d<4;d++){
       if(!(m>>d&1))continue;
       const nx=x+DX[d],ny=y+DY[d];
-      if(nx<0||ny<0||nx>=n||ny>=n){leaks.push([i,d]);continue;}
-      const j=ny*n+nx;
-      if(!(rotMask(tiles[j].base,tiles[j].rotT)>>((d+2)&3)&1)){leaks.push([i,d]);continue;}
+      if(nx<0||ny<0||nx>=gw||ny>=gh){leaks.push([i,d]);continue;}
+      const j=ny*gw+nx;
+      if(tiles[j].blocked||!(rotMask(tiles[j].base,tiles[j].rotT)>>((d+2)&3)&1)){leaks.push([i,d]);continue;}
       if(!lit[j]){lit[j]=1;depth[j]=depth[i]+1;q.push(j);}
     }
   }
   let litN=0,ends=0,endsLit=0,maxD=0;
-  for(let i=0;i<N;i++){litN+=lit[i];maxD=Math.max(maxD,depth[i]);if(i!==src&&bits(tiles[i].base)===1){ends++;if(lit[i])endsLit++;}}
-  return{lit,depth,leaks,maxD,ends,endsLit,solved:litN===N&&leaks.length===0};
+  for(let i=0;i<N;i++){if(tiles[i].blocked)continue;litN+=lit[i];maxD=Math.max(maxD,depth[i]);if(!tiles[i].pump&&bits(tiles[i].base)===1){ends++;if(lit[i])endsLit++;}}
+  return{lit,depth,leaks,maxD,ends,endsLit,solved:litN===nAct&&leaks.length===0};
 }
 
-function newGame(){baseSeed=Math.floor(Math.random()*1e9);total=0;results=[];setupRound(0);showStart();}
+function newGame(){baseSeed=Math.floor(Math.random()*1e9);planRounds(mulberry32(baseSeed^0x2545f491));total=0;results=[];setupRound(0);showStart();}
 function setupRound(i){
-  roundIdx=i;round=ROUNDS[i];n=round.n;cs=BS/n;
+  roundIdx=i;round=ROUNDS[i];gw=round.w;gh=round.h;
+  cs=Math.min(BS/gw,BS/gh);ox=BX+(BS-gw*cs)/2;oy=BY+(BS-gh*cs)/2;
   const rnd=mulberry32((baseSeed+i*7919)>>>0);
-  const{mask,src:s}=genTree(n,rnd);src=s;
-  tiles=mask.map(m=>{const r=Math.floor(rnd()*4);return{base:m,rotT:r,ang:r*Math.PI/2,locked:false,wet:0,shake:0};});
+  const act=makeShape(round,rnd);pumps=placePumps(round,act);nAct=act.filter(Boolean).length;
+  const mask=genTree(gw,gh,act,pumps[0],rnd);
+  tiles=mask.map((m,k)=>{const r=Math.floor(rnd()*4);return{base:m,rotT:r,ang:r*Math.PI/2,locked:false,wet:0,shake:0,blocked:!act[k],pump:pumps.includes(k)};});
   F=flow();
   let guard=0;while(F.solved&&guard++<20){tiles.forEach(t=>{t.rotT+=1+Math.floor(rnd()*3);t.ang=t.rotT*Math.PI/2;});F=flow();}
   tiles.forEach((t,k)=>t.wet=(!round.hidden&&F.lit[k])?1:0);
@@ -158,11 +206,11 @@ function afterChange(){
 }
 function rotate(i,dir){
   if(!playing||check||i<0)return;
-  const t=tiles[i];
+  const t=tiles[i];if(t.blocked)return;
   if(t.locked){t.shake=1;toast('Festgeschraubt – mit F oder Mittelklick lösen');return;}
   t.rotT+=dir;sfx('tick');afterChange();
 }
-function toggleLock(i){if(!playing||check||i<0)return;tiles[i].locked=!tiles[i].locked;sfx('lock');}
+function toggleLock(i){if(!playing||check||i<0||tiles[i].blocked)return;tiles[i].locked=!tiles[i].locked;sfx('lock');}
 function waterCheck(){
   if(!playing||check||!round.hidden)return;
   const f=flow(),dur=f.maxD*0.07+0.9;
@@ -175,9 +223,9 @@ function waterCheck(){
 }
 function win(){
   playing=false;endSecs=(performance.now()-t0)/1000;wonAt=performance.now();sfx('win');
-  const N=n*n,par=Math.round(N*(round.hidden?3.5:2.5)),base=N*4,pen=mistakes*25,bonus=Math.max(0,Math.round((par-endSecs)*3));
+  const N=nAct,par=Math.round(N*(round.hidden?3.5:2.5)),base=N*4,pen=mistakes*25,bonus=Math.max(0,Math.round((par-endSecs)*3));
   const pts=Math.max(0,base-pen+bonus);total+=pts;
-  results.push({name:round.name,n,secs:endSecs,mistakes,base,pen,bonus,par,pts});
+  results.push({name:round.name,n:nAct,secs:endSecs,mistakes,base,pen,bonus,par,pts});
   setTimeout(showSummary,1500);
 }
 function toast(m){toastMsg=m;toastT=2.4;}
@@ -199,7 +247,7 @@ function sfx(type){
 
 /* ---------- Eingabe ---------- */
 function toLocal(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left)*W/r.width,y:(e.clientY-r.top)*H/r.height};}
-function tileAt(p){if(p.x<BX||p.y<BY||p.x>=BX+BS||p.y>=BY+BS)return -1;return Math.floor((p.y-BY)/cs)*n+Math.floor((p.x-BX)/cs);}
+function tileAt(p){const x=Math.floor((p.x-ox)/cs),y=Math.floor((p.y-oy)/cs);if(x<0||y<0||x>=gw||y>=gh)return -1;const i=y*gw+x;return tiles[i]&&!tiles[i].blocked?i:-1;}
 const inBtn=p=>p.x>=BTN.x&&p.x<=BTN.x+BTN.w&&p.y>=BTN.y&&p.y<=BTN.y+BTN.h;
 let press=null,lastWheel=0;
 cv.addEventListener('pointerdown',e=>{
@@ -250,11 +298,12 @@ function wetness(i,now){
   return round.hidden?0:tiles[i].wet;
 }
 function drawTile(i,now){
-  const t=tiles[i],x=BX+(i%n)*cs,y=BY+((i/n)|0)*cs,cx=x+cs/2,cy=y+cs/2;
+  const t=tiles[i],x=ox+(i%gw)*cs,y=oy+((i/gw)|0)*cs,cx=x+cs/2,cy=y+cs/2;
+  if(t.blocked){ctx.fillStyle=COL.lead;ctx.fillRect(x+1.5,y+1.5,cs-3,cs-3);ctx.save();ctx.beginPath();ctx.rect(x+1.5,y+1.5,cs-3,cs-3);ctx.clip();ctx.strokeStyle='rgba(0,0,0,.28)';ctx.lineWidth=cs*.08;for(let k=-cs;k<cs*2;k+=cs*.25){ctx.beginPath();ctx.moveTo(x+k,y);ctx.lineTo(x+k-cs,y+cs);ctx.stroke();}ctx.restore();return;}
   const sh=t.shake>0?Math.sin(t.shake*40)*3*t.shake:0;
   ctx.fillStyle=t.locked?COL.plateLock:COL.plate;ctx.fillRect(x+1.5,y+1.5,cs-3,cs-3);
   if(t.locked){const o=cs*.11,r=Math.max(2.5,cs*.035);screw(x+o,y+o,r);screw(x+cs-o,y+o,r);screw(x+o,y+cs-o,r);screw(x+cs-o,y+cs-o,r);}
-  const pw=cs*.27,L=cs/2,wet=wetness(i,now),isEnd=i!==src&&bits(t.base)===1;
+  const pw=cs*.27,L=cs/2,wet=wetness(i,now),isEnd=!t.pump&&bits(t.base)===1;
   ctx.save();ctx.translate(cx+sh,cy);ctx.rotate(t.ang);
   const arms=g=>{for(let d=0;d<4;d++)if(t.base>>d&1){ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(DX[d]*L,DY[d]*L);ctx.stroke();}};
   ctx.lineCap='butt';
@@ -269,7 +318,7 @@ function drawTile(i,now){
   ctx.strokeStyle=COL.board;ctx.lineWidth=pw*.46;arms();
   if(wet>0){ctx.globalAlpha=wet;ctx.strokeStyle=COL.water;ctx.lineWidth=pw*.46;arms();ctx.globalAlpha=1;}
   ctx.restore();
-  if(i===src){
+  if(t.pump){
     const s=cs*.6;rr(cx-s/2,cy-s/2,s,s,s*.18);ctx.fillStyle=COL.amber;ctx.fill();ctx.strokeStyle='#7a5413';ctx.lineWidth=2;ctx.stroke();
     ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(cx,cy,s*.32,0,7);ctx.fill();
     const a=-Math.PI*.75+(F.ends?F.endsLit/F.ends:0)*Math.PI*1.5*(round.hidden&&!wonAt?0:1)+Math.sin(now/300)*.04;
@@ -285,7 +334,7 @@ function drawTile(i,now){
 function drawLeaks(list,now){
   const pulse=.6+.4*Math.sin(now/160);
   for(const[i,d]of list){
-    const cx=BX+(i%n)*cs+cs/2+DX[d]*cs*.5,cy=BY+((i/n)|0)*cs+cs/2+DY[d]*cs*.5,r=Math.max(5,cs*.09);
+    const cx=ox+(i%gw)*cs+cs/2+DX[d]*cs*.5,cy=oy+((i/gw)|0)*cs+cs/2+DY[d]*cs*.5,r=Math.max(5,cs*.09);
     ctx.globalAlpha=pulse;ctx.fillStyle=COL.rose;
     ctx.beginPath();ctx.arc(cx,cy+r*.3,r,0,Math.PI);ctx.lineTo(cx,cy-r*1.4);ctx.closePath();ctx.fill();
     ctx.globalAlpha=1;
@@ -301,14 +350,14 @@ function draw(now){
   ctx.textBaseline='alphabetic';ctx.textAlign='left';
   ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.water;ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,BX,44);
   ctx.font=`800 34px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(round.name,BX,82);
-  const tw=ctx.measureText(round.name).width;ctx.font=`500 15px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText(`${n} × ${n}`,BX+tw+14,82);
+  const tw=ctx.measureText(round.name).width;ctx.font=`500 15px ${MONO}`;ctx.fillStyle=COL.muted;ctx.fillText(`${gw} × ${gh}`,BX+tw+14,82);
   ctx.textAlign='right';label('ZEIT',BX+BS,44,'right');
   ctx.font=`600 34px ${MONO}`;ctx.fillStyle=COL.ink;ctx.fillText(fmt(secsNow()),BX+BS,82);
 
   // Brett
-  ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;ctx.fillStyle=COL.board;ctx.fillRect(BX,BY,BS,BS);ctx.restore();
-  for(let i=0;i<n*n;i++)drawTile(i,now);
-  ctx.strokeStyle=COL.lead;ctx.lineWidth=6;ctx.strokeRect(BX-3,BY-3,BS+6,BS+6);
+  ctx.save();ctx.shadowColor='rgba(0,0,0,.5)';ctx.shadowBlur=30;ctx.shadowOffsetY=8;ctx.fillStyle=COL.board;ctx.fillRect(ox,oy,gw*cs,gh*cs);ctx.restore();
+  for(let i=0;i<gw*gh;i++)drawTile(i,now);
+  ctx.strokeStyle=COL.lead;ctx.lineWidth=6;ctx.strokeRect(ox-3,oy-3,gw*cs+6,gh*cs+6);
   if(playing&&round.leaks&&!check)drawLeaks(F.leaks,now);
   if(check&&(now-check.t0)/1000>check.dur)drawLeaks(check.F.leaks,now);
 
@@ -317,17 +366,18 @@ function draw(now){
   label('SO GEHT’S',36,132);
   ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';
   let y=160;
-  y=wrapText('Dreh die Rohre so, dass das Wasser von der Pumpe in der Mitte jeden Hahn erreicht.',36,y,260,21)+8;
+  y=wrapText(pumps.length>1?'Dreh die Rohre so, dass das Wasser der Pumpen jeden Hahn erreicht.':'Dreh die Rohre so, dass das Wasser von der Pumpe jeden Hahn erreicht.',36,y,260,21)+8;
   y=wrapText('Fertig ist das Netz, wenn alle Rohre verbunden sind und nirgends Wasser austritt.',36,y,260,21)+16;
   ctx.strokeStyle=COL.edge;ctx.beginPath();ctx.moveTo(36,y-8);ctx.lineTo(296,y-8);ctx.stroke();y+=14;
-  const legend=[['pump','Pumpe'],['tap','Hahn'],['lock','Festgeschraubt'],['leak','Leck']];
+  const legend=[['pump','Pumpe'],['tap','Hahn'],['lock','Festgeschraubt'],['leak','Leck'],['block','Betonblock']];
   for(const[k,txt]of legend){
     const ix=52,iy=y-5;
     if(k==='pump'){rr(ix-11,iy-11,22,22,4);ctx.fillStyle=COL.amber;ctx.fill();ctx.fillStyle=COL.board;ctx.beginPath();ctx.arc(ix,iy,6,0,7);ctx.fill();}
     else if(k==='tap'){ctx.fillStyle=COL.steelDark;ctx.beginPath();ctx.arc(ix,iy,10,0,7);ctx.fill();ctx.fillStyle=COL.water;ctx.beginPath();ctx.arc(ix,iy,7.5,0,7);ctx.fill();}
     else if(k==='lock'){ctx.fillStyle=COL.plateLock;ctx.fillRect(ix-12,iy-12,24,24);screw(ix-7,iy-7,3);screw(ix+7,iy+7,3);screw(ix+7,iy-7,3);screw(ix-7,iy+7,3);}
-    else{ctx.fillStyle=COL.rose;ctx.beginPath();ctx.arc(ix,iy+2,6,0,Math.PI);ctx.lineTo(ix,iy-9);ctx.closePath();ctx.fill();}
-    ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.fillText(txt,76,y);y+=34;
+    else if(k==='leak'){ctx.fillStyle=COL.rose;ctx.beginPath();ctx.arc(ix,iy+2,6,0,Math.PI);ctx.lineTo(ix,iy-9);ctx.closePath();ctx.fill();}
+    else{ctx.save();ctx.beginPath();ctx.rect(ix-12,iy-12,24,24);ctx.clip();ctx.fillStyle=COL.lead;ctx.fillRect(ix-12,iy-12,24,24);ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=2;for(let k2=0;k2<=36;k2+=6){ctx.beginPath();ctx.moveTo(ix-12+k2,iy-12);ctx.lineTo(ix-12+k2-24,iy+12);ctx.stroke();}ctx.restore();}
+    ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.textAlign='left';ctx.fillText(txt,76,y);y+=30;
   }
   y+=4;ctx.strokeStyle=COL.edge;ctx.beginPath();ctx.moveTo(36,y-8);ctx.lineTo(296,y-8);ctx.stroke();y+=18;
   label('DIESE RUNDE',36,y);y+=26;
@@ -386,13 +436,14 @@ function showStart(){
   showOverlay(`
     <div class="eyebrow">Minispiel · Logik</div>
     <h2>Rohrleitung</h2>
-    <p>Die Pumpe in der Mitte läuft, aber die Rohre sind verdreht. Bring das Wasser zu jedem Hahn, ohne dass irgendwo etwas ausläuft.</p>
+    <p>Die Pumpe läuft, aber die Rohre sind verdreht. Bring das Wasser zu jedem Hahn, ohne dass irgendwo etwas ausläuft.</p>
     <ul>
       <li>Klick dreht ein Rohr rechtsrum, Rechtsklick linksrum.</li>
       <li>Rohre, die sicher richtig liegen, kannst du mit F oder Mittelklick festschrauben (am Handy: lange drücken).</li>
       <li>Mit jeder Runde wird das Netz größer. Ab Runde 3 fehlt die Leck-Anzeige, ab Runde 4 siehst du das Wasser nur noch, wenn du „Wasser marsch“ drückst.</li>
+      <li>Jedes Spiel zieht pro Runde eine andere Variante: neue Formen, Betonblöcke, Pumpen am Rand oder zwei Pumpen.</li>
     </ul>
-    <div class="next"><strong>Runde 1 · ${ROUNDS[0].name}:</strong> ${ROUNDS[0].n} × ${ROUNDS[0].n}. ${ROUNDS[0].intro}</div>
+    <div class="next">Runde 1 · ${roundText(ROUNDS[0])}</div>
     <button class="go" type="button">Runde 1 starten</button>`,begin);
 }
 function showSummary(){
@@ -403,13 +454,13 @@ function showSummary(){
     <div class="eyebrow">Runde ${roundIdx+1} geschafft · ${r.name}</div>
     <h2>${fmt(r.secs)} Minuten</h2>
     <div class="rows">
-      <span>${r.n * r.n} Rohre × 4</span><span>+${r.base}</span>
+      <span>${r.n} Rohre × 4</span><span>+${r.base}</span>
       <span>${r.mistakes} Fehlversuche × 25</span><span>−${r.pen}</span>
       <span>Zeitbonus (Ziel ${fmt(r.par)})</span><span>+${r.bonus}</span>
       <span class="total">Runde</span><span class="total">${r.pts.toLocaleString('de-DE')}</span>
       <span>Gesamt</span><span>${total.toLocaleString('de-DE')}</span>
     </div>
-    <div class="next"><strong>Runde ${roundIdx+2} · ${nx.name}:</strong> ${nx.n} × ${nx.n}. ${nx.intro}</div>
+    <div class="next">Runde ${roundIdx+2} · ${roundText(nx)}</div>
     <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
 }
 function showFinal(){
