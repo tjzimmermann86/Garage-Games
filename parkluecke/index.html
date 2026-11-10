@@ -117,7 +117,7 @@ const LEVELS=[
     {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.2,ml:.15,dir:'rück',far:1,time:110},
     {veh:'pkw',tpl:'street',theme:'wohn',wohn:1,mw:.22,ml:.4,dir:'wende',side:1.9,time:100},
     {veh:'lkw',tpl:'court',theme:'hafen',mw:.3,ml:.16,size:[2.4,1.7],cars:1,time:130},
-    {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.32,top:1,narrow:.38,dir:'wende',side:1.8,time:90},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.38,top:1,narrow:.36,dir:'wende',side:1.8,time:90},
   ],
 ];
 const PARKCOL=['rose','sea','water','violet','apricot','amber','lime','steel'];
@@ -146,7 +146,8 @@ function build(def,R){
       if(rows.some(q=>q.y===r.y+sl))S.lines.push([x0,r.y+sl,x0+n*sw,r.y+sl]);
       for(let i=0;i<n;i++){const cx=x0+(i+.5)*sw;
         if(i===ti){S.slot={cx,cy,hw:sl/2,hh:sw/2,a:r.a,need:need(r.a)};continue;}
-        if(Math.abs(i-ti)===1&&def.mw<.8||R()<.8)parked(cx+R.range(-jit,jit),cy+R.range(-1,1)*(sl-TL)*.25,R()<.5?r.a:r.a+PI,pv);}
+        if(Math.abs(i-ti)===1&&def.mw<.8||R()<.8){const room=(sw-V.wid)/2-1.5,ang=R.range(-1,1)*Math.min(.05,room*.5/(TL/2)),off=R.range(-1,1)*Math.max(0,room-TL/2*Math.abs(ang));
+          parked(cx+off,cy+R.range(-1,1)*(sl-TL)*.42,(R()<.5?r.a:r.a+PI)+ang,pv);}}
     });
     S.start={x:sx,y:aisles[sa],a:0};
   }else if(def.tpl==='street'){ // Straße in echten Maßen: Fahrstreifen höchstens zwei Autobreiten
@@ -159,14 +160,15 @@ function build(def,R){
     S.lines.push([0,y2-pw,FW,y2-pw,1],[0,y1+TS,FW,y1+TS,1]);
     S.slot={cx,cy,hw:sl/2,hh:pw/2,a:0,need:def.dir==='wende'?PI:null};
     const bins=(x,yy)=>{if(wohn||R()<.3){circ(x-9,yy,8,'bin');circ(x+9,yy,8,'bin');}};
-    const strip=(x,dir,stop)=>{for(let k=0;dir<0?x>stop:x<stop;k++){const g=R.range(7,14),l=84;
-        if(k===0||R()>(wohn?.2:.12))parked(x+dir*l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');else{if(wohn)S.decor.push({k:'drive',x:x+dir*l/2,y:y2,w:l-14,up:0});bins(x+dir*(l-16),y2-11);}
+    const skew=()=>R.range(-.045,.045),side=()=>R.range(-5,6),gap=()=>R()<.25?R.range(20,38):R.range(5,16);
+    const strip=(x,dir,stop)=>{for(let k=0;dir<0?x>stop:x<stop;k++){const g=gap(),l=84;
+        if(k===0||R()>(wohn?.2:.12))parked(x+dir*l/2,cy+side(),(R()<.85?0:PI)+skew(),'pkw');else{if(wohn)S.decor.push({k:'drive',x:x+dir*l/2,y:y2,w:l-14,up:0});bins(x+dir*(l-16),y2-11);}
         x+=dir*(l+g);}};
-    strip(cx-sl/2-R.range(5,9),-1,70);strip(cx+sl/2+R.range(5,9),1,FW-90);
+    strip(cx-sl/2-R.range(3,14),-1,70);strip(cx+sl/2+R.range(3,14),1,FW-90);
     const blk=def.narrow?sl*.9+70:0,dens=def.top?.85:wohn?.8:.45;
-    for(let x=R.range(60,120);x<FW-60;x+=84+R.range(7,14)){
+    for(let x=R.range(60,120);x<FW-60;x+=84+gap()){
       if(Math.abs(x-sideX)<sideW/2+70||Math.abs(x-cx)<blk)continue;
-      if(R()<dens)parked(x,y1+TS/2+R.range(-2,2),R()<.85?PI:0,'pkw');else if(wohn){S.decor.push({k:'drive',x,y:y1,w:70,up:1});bins(x+34,y1+11);}}
+      if(R()<dens)parked(x,y1+TS/2+side()*.8,(R()<.85?PI:0)+skew(),'pkw');else if(wohn){S.decor.push({k:'drive',x,y:y1,w:70,up:1});bins(x+34,y1+11);}}
     if(def.narrow){const nh=TS+LW*def.narrow*2;wall(cx-sl*.9,y1,cx+sl*.9,y1+nh,'barrier');for(const k of[-1,1])circ(cx+k*(sl*.9+20),y1+nh-10,11,'cone');}
     // Häuser, Vorgärten und Bäume hinter dem Gehweg
     for(const up of[1,0]){const d0=up?y1-34:FH-y2-34;if(d0<70)continue;
