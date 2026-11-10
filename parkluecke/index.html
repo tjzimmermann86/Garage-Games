@@ -70,54 +70,117 @@ const THEMES={
   hafen:{name:'Hafen',ground:['#e2e6ea','#22262b'],line:['#fff3c4','#8a7f55'],flank:'container',scatter:['barrel','pallet','cone']},
   kaserne:{name:'Kaserne',ground:['#e4e6d0','#25281f'],line:['#fffdf5','#77806a'],flank:'sandbag',scatter:['crate','barrel','hedgehog']},
 };
-// Fünf Stufen, jede zieht eine Variante. mw/ml = Luft in der Lücke quer/längs (Anteil der Fahrzeuggröße)
+// Fünf Stufen mit je sechs Szenarien, jede Partie zieht pro Stufe eines.
+// mw/ml = Luft in der Lücke quer/längs (Anteil der Fahrzeuggröße) · dir = verlangte Parkrichtung
+// course = Hindernisse auf dem Weg · aisle = enge Gasse vor der Parkreihe · narrow = Baustelle auf der Straße
 const LEVELS=[
-  [{veh:'pkw',tpl:'lot',theme:'supermarkt',mw:.85,ml:.4,time:50},{veh:'traktor',tpl:'yard',theme:'hof',pos:'right',mw:.9,ml:.5,clutter:2,time:55}],
-  [{veh:'bagger',tpl:'yard',theme:'baustelle',pos:'top',mw:.65,ml:.4,clutter:4,time:65},{veh:'pkw',tpl:'street',theme:'stadt',mw:.35,ml:.8,time:55},{veh:'traktor',tpl:'lot',theme:'hof',mw:.55,ml:.35,time:60}],
-  [{veh:'bus',tpl:'lot',theme:'busbahnhof',mw:.5,ml:.2,time:80},{veh:'lkw',tpl:'yard',theme:'hafen',pos:'top',mw:.5,ml:.25,clutter:4,time:80}],
-  [{veh:'panzer',tpl:'yard',theme:'kaserne',pos:'diag',mw:.3,ml:.25,clutter:6,time:75},{veh:'pkw',tpl:'street',theme:'stadt',mw:.3,ml:.42,top:1,time:75},{veh:'bagger',tpl:'lot',theme:'baustelle',mw:.36,ml:.22,time:75}],
-  [{veh:'lkwh',tpl:'yard',theme:'hafen',pos:'right',mw:.42,ml:.15,clutter:3,time:110},{veh:'bus',tpl:'street',theme:'stadt',mw:.3,ml:.4,top:1,time:110},{veh:'lkw',tpl:'lot',theme:'hafen',mw:.3,ml:.14,time:100}],
+  [ // Stufe 1: Platz genug, Richtung egal
+    {veh:'pkw',tpl:'lot',theme:'supermarkt',mw:.85,ml:.4,time:45},
+    {veh:'traktor',tpl:'yard',theme:'hof',pos:'right',mw:.9,ml:.5,clutter:2,time:50},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.35,ml:.8,time:45},
+    {veh:'bagger',tpl:'yard',theme:'baustelle',pos:'top',mw:.65,ml:.4,clutter:3,time:55},
+    {veh:'traktor',tpl:'lot',theme:'hof',mw:.55,ml:.35,time:50},
+    {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'diag',mw:.45,ml:.35,clutter:3,time:55},
+  ],
+  [ // Stufe 2: erste Vorgaben und Hindernisse
+    {veh:'pkw',tpl:'lot',theme:'supermarkt',mw:.42,ml:.25,dir:'rück',time:50},
+    {veh:'bus',tpl:'lot',theme:'busbahnhof',mw:.45,ml:.18,dir:'vor',time:60},
+    {veh:'lkw',tpl:'yard',theme:'hafen',pos:'right',mw:.5,ml:.25,course:'chicane',gap:3.2,time:70},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.3,ml:.5,top:1,time:50},
+    {veh:'traktor',tpl:'yard',theme:'hof',pos:'right',mw:.5,ml:.3,course:'slalom',gap:2.5,time:80},
+    {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'diag',mw:.3,ml:.25,course:'tor',gap:1.8,dir:'rück',time:80},
+  ],
+  [ // Stufe 3: eng, mit Wenden und Rückwärtsfahren
+    {veh:'bus',tpl:'lot',theme:'busbahnhof',mw:.36,ml:.14,dir:'rück',time:75},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.3,ml:.42,top:1,dir:'wende',time:65},
+    {veh:'bagger',tpl:'lot',theme:'baustelle',mw:.4,ml:.22,dir:'rück',aisle:1.5,time:90},
+    {veh:'lkw',tpl:'yard',theme:'hafen',pos:'right',mw:.4,ml:.2,course:'chicane',gap:2.7,dir:'rück',time:90},
+    {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'right',mw:.25,ml:.2,course:'slalom',gap:1.7,dir:'rück',time:120},
+    {veh:'pkw',tpl:'court',theme:'stadt',mw:.35,ml:.4,size:[3.6,2.6],cars:2,time:60},
+  ],
+  [ // Stufe 4: sperrige Fahrzeuge auf engem Raum
+    {veh:'bus',tpl:'court',theme:'busbahnhof',mw:.4,ml:.2,size:[2.5,1.75],time:110},
+    {veh:'lkwh',tpl:'yard',theme:'hafen',pos:'right',mw:.4,ml:.15,course:'tor',gap:2.6,dir:'vor',time:110},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.25,ml:.32,top:1,narrow:.38,time:70},
+    {veh:'traktor',tpl:'lot',theme:'hof',mw:.3,ml:.2,dir:'rück',aisle:1.25,time:80},
+    {veh:'lkw',tpl:'street',theme:'stadt',mw:.25,ml:.36,top:1,time:95},
+    {veh:'bagger',tpl:'yard',theme:'baustelle',pos:'right',mw:.3,ml:.2,course:'slalom',gap:2,dir:'rück',time:115},
+  ],
+  [ // Stufe 5: Meisterprüfung
+    {veh:'lkwh',tpl:'yard',theme:'hafen',pos:'left',mw:.55,ml:.15,dir:'rück',time:150},
+    {veh:'bus',tpl:'court',theme:'busbahnhof',mw:.32,ml:.16,size:[2.3,1.6],quer:1,time:130},
+    {veh:'bus',tpl:'street',theme:'stadt',mw:.25,ml:.34,dir:'wende',time:130},
+    {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.2,ml:.15,dir:'rück',aisle:1.25,time:110},
+    {veh:'lkw',tpl:'court',theme:'hafen',mw:.3,ml:.16,size:[2.4,1.7],cars:1,time:130},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.27,top:1,narrow:.45,dir:'wende',time:90},
+  ],
 ];
 const PARKCOL=['rose','sea','water','violet','apricot','amber','lime','steel'];
+const vorgabe=d=>d.tpl==='court'?(d.quer?'wenden und rückwärts einparken':'wenden, Front in Pfeilrichtung'):d.dir?DIRTXT[d.dir]:'';
+const DIRTXT={vor:'vorwärts einparken',rück:'rückwärts einparken',wende:'vorher wenden: Front in Pfeilrichtung'};
 
-function build(def,R,lvl){
-  const V=VEH[def.veh],TL=totLen(V),sl=TL*(1+def.ml),sw=V.wid*(1+def.mw);
+function build(def,R){
+  const V=VEH[def.veh],TL=totLen(V),sl=TL*(1+def.ml),sw=V.wid*(1+def.mw),TH=24;
   const S={def,V,obs:[],lines:[],decor:[],theme:THEMES[def.theme],limit:def.time};
-  const sx=(V.trailer?V.trailer.from+V.trailer.len:V.ro)+44; // Heck steht 44 px vom linken Rand
+  const rear=V.trailer?V.trailer.from+V.trailer.len:V.ro,sx=rear+44,front=sx+V.len-V.ro; // Heck steht 44 px vom linken Rand
   const rect=(cx,cy,hw,hh,a,kind,ex)=>{const o={t:'r',cx,cy,hw,hh,a,kind,...ex};S.obs.push(o);return o;};
+  const wall=(x1,y1,x2,y2,kind)=>rect((x1+x2)/2,(y1+y2)/2,Math.abs(x2-x1)/2,Math.abs(y2-y1)/2,0,kind||S.theme.flank);
   const circ=(x,y,r,kind)=>S.obs.push({t:'c',x,y,r,kind});
   const parked=(cx,cy,a,vt)=>{const P=VEH[vt],tl=totLen(P);rect(cx,cy,tl/2,P.wid/2,a,'veh',{vt,col:R.pick(PARKCOL)});};
+  const need=a=>def.dir==='rück'?a+PI:def.dir==='vor'?a:null;
   if(def.tpl==='lot'){
     const both=FH-2*sl>=Math.max(250,TL*2.3),n=Math.floor((FW-160)/sw),x0=(FW-n*sw)/2,rows=both?[0,1]:[0];
-    const ti=R.int(Math.floor(n*.45),n-2),tr=both&&R()<.5?1:0,jit=(sw-V.wid)*.22;
+    const ti=R.int(Math.floor(n*.4),n-3),tr=both&&R()<.5?1:0,jit=(sw-V.wid)*.22,pv=def.veh==='lkwh'?'lkw':def.veh;
     rows.forEach(r=>{const cy=r?FH-sl/2:sl/2,a=r?PI/2:-PI/2;
       for(let i=0;i<=n;i++)S.lines.push([x0+i*sw,r?FH-sl:0,x0+i*sw,r?FH:sl]);
       for(let i=0;i<n;i++){const cx=x0+(i+.5)*sw;
-        if(r===tr&&i===ti){S.slot={cx,cy,hw:sl/2,hh:sw/2,a};continue;}
+        if(r===tr&&i===ti){S.slot={cx,cy,hw:sl/2,hh:sw/2,a,need:need(a)};continue;}
         const nb=r===tr&&Math.abs(i-ti)===1;
-        if(nb&&lvl>0||R()<.72)parked(cx+R.range(-jit,jit),cy+R.range(-1,1)*(sl-TL)*.25,R()<.5?a:a+PI,def.veh==='lkwh'?'lkw':def.veh);}
+        if(nb&&def.mw<.8||R()<.72)parked(cx+R.range(-jit,jit),cy+R.range(-1,1)*(sl-TL)*.25,R()<.5?a:a+PI,pv);}
     });
-    S.start={x:sx,y:both?FH/2:sl+(FH-sl)/2+20,a:0};
+    let sy=both?FH/2:sl+(FH-sl)/2+20;
+    if(def.aisle){ // Insel vor der Parkreihe: Man muss außen herum in eine enge Gasse
+      const aw=def.aisle*TL,open=Math.max(TL*1.25,190);
+      if(tr){const y=FH-sl-aw;wall(0,y-TH,FW-open,y,'planter');sy=Math.min(sy,y-TH-V.wid/2-40);}
+      else{const y=sl+aw;wall(0,y,FW-open,y+TH,'planter');sy=Math.max(sy,y+TH+V.wid/2+40);}
+    }
+    S.start={x:sx,y:sy,a:0};
   }else if(def.tpl==='street'){
     const y1=120,y2=FH-120,pw=Math.max(sw,54),cy=y2-pw/2;
     rect(FW/2,y1/2,FW/2,y1/2,0,'curb');rect(FW/2,(y2+FH)/2,FW/2,(FH-y2)/2,0,'curb');
     S.decor.push({k:'lane',y:(y1+y2-pw)/2});S.lines.push([0,y2-pw,FW,y2-pw,1]);
-    const cx=R.range(660,860);S.slot={cx,cy,hw:sl/2,hh:pw/2,a:0};
-    for(let x=cx-sl/2-R.range(6,12),k=0;x>150;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x-l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x-=l+g;}
-    for(let x=cx+sl/2+R.range(6,12),k=0;x<FW-90;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x+l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x+=l+g;}
-    if(def.top)for(let x=R.range(420,520);x<FW-100;x+=R.range(150,330))parked(x,y1+24,PI,'pkw');
+    const cx=R.range(660,820);S.slot={cx,cy,hw:sl/2,hh:pw/2,a:0,need:def.dir==='wende'?PI:null};
+    for(let x=cx-sl/2-R.range(5,9),k=0;x>150;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x-l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x-=l+g;}
+    for(let x=cx+sl/2+R.range(5,9),k=0;x<FW-90;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x+l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x+=l+g;}
+    if(def.top)for(let x=R.range(front+260,front+340);x<FW-100;x+=R.range(150,330))if(!def.narrow||Math.abs(x-cx)>sl*.9+70)parked(x,y1+24,PI,'pkw');
+    if(def.narrow){const nh=(y2-y1)*def.narrow;wall(cx-sl*.9,y1,cx+sl*.9,y1+nh,'barrier');for(const k of[-1,1])circ(cx+k*(sl*.9+22),y1+nh-10,11,'cone');}
     for(let x=60;x<FW;x+=R.range(120,220)){S.decor.push({k:'tree',x,y:R.range(28,y1-40),r:R.range(22,30)});S.decor.push({k:'tree',x:x+60,y:FH-R.range(28,80),r:R.range(22,30)});}
     S.start={x:sx,y:y1+(def.top?130:100),a:0};
-  }else{ // freier Platz mit einer Bucht
+  }else if(def.tpl==='court'){ // enger Hof: erst wenden, dann einparken
+    const cw=Math.min(FW-40,def.size[0]*TL),ch=Math.min(FH-30,def.size[1]*TL),x0=(FW-cw)/2,y0=(FH-ch)/2,x1=x0+cw,y1=y0+ch;
+    wall(0,0,FW,y0,'block');wall(0,y1,FW,FH,'block');wall(0,y0,x0,y1,'block');wall(x1,y0,FW,y1,'block');
+    if(def.quer){const cx=x1-14-sw/2,cy=y0+sl/2+8;S.slot={cx,cy,hw:sl/2,hh:sw/2,a:-PI/2,need:PI/2};S.lines.push([cx-sw/2,y0,cx-sw/2,y0+sl+8]);}
+    else{const cx=x0+12+sl/2,cy=y0+10+sw/2;S.slot={cx,cy,hw:sl/2,hh:sw/2,a:0,need:PI};S.lines.push([x0,cy+sw/2,cx+sl/2,cy+sw/2],[cx+sl/2,y0,cx+sl/2,cy+sw/2]);}
+    for(let k=0;k<(def.cars||0);k++)parked(x1-30-(k*.9+.5)*60,y1-52,PI/2*(R()<.5?1:-1),'pkw');
+    S.start={x:x0+rear+16,y:y1-V.wid/2-16,a:0};
+  }else{ // freier Platz mit einer Bucht, davor je nach Szenario ein Parcours
     let cx,cy,a,sy;
-    if(def.pos==='right'){const up=R()<.5;cy=up?70+sw/2:FH-70-sw/2;cx=FW-50-sl/2;a=0;sy=up?FH-110:110;}
+    const same=def.course==='chicane'; // nach zwei Wänden kommt man auf der Startseite heraus
+    if(def.pos==='right'){const up=R()<.5;cy=up?70+sw/2:FH-70-sw/2;cx=FW-50-sl/2;a=0;sy=up!==same?FH-110:110;}
+    else if(def.pos==='left'){const up=R()<.5;cy=up?70+sw/2:FH-70-sw/2;cx=64+sl/2;a=PI;sy=up?FH-110:110;} // Bucht neben dem Start, Einfahrt von rechts
     else if(def.pos==='top'){cx=R.range(720,1000);cy=40+sl/2;a=-PI/2;sy=FH-150;}
     else{a=-PI/4;cx=FW-110-sl*.36-sw*.36;cy=110+sl*.36+sw*.36;sy=FH-140;}
-    S.slot={cx,cy,hw:sl/2,hh:sw/2,a};
+    S.slot={cx,cy,hw:sl/2,hh:sw/2,a,need:need(a)};
     const c=Math.cos(a),s=Math.sin(a),fk=S.theme.flank;
     [-1,1].forEach(k=>rect(cx-s*k*(sw/2+14),cy+c*k*(sw/2+14),sl/2,14,a,fk));
     rect(cx+c*(sl/2+14),cy+s*(sl/2+14),14,sw/2+28,a,fk);
     S.start={x:sx,y:sy,a:0};
+    const low=sy>FH/2,g=(def.gap||2.5)*V.wid,xa=front+Math.max(110,V.wid*2),xe=cx-sl/2-Math.max(TL*1.1,170);
+    if(def.course==='chicane'||def.course==='slalom'){ // versetzte Wände: Lücke abwechselnd oben und unten
+      const nW=def.course==='slalom'?3:2;
+      for(let k=0;k<nW;k++){const x=xa+(xe-xa)*(nW===1?0:k/(nW-1)),top=(k%2===0)===low; // erste Lücke gegenüber vom Start
+        if(top)wall(x,g,x+TH,FH);else wall(x,0,x+TH,FH-g);}
+    }else if(def.course==='tor'){const x=(xa+xe)/2,gy=low?R.range(70,FH*.3):R.range(FH*.7,FH-70)-g;wall(x,0,x+TH,gy);wall(x,gy+g,x+TH,FH);for(const yy of[gy-2,gy+g+2])circ(x-18,yy,11,'cone');}
     // lose Hindernisse, aber nicht im Startbereich und nicht direkt vor der Einfahrt
     const ex=cx-c*(sl/2),ey=cy-s*(sl/2),pts=[],minGap=V.wid*2.2+TL*.35;
     for(let i=0,tries=0;i<(def.clutter||0)&&tries<400;tries++){
@@ -148,7 +211,7 @@ function circHit(B,o){const c=Math.cos(B.a),s=Math.sin(B.a),dx=o.x-B.cx,dy=o.y-B
 function inBox(B,x,y){const c=Math.cos(B.a),s=Math.sin(B.a),dx=x-B.cx,dy=y-B.cy;return Math.abs(dx*c+dy*s)<=B.hw+.01&&Math.abs(-dx*s+dy*c)<=B.hh+.01;}
 
 /* ---------- Zustand ---------- */
-let seed,LV=[],li=0,S=null,car=null,state='idle',tLeft=0,started=false,crashes=0,total=0,results=[],freeze=0,parkT=0,pct=0,hintT=0,beep=0;
+let seed,LV=[],li=0,S=null,car=null,state='idle',tLeft=0,started=false,crashes=0,total=0,results=[],freeze=0,parkT=0,pct=0,hintT=0,beep=0,wrongCd=0;
 const keys={};
 function parts(c=car){ // Karosserie(n) als gedrehte Rechtecke
   const V=S.V,d=V.len/2-V.ro,out=[{cx:c.x+Math.cos(c.a)*d,cy:c.y+Math.sin(c.a)*d,hw:V.len/2,hh:V.wid/2,a:c.a}];
@@ -167,7 +230,7 @@ function collides(){
 const angd=(a,b)=>{let d=a-b;while(d>PI)d-=2*PI;while(d<-PI)d+=2*PI;return d;};
 function resetCar(){car={x:S.start.x,y:S.start.y,a:S.start.a,ta:S.start.a,v:0,st:0};parkT=0;}
 function newGame(){seed=GG.newSeed();const R=GG.rng(seed);LV=LEVELS.map(p=>R.pick(p));total=0;results=[];setup(0);showStart();}
-function setup(i){li=i;S=build(LV[i],GG.rng(seed+i*7919+3),i);resetCar();tLeft=S.limit;started=false;crashes=0;state='idle';pct=0;freeze=0;}
+function setup(i){li=i;S=build(LV[i],GG.rng(seed+i*7919+3));resetCar();tLeft=S.limit;started=false;crashes=0;state='idle';pct=0;freeze=0;}
 function begin(){ov.hide();state='drive';hintT=7;}
 
 function update(dt){
@@ -192,13 +255,15 @@ function update(dt){
   const hit=collides();
   if(hit){crashes++;freeze=.9;car.v=0;GG.sfx('err');GG.toast(hit==='knick'?'Hänger eingeknickt! Zurück zum Start':hit==='Rand'?'Platz verlassen! Zurück zum Start':'Angeeckt! Zurück zum Start',COL.rose);return;}
   pct=percentIn();
-  if(pct>=1&&Math.abs(car.v)<10){parkT+=dt;if(parkT>=.7)finish(true);}else parkT=0;
+  const wrong=S.slot.need!=null&&Math.abs(angd(car.a,S.slot.need))>1.2;wrongCd-=dt;
+  if(pct>=1&&Math.abs(car.v)<10){if(wrong){parkT=0;if(wrongCd<=0){wrongCd=3;GG.toast('Falsch herum! Die Front muss in Pfeilrichtung zeigen',COL.amber);}}else{parkT+=dt;if(parkT>=.7)finish(true);}}else parkT=0;
 }
 function finish(ok){
   state='done';
   let pts,detail;const used=S.limit-tLeft;
   if(ok){const bonus=Math.round(1000*tLeft/S.limit);pts=1000+bonus;detail=[['Eingeparkt','1.000'],[`Zeitbonus (${used.toFixed(1)} s von ${S.limit} s)`,`+${GG.num(bonus)}`]];GG.sfx('win');}
-  else{pct=freeze>0?0:percentIn();
+  else{pct=freeze>0?0:percentIn();if(pct>=1)pct=.9; // ganz drin, aber falsch herum
+
     if(pct>0){pts=Math.round(300+500*pct);detail=[[`${Math.round(pct*100)} % des Fahrzeugs in der Lücke`,GG.num(pts)]];}
     else{const d=Math.hypot(car.x-S.slot.cx,car.y-S.slot.cy),f=freeze>0?0:clamp(1-d/S.startDist,0,1);pts=Math.round(300*f);detail=[[`Nähe zur Lücke (${Math.round(f*100)} % des Wegs)`,GG.num(pts)]];}
     GG.sfx('thud');}
@@ -260,12 +325,12 @@ function drawObs(o){
     c.strokeStyle=DARK?'rgba(255,255,255,.04)':'rgba(120,100,80,.12)';c.lineWidth=1;for(let x=40;x<FW;x+=40){c.beginPath();c.moveTo(x,o.cy-o.hh);c.lineTo(x,o.cy+o.hh);c.stroke();}return;}
   c.save();c.translate(o.cx,o.cy);c.rotate(o.a);const w=o.hw*2,h=o.hh*2;
   const st={wall:[DARK?'#8b7f95':'#cbb9d6',DARK?'#5e5566':'#9f8bae'],bale:[COL.amber,DARK?'#8a7a3a':'#c9a94a'],barrier:['#fff','#e2557c'],container:[COL.water,COL.waterInk],sandbag:[DARK?'#a8946a':'#e6d4a4',DARK?'#6f6142':'#b49d64'],
-    crate:[COL.apricot,COL.apricotInk],pallet:[DARK?'#8a6f5c':'#d9b48f',DARK?'#5a4638':'#a57d58'],trough:[COL.steel,COL.steelDark]}[o.kind]||[COL.steel,COL.steelDark];
+    crate:[COL.apricot,COL.apricotInk],planter:[DARK?'#4f7d5c':'#a9d8b0',DARK?'#36573f':'#79b58a'],block:[DARK?'#35313b':'#efe6d8',DARK?'#58525e':'#cfc5b6'],pallet:[DARK?'#8a6f5c':'#d9b48f',DARK?'#5a4638':'#a57d58'],trough:[COL.steel,COL.steelDark]}[o.kind]||[COL.steel,COL.steelDark];
   GG.rr(c,-o.hw,-o.hh,w,h,o.kind==='sandbag'||o.kind==='bale'?7:3);c.fillStyle=st[0];c.fill();c.strokeStyle=st[1];c.stroke();
   const long=w>h,len=long?w:h;c.lineWidth=1.2;
   if(o.kind==='barrier'){c.fillStyle='#e2557c';for(let k=6;k<len-8;k+=28){if(long)c.fillRect(-o.hw+k,-o.hh+3,14,h-6);else c.fillRect(-o.hw+3,-o.hh+k,w-6,14);}}
   else if(o.kind==='crate'||o.kind==='pallet'){c.beginPath();c.moveTo(-o.hw+5,-o.hh+5);c.lineTo(o.hw-5,o.hh-5);c.moveTo(o.hw-5,-o.hh+5);c.lineTo(-o.hw+5,o.hh-5);c.stroke();}
-  else if(o.kind!=='wall'&&o.kind!=='trough'){for(let k=o.kind==='container'?14:26;k<len-6;k+=o.kind==='container'?14:26){c.beginPath();if(long){c.moveTo(-o.hw+k,-o.hh+3);c.lineTo(-o.hw+k,o.hh-3);}else{c.moveTo(-o.hw+3,-o.hh+k);c.lineTo(o.hw-3,-o.hh+k);}c.stroke();}}
+  else if(o.kind!=='wall'&&o.kind!=='trough'&&o.kind!=='block'&&o.kind!=='planter'){for(let k=o.kind==='container'?14:26;k<len-6;k+=o.kind==='container'?14:26){c.beginPath();if(long){c.moveTo(-o.hw+k,-o.hh+3);c.lineTo(-o.hw+k,o.hh-3);}else{c.moveTo(-o.hw+3,-o.hh+k);c.lineTo(o.hw-3,-o.hh+k);}c.stroke();}}
   c.restore();
 }
 function draw(dt){
@@ -281,6 +346,8 @@ function draw(dt){
   const sl=S.slot,ok=pct>=1;c.save();c.translate(sl.cx,sl.cy);c.rotate(sl.a);
   c.fillStyle=ok?COL.sea:COL.water;c.globalAlpha=.25+.35*pct+(ok?.15*Math.sin(performance.now()/120):0);c.fillRect(-sl.hw,-sl.hh,sl.hw*2,sl.hh*2);c.globalAlpha=1;
   c.strokeStyle=ok?COL.seaInk:COL.waterInk;c.lineWidth=4;c.setLineDash([16,10]);c.lineDashOffset=-performance.now()/50;c.strokeRect(-sl.hw,-sl.hh,sl.hw*2,sl.hh*2);c.setLineDash([]);
+  if(sl.need!=null){const d=Math.cos(sl.need-sl.a)>0?1:-1,L=Math.min(sl.hw*.7,90),w=Math.min(sl.hh*.5,16);c.fillStyle=ok?COL.seaInk:COL.waterInk;c.globalAlpha=.8;
+    c.beginPath();c.moveTo(d*(sl.hw-12),0);c.lineTo(d*(sl.hw-12-w*1.6),-w);c.lineTo(d*(sl.hw-12-w*1.6),-w*.4);c.lineTo(d*(sl.hw-12-L),-w*.4);c.lineTo(d*(sl.hw-12-L),w*.4);c.lineTo(d*(sl.hw-12-w*1.6),w*.4);c.lineTo(d*(sl.hw-12-w*1.6),w);c.closePath();c.fill();c.globalAlpha=1;c.translate(-d*sl.hw*.45,0);}
   c.rotate(-sl.a);c.font=`800 ${Math.min(44,sl.hh*1.4)}px ${DISPLAY}`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=ok?COL.seaInk:COL.waterInk;c.globalAlpha=.75;c.fillText('P',0,2);c.globalAlpha=1;c.textBaseline='alphabetic';c.restore();
   S.obs.forEach(o=>{if(o.kind==='curb')drawObs(o);});
   S.decor.forEach(d=>{if(d.k==='tree'){c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';c.strokeStyle=DARK?'#36573f':'#79b58a';c.lineWidth=2.5;c.beginPath();c.arc(d.x,d.y,d.r,0,7);c.fill();c.stroke();c.fillStyle=DARK?'#6a9a76':'#c8e8cb';c.beginPath();c.arc(d.x-d.r*.25,d.y-d.r*.25,d.r*.35,0,7);c.fill();}});
@@ -290,18 +357,18 @@ function draw(dt){
   const blink=freeze>0&&Math.floor(freeze*10)%2;
   if(!blink)drawVehicle(c,S.def.veh,car.x,car.y,car.a,S.V.col,car.st,car.ta,true);
   if(freeze>0){c.fillStyle=`rgba(226,85,124,${freeze*.25})`;c.fillRect(0,0,FW,FH);}
-  if(hintT>0&&state==='drive'){c.globalAlpha=Math.min(1,hintT);c.font=`600 15px ${DISPLAY}`;const t=`${S.V.name}: ${S.V.hint}`,w=c.measureText(t).width+36;const hy=S.slot.cy<FH/2&&Math.abs(S.slot.cx-FW/2)<w/2+S.slot.hw+S.slot.hh?FH-56:14;GG.rr(c,FW/2-w/2,hy,w,36,18);c.fillStyle=COL.panel;c.fill();c.strokeStyle=COL.accent;c.lineWidth=1;c.stroke();GG.text(c,t,FW/2,hy+23,{size:15,weight:600,align:'center'});c.globalAlpha=1;}
+  if(hintT>0&&state==='drive'){c.globalAlpha=Math.min(1,hintT);c.font=`600 15px ${DISPLAY}`;const t=`${S.V.name}: ${S.V.hint}`+(vorgabe(S.def)?` Vorgabe: ${vorgabe(S.def)}.`:''),w=c.measureText(t).width+36;const hy=S.slot.cy<FH/2&&Math.abs(S.slot.cx-FW/2)<w/2+S.slot.hw+S.slot.hh?FH-56:14;GG.rr(c,FW/2-w/2,hy,w,36,18);c.fillStyle=COL.panel;c.fill();c.strokeStyle=COL.accent;c.lineWidth=1;c.stroke();GG.text(c,t,FW/2,hy+23,{size:15,weight:600,align:'center'});c.globalAlpha=1;}
   if(parkT>0){c.strokeStyle=COL.seaInk;c.lineWidth=6;c.beginPath();c.arc(sl.cx,sl.cy,26,-PI/2,-PI/2+2*PI*Math.min(1,parkT/.7));c.stroke();}
   c.restore();
   // Kopfleiste
   c.fillStyle=COL.panel;c.fillRect(0,0,W,TOP);c.strokeStyle=COL.edge;c.lineWidth=1;c.beginPath();c.moveTo(0,TOP+.5);c.lineTo(W,TOP+.5);c.stroke();
-  GG.label(c,`STUFE ${li+1} / ${LV.length} · ${th.name.toUpperCase()}`,20,24,'left',COL.accentInk);GG.text(c,S.V.name,20,50,{size:22,weight:800});
-  GG.label(c,'ZEIT',330,24);const f=tLeft/S.limit;GG.rr(c,330,34,300,12,6);c.fillStyle=COL.board;c.fill();if(f>0){GG.rr(c,330,34,Math.max(12,300*f),12,6);c.fillStyle=f<.25?COL.rose:COL.accent;c.fill();}
-  GG.text(c,`${tLeft.toFixed(1)} s`,640,46,{size:15,weight:600,font:MONO,color:f<.25?COL.roseInk:COL.ink});
-  if(!started&&state==='drive')GG.text(c,'Die Zeit läuft ab der ersten Taste',330,60,{size:11,font:MONO,color:COL.muted});
-  GG.label(c,'IN DER LÜCKE',730,24);GG.value(c,`${Math.round(pct*100)} %`,730,52,'left',pct>=1?COL.seaInk:COL.ink,24);
-  GG.label(c,'ANGEECKT',880,24);GG.value(c,String(crashes),880,52,'left',crashes?COL.roseInk:COL.ink,24);
-  GG.label(c,'TEMPO',990,24);GG.value(c,`${car.v<-1?'R':car.v>1?'V':'–'} ${Math.round(Math.abs(car.v)/6)}`,990,52,'left',COL.ink,24);
+  GG.label(c,`STUFE ${li+1} / ${LV.length} · ${th.name.toUpperCase()}`,20,24,'left',COL.accentInk);GG.text(c,S.V.name,20,50,{size:22,weight:800});if(vorgabe(S.def)){const nw=c.measureText(S.V.name).width;GG.text(c,'↳ '+vorgabe(S.def),32+nw,49,{size:12,weight:600,font:MONO,color:COL.amberInk});}
+  GG.label(c,'ZEIT',470,24);const f=tLeft/S.limit;GG.rr(c,470,34,220,12,6);c.fillStyle=COL.board;c.fill();if(f>0){GG.rr(c,470,34,Math.max(12,220*f),12,6);c.fillStyle=f<.25?COL.rose:COL.accent;c.fill();}
+  GG.text(c,`${tLeft.toFixed(1)} s`,700,46,{size:15,weight:600,font:MONO,color:f<.25?COL.roseInk:COL.ink});
+  if(!started&&state==='drive')GG.text(c,'Die Zeit läuft ab der ersten Taste',470,60,{size:11,font:MONO,color:COL.muted});
+  GG.label(c,'IN DER LÜCKE',800,24);GG.value(c,`${Math.round(pct*100)} %`,800,52,'left',pct>=1?COL.seaInk:COL.ink,24);
+  GG.label(c,'ANGEECKT',930,24);GG.value(c,String(crashes),930,52,'left',crashes?COL.roseInk:COL.ink,24);
+  GG.label(c,'TEMPO',1030,24);GG.value(c,`${car.v<-1?'R':car.v>1?'V':'–'} ${Math.round(Math.abs(car.v)/6)}`,1030,52,'left',COL.ink,24);
   GG.label(c,'PUNKTE',W-20,24,'right');GG.value(c,GG.num(total),W-20,52,'right',COL.accentInk,24);
   GG.drawToast(c,W/2,TOP+86,dt);
 }
@@ -315,11 +382,13 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 
 /* ---------- Karten ---------- */
-const lvText=d=>`<strong>${VEH[d.veh].name}</strong> · ${THEMES[d.theme].name} · ${d.time} Sekunden. ${VEH[d.veh].hint}`;
+const TPL={lot:'Querparken',street:'Längsparken',court:'enger Hof',yard:'Parkbucht'},CRS={chicane:'einer Schikane',slalom:'einem Slalom',tor:'einem schmalen Tor'};
+const lvText=d=>`<strong>${VEH[d.veh].name}</strong> · ${THEMES[d.theme].name} · ${TPL[d.tpl]}${d.course?' hinter '+CRS[d.course]:''}${d.aisle?' in enger Gasse':''}${d.narrow?' an einer Baustelle':''} · ${d.time} Sekunden.${vorgabe(d)?` <strong>Vorgabe: ${vorgabe(d)}.</strong>`:''} ${VEH[d.veh].hint}`;
 function showStart(){
   ov.show(`<div class="eyebrow">Minispiel · Geschick</div><h2>Parklücke</h2>
-    <p>Fünf Fahrzeuge, fünf Lücken. Die Lücken werden enger, die Fahrzeuge sperriger.</p>
+    <p>Fünf Stufen, jede deutlich schwerer: engere Lücken, Schikanen auf dem Weg, sperrige Fahrzeuge, Wenden auf engem Raum.</p>
     <ul><li>Stell das Fahrzeug ganz in die markierte Lücke und bleib stehen. Das bringt 1.000 Punkte plus bis zu 1.000 für die Zeit.</li>
+    <li>Zeigt die Lücke einen Pfeil, muss die Front am Ende in Pfeilrichtung stehen, zum Beispiel beim Rückwärtseinparken.</li>
     <li>Wer aneckt, startet wieder am Anfang. Die Zeit läuft weiter.</li>
     <li>Zeit um? Dann zählt, wie viel vom Fahrzeug schon drin ist oder wie nah du dran bist.</li></ul>
     <div class="next">Stufe 1 · ${lvText(LV[0])}</div>
