@@ -11,7 +11,8 @@
 <link rel="stylesheet" href="../shared/garage.css">
 <style>
 :root{--accent:var(--rose);--accent-ink:var(--rose-ink)}
-.pick{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.card{width:min(620px,100%);gap:12px;padding:20px 24px}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .pick.three{grid-template-columns:repeat(3,1fr)}
 .pick button{appearance:none;border:1px solid var(--panel-edge);background:var(--plate);color:var(--ink);border-radius:10px;padding:9px 10px;font:600 .92rem var(--display);cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:2px;align-items:center}
 .pick button small{font:500 .72rem var(--mono);color:var(--muted)}
@@ -31,7 +32,7 @@
   <header>
     <div>
       <h1>Farb<em>schlacht</em></h1>
-      <div class="sub">Minispiel der Garage Games · Farbkugel-Shooter · jeder gegen jeden · 4 Minuten</div>
+      <div class="sub">Minispiel der Garage Games · Farbkugel-Shooter · jeder gegen jeden · Karten für 4, 8 oder 16 Spieler</div>
     </div>
     <div class="actions">
       <a class="ghost" href="../">Menü</a>
@@ -62,7 +63,8 @@
 const{W,H,COL,MONO,DISPLAY}=GG;
 const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ovEl=document.getElementById('ov'),ov=GG.overlay(ovEl);
 const DARK=GG.dark;
-const WW=2400,WH=1600,PR=18,HEAD=PR*.25,MATCH=240,RESPAWN=3,SHIELD=5,CELL=40,GC=WW/CELL,GR=WH/CELL;
+const PR=18,HEAD=PR*.25,RESPAWN=3,SHIELD=5,CELL=40;
+let WW=3000,WH=2000,GC=WW/CELL,GR=WH/CELL,MATCH=240,sizeKey='m';
 const KILL_PTS=100,HEAD_BONUS=50;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const angDiff=(a,b)=>{let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d;};
@@ -81,23 +83,32 @@ const START=['pistole','mp','revolver'];
 const GUN={pistole:[22,7],mp:[28,9],revolver:[26,8],sturm:[38,9],schrot:[34,11],sniper:[50,7],minigun:[40,15]};
 const PREF={pistole:300,mp:220,revolver:380,sturm:360,schrot:130,sniper:650,minigun:260};
 const SND={pistole:[760,.07,'square'],mp:[920,.045,'square'],revolver:[320,.14,'sawtooth'],sturm:[560,.06,'sawtooth'],schrot:[190,.16,'sawtooth'],sniper:[1500,.22,'triangle'],minigun:[1100,.035,'square']};
-const PAINT=['#ef9f2f','#e2557c','#2fae74','#3d8ad6','#9765d6','#e47a3e','#2ab0b8'];
+const PAINT=['#e2557c','#ef9f2f','#2fae74','#3d8ad6','#9765d6','#e47a3e','#2ab0b8','#c94fb0','#7aa83a','#d6453d','#4f63d6','#b0862a','#36a3a0','#8a5ad0','#e0708f','#5a9e5e'];
 
 /* ---------- Karten ---------- */
+// Jede Karte gibt es in drei Größen; man sieht immer nur einen Ausschnitt, die Übersichtskarte zeigt das Ganze.
+const SIZES={
+  s:{name:'Klein',max:4,w:2000,h:1320,spawns:10,spots:4,time:180},
+  m:{name:'Mittel',max:8,w:3000,h:2000,spawns:16,spots:7,time:240},
+  l:{name:'Groß',max:16,w:4200,h:2800,spawns:28,spots:12,time:300},
+};
+const SIZE_KEYS=Object.keys(SIZES);
+const sizeFor=n=>SIZE_KEYS.find(k=>SIZES[k].max>=n)||'l';
 const MAPS={
-  wald:{name:'Wald',text:'Bäume, Felsen, zwei Teiche und eine Hütte in der Mitte. Unter den Baumkronen bist du schwer zu sehen.'},
-  siedlung:{name:'Siedlung',text:'Acht Häuser mit Türen und Fenstern, Straßen, Autos und Gartenzäune. Durch Fenster und Zäune fliegen die Kugeln.'},
-  graben:{name:'Schützengraben',text:'Zwei lange Gräben mit Sandsäcken, Bunker an den Seiten und offenes Gelände dazwischen.'},
-  lager:{name:'Lagerhalle',text:'Eine große Halle mit Säulen und Kisten, draußen Reihen aus bunten Containern.'},
+  wald:{name:'Wald',text:'Bäume, Felsen, Teiche und Holzhütten. Unter den Baumkronen bist du schwer zu sehen.'},
+  siedlung:{name:'Siedlung',text:'Häuserblocks mit Türen und Fenstern, Straßen, Autos und Gartenzäune. Durch Fenster und Zäune fliegen die Kugeln.'},
+  graben:{name:'Schützengraben',text:'Lange Gräben mit Sandsäcken, Bunker an den Seiten und offenes Gelände dazwischen.'},
+  lager:{name:'Lagerhalle',text:'Große Hallen mit Säulen und Kisten, draußen Reihen aus bunten Containern.'},
 };
 const MAP_KEYS=Object.keys(MAPS);
-// bullet: hält Kugeln auf · low: nur Hindernis für Laufen
+// bullet: hält Kugeln auf · sonst nur Hindernis für Laufen
 const KIND={wall:{bullet:1},wood:{bullet:1},bunker:{bullet:1},hall:{bullet:1},crate:{bullet:1},container:{bullet:1},rock:{bullet:1},trunk:{bullet:1},sandbag:{bullet:1},car:{bullet:1},pillar:{bullet:1},log:{bullet:1},barrel:{bullet:1},
   window:{bullet:0},fence:{bullet:0},pond:{bullet:0},wire:{bullet:0}};
 
-function makeMap(key){
-  const R=GG.rng({wald:11,siedlung:23,graben:37,lager:41}[key]);
-  const M={key,obs:[],floors:[],zones:[],craters:[],roads:[],canopy:[],hints:[]};
+function makeMap(key,sz){
+  const R=GG.rng({wald:11,siedlung:23,graben:37,lager:41}[key]*7+{s:1,m:2,l:3}[sz]);
+  const M={key,sz,obs:[],floors:[],zones:[],craters:[],roads:[],canopy:[],hints:[]};
+  const A=WW*WH/1e6,dens=k=>Math.round(k*A); // Anzahl pro Million Quadratpixel
   const rect=(x,y,w,h,kind,ex)=>{const o={t:'r',x,y,w,h,kind,...ex};M.obs.push(o);return o;};
   const circ=(x,y,r,kind,ex)=>{const o={t:'c',x,y,r,kind,...ex};M.obs.push(o);return o;};
   const inR=(x,y,o,r)=>x>o.x-r&&x<o.x+o.w+r&&y>o.y-r&&y<o.y+o.h+r;
@@ -107,6 +118,7 @@ function makeMap(key){
     &&M.hints.every(([hx,hy])=>Math.hypot(hx-x,hy-y)>r+50);
   const scatter=(n,r,fn)=>{for(let i=0;i<n;i++)for(let k=0;k<60;k++){const x=R.range(60,WW-60),y=R.range(60,WH-60);if(clear(x,y,r)){fn(x,y);break;}}};
   const tree=(x,y)=>{circ(x,y,15,'trunk');M.canopy.push({x,y,r:R.range(46,62),s:R()});};
+  const sides=()=>{const k=['n','e','s','w'],d=R.shuffle(k.slice()).slice(0,2),o={};k.forEach(s=>o[s]=d.includes(s)?'door':R()<.75?'window':'wall');return o;};
   function house(x,y,w,h,s,kind='wall',T=14){
     M.floors.push({x,y,w,h,kind});
     const side=(ax,ay,len,horiz,type)=>{
@@ -117,50 +129,70 @@ function makeMap(key){
     };
     side(x,y,w,true,s.n);side(x,y+h-T,w,true,s.s);side(x,y+T,h-2*T,false,s.w);side(x+w-T,y+T,h-2*T,false,s.e);
   }
+  const at=(fx,fy)=>[WW*fx,WH*fy];
   if(key==='wald'){
-    house(1080,700,240,200,{n:'door',s:'door',e:'window',w:'window'},'wood');
-    M.hints.push([1200,800],[470,960],[1950,600],[300,260],[2120,1360],[1200,300],[1200,1330]);
-    circ(470,1180,115,'pond');circ(1950,400,90,'pond');
-    [[700,560,150,26],[1520,1080,26,150],[1720,860,140,26],[600,860,26,130],[1460,330,26,140]].forEach(a=>rect(...a,'log'));
-    scatter(14,42,(x,y)=>circ(x,y,R.range(22,36),'rock'));
-    scatter(82,72,tree);
+    const huts={s:[[.5,.5]],m:[[.5,.5],[.2,.25],[.8,.75]],l:[[.5,.5],[.18,.22],[.82,.22],[.18,.78],[.82,.78]]}[sz];
+    huts.forEach(([fx,fy],i)=>{const[cx,cy]=at(fx,fy),w=i?200:240,h=i?170:200;house(cx-w/2,cy-h/2,w,h,i?sides():{n:'door',s:'door',e:'window',w:'window'},'wood');M.hints.push([cx,cy]);});
+    scatter({s:1,m:2,l:4}[sz],140,(x,y)=>{const r=R.range(85,125);circ(x,y,r,'pond');M.hints.push([x,y-r-50]);});
+    scatter(dens(1.3),90,(x,y)=>R()<.5?rect(x-70,y-13,140,26,'log'):rect(x-13,y-70,26,140,'log'));
+    scatter(dens(3.6),42,(x,y)=>circ(x,y,R.range(22,36),'rock'));
+    scatter(dens(21),72,tree);
   }else if(key==='siedlung'){
-    M.roads.push({x:0,y:740,w:WW,h:120,h2:1},{x:1140,y:0,w:120,h:WH});
-    const HS=[[110,110,420,300,{n:'window',e:'door',s:'door',w:'window'}],[650,200,380,360,{n:'window',e:'window',s:'door',w:'door'}],
-      [1380,120,360,320,{n:'window',e:'door',s:'door',w:'wall'}],[1880,200,400,330,{n:'window',e:'window',s:'door',w:'door'}],
-      [140,980,380,330,{n:'door',e:'door',s:'window',w:'window'}],[660,1060,360,380,{n:'door',e:'window',s:'window',w:'door'}],
-      [1400,980,400,300,{n:'door',e:'window',s:'window',w:'door'}],[1900,1060,380,360,{n:'door',e:'window',s:'door',w:'window'}]];
-    HS.forEach(([x,y,w,h,s],i)=>{house(x,y,w,h,s);rect(x+w/2-7,y+14,14,(h-28)/2-30,'wall');if(i%2)M.hints.push([x+w*.27,y+h*.6]);});
-    M.hints.push([1200,800],[1200,1500],[60+40,800]);
-    [[300,770,110,52,0],[1600,790,110,52,2],[2000,766,110,52,4],[1166,300,52,110,1],[1182,1240,52,110,3],[760,790,110,52,5]].forEach(([x,y,w,h,c])=>rect(x,y,w,h,'car',{c}));
-    [[90,640,460,10],[540,450,10,200],[1370,600,520,10],[1880,600,10,110],[120,1440,440,10],[1390,1360,420,10],[1810,1300,10,70],[2300,560,10,160]].forEach(a=>rect(...a,'fence'));
-    scatter(14,40,(x,y)=>rect(x-26,y-26,52,52,'crate'));
-    scatter(16,70,tree);
+    const nr={s:1,m:2,l:3}[sz],RW=120,ys=[],xs=[];
+    for(let k=1;k<=nr;k++){ys.push(Math.round(WH*k/(nr+1)-RW/2));xs.push(Math.round(WW*k/(nr+1)-RW/2));}
+    ys.forEach(y=>M.roads.push({x:0,y,w:WW,h:RW}));xs.forEach(x=>M.roads.push({x,y:0,w:RW,h:WH}));
+    xs.forEach(x=>ys.forEach(y=>M.hints.push([x+RW/2,y+RW/2])));
+    // Häuserblocks zwischen den Straßen
+    const bx=[0,...xs.map(x=>x+RW)],bw=[...xs,WW].map((e,i)=>e-bx[i]),by=[0,...ys.map(y=>y+RW)],bh=[...ys,WH].map((e,i)=>e-by[i]);
+    bx.forEach((x0,i)=>by.forEach((y0,j)=>{
+      const w0=bw[i]-120,h0=bh[j]-120,two=w0>860,n=two?2:1,cw=w0/n;
+      for(let k=0;k<n;k++){const w=Math.min(440,cw*R.range(.62,.8)),h=Math.min(400,h0*R.range(.55,.72)),x=x0+60+k*cw+R.range(0,cw-w),y=y0+60+R.range(0,h0-h);
+        house(x,y,w,h,sides());rect(x+w/2-7,y+14,14,(h-28)/2-30,'wall');if(R()<.5)M.hints.push([x+w*.27,y+h*.62]);
+        // Gartenzaun neben dem Haus
+        if(R()<.7){const fy=R()<.5?y-30:y+h+30;if(fy>y0+20&&fy<y0+bh[j]-20)rect(x,fy,w*R.range(.5,1),10,'fence');}}
+    }));
+    M.roads.forEach(r=>{const horiz=r.w>r.h,len=horiz?r.w:r.h;for(let k=0;k<len/700;k++){const p=R.range(100,len-200);
+      const c=R.int(0,5);if(horiz){const y=r.y+(R()<.5?14:r.h-66);if(!xs.some(x=>p+110>x-20&&p<x+RW+20))rect(p,y,110,52,'car',{c});}
+      else{const x=r.x+(R()<.5?14:r.w-66);if(!ys.some(y=>p+110>y-20&&p<y+RW+20))rect(x,p,52,110,'car',{c});}}});
+    scatter(dens(3),40,(x,y)=>rect(x-26,y-26,52,52,'crate'));
+    scatter(dens(3.5),70,tree);
   }else if(key==='graben'){
-    M.zones.push({x:140,y:420,w:2120,h:90},{x:140,y:1090,w:2120,h:90},{x:1155,y:510,w:90,h:580});
-    const bags=(x1,x2,y,skip)=>{let x=x1;while(x<x2){const l=Math.min(R.range(200,300),x2-x);if(!(skip&&x+l>skip[0]&&x<skip[1]))rect(x,y,l,16,'sandbag');else{if(skip[0]-x>40)rect(x,y,skip[0]-x,16,'sandbag');if(x+l-skip[1]>40)rect(skip[1],y,x+l-skip[1],16,'sandbag');}x+=l+76;}};
-    const vbags=(x,y1,y2)=>{let y=y1;while(y<y2){const l=Math.min(R.range(160,240),y2-y);rect(x,y,16,l,'sandbag');y+=l+76;}};
-    bags(140,2260,404);bags(140,2260,510,[1139,1261]);bags(140,2260,1074,[1139,1261]);bags(140,2260,1180);
-    vbags(1139,526,1074);vbags(1245,526,1074);
-    house(240,700,220,180,{n:'wall',e:'door',s:'wall',w:'window'},'bunker',20);
-    house(1940,700,220,180,{n:'wall',e:'window',s:'wall',w:'door'},'bunker',20);
-    house(1100,130,200,160,{n:'window',e:'wall',s:'door',w:'wall'},'bunker',20);
-    house(1100,1310,200,160,{n:'door',e:'wall',s:'window',w:'wall'},'bunker',20);
-    M.hints.push([350,790],[2050,790],[1200,210],[1200,1390],[700,800],[1700,800],[1200,465]);
-    for(let i=0;i<16;i++)M.craters.push({x:R.range(100,WW-100),y:R.range(100,WH-100),r:R.range(30,70)});
-    scatter(8,90,(x,y)=>R()<.5?rect(x-80,y-5,160,10,'wire'):rect(x-5,y-80,10,160,'wire'));
-    scatter(12,40,(x,y)=>circ(x,y,R.range(22,34),'rock'));
-    scatter(10,40,(x,y)=>circ(x,y,15,'trunk',{dead:1}));
+    const nt={s:2,m:2,l:3}[sz],TH=90,X1=140,X2=WW-140,ys=[],cx={s:[.5],m:[.5],l:[1/3,2/3]}[sz].map(f=>Math.round(WW*f-45));
+    for(let k=1;k<=nt;k++)ys.push(Math.round(WH*k/(nt+1)-TH/2));
+    ys.forEach(y=>M.zones.push({x:X1,y,w:X2-X1,h:TH}));
+    for(let k=0;k<nt-1;k++)cx.forEach(x=>M.zones.push({x,y:ys[k]+TH,w:90,h:ys[k+1]-ys[k]-TH}));
+    const bags=(x1,x2,y,skips)=>{let x=x1;while(x<x2){const l=Math.min(R.range(200,300),x2-x);let segs=[[x,x+l]];
+        skips.forEach(([a,b])=>{segs=segs.flatMap(([s,e])=>e<=a||s>=b?[[s,e]]:[[s,a],[b,e]].filter(([p,q])=>q-p>40));});
+        segs.forEach(([s,e])=>rect(s,y,e-s,16,'sandbag'));x+=l+76;}};
+    const vbags=(x,y1,y2)=>{let y=y1;while(y<y2){const l=Math.min(R.range(160,240),y2-y);if(l>40)rect(x,y,16,l,'sandbag');y+=l+76;}};
+    const gaps=cx.map(x=>[x-16,x+106]);
+    ys.forEach((y,k)=>{bags(X1,X2,y-16,k>0?gaps:[]);bags(X1,X2,y+TH,k<nt-1?gaps:[]);});
+    for(let k=0;k<nt-1;k++)cx.forEach(x=>{vbags(x-16,ys[k]+TH+16,ys[k+1]-16);vbags(x+90,ys[k]+TH+16,ys[k+1]-16);});
+    for(let k=0;k<nt-1;k++){const my=(ys[k]+TH+ys[k+1])/2;
+      house(240,my-90,220,180,{n:'wall',e:'door',s:'wall',w:'window'},'bunker',20);house(WW-460,my-90,220,180,{n:'wall',e:'window',s:'wall',w:'door'},'bunker',20);
+      M.hints.push([350,my],[WW-350,my]);cx.forEach(x=>M.hints.push([x+45,ys[k]+TH/2]));
+      if(sz!=='s'){M.hints.push([WW*.27,my],[WW*.73,my]);}}
+    const tb=Math.min(160,ys[0]-200);if(tb>110){house(WW/2-100,(ys[0]-16-tb)/2,200,tb,{n:'window',e:'wall',s:'door',w:'wall'},'bunker',20);house(WW/2-100,WH-(WH-ys[nt-1]-TH-16-tb)/2-tb,200,tb,{n:'door',e:'wall',s:'window',w:'wall'},'bunker',20);
+      M.hints.push([WW/2,ys[0]/2],[WW/2,WH-(WH-ys[nt-1]-TH)/2]);}
+    for(let i=0;i<dens(4);i++)M.craters.push({x:R.range(100,WW-100),y:R.range(100,WH-100),r:R.range(30,70)});
+    scatter(dens(2),90,(x,y)=>R()<.5?rect(x-80,y-5,160,10,'wire'):rect(x-5,y-80,10,160,'wire'));
+    scatter(dens(3),40,(x,y)=>circ(x,y,R.range(22,34),'rock'));
+    scatter(dens(2.6),40,(x,y)=>circ(x,y,15,'trunk',{dead:1}));
   }else{
-    house(760,480,880,640,{n:'door',e:'door',s:'door',w:'door'},'hall',18);
-    [960,1200,1440].forEach(x=>[650,950].forEach(y=>rect(x-20,y-20,40,40,'pillar')));
-    [[860,560],[1290,700],[1500,860],[1060,880],[880,1000],[1380,1010]].forEach(([x,y])=>rect(x,y,60,60,'crate'));
-    M.hints.push([1200,800],[880,620],[1520,980],[300,300],[2100,1300],[1200,260],[1200,1340]);
+    const halls={s:[[.5,.5,640,440]],m:[[.5,.5,880,640]],l:[[.3,.36,960,680],[.7,.64,960,680]]}[sz];
+    halls.forEach(([fx,fy,w,h])=>{const x=Math.round(WW*fx-w/2),y=Math.round(WH*fy-h/2);house(x,y,w,h,{n:'door',e:'door',s:'door',w:'door'},'hall',18);
+      const px=[],py=[];for(let k=1;k<Math.round(w/240);k++)px.push(x+w*k/Math.round(w/240));for(let k=1;k<Math.round(h/300)+1;k++)py.push(y+h*k/(Math.round(h/300)+1));
+      px.forEach(a=>py.forEach(b=>rect(a-20,b-20,40,40,'pillar')));
+      M.hints.push([x+w/2,y+h/2],[x+110,y+110],[x+w-110,y+h-110]);
+      for(let k=0;k<Math.round(w*h/70000);k++){const cx=R.range(x+70,x+w-130),cy=R.range(y+70,y+h-130);
+        if(!M.obs.some(o=>o.kind==='pillar'&&Math.abs(o.x+20-cx-30)<90&&Math.abs(o.y+20-cy-30)<90)&&M.hints.every(([hx,hy])=>Math.hypot(hx-cx-30,hy-cy-30)>90))rect(cx,cy,60,60,'crate');}});
     let ci=0;const cont=(x,y,w,h)=>rect(x,y,w,h,'container',{c:ci++%6});
-    [140,440,1500,1800,2060].forEach(x=>cont(x,130,240,80));[100,400,700,1500,1800].forEach(x=>cont(x,1390,240,80));
-    [[150,420],[150,900],[400,640],[2170,420],[2170,900],[1940,640],[620,300],[1640,1150]].forEach(([x,y])=>cont(x,y,80,240));
-    scatter(16,44,(x,y)=>rect(x-28,y-28,56,56,'crate'));
-    scatter(10,30,(x,y)=>circ(x,y,17,'barrel'));
+    for(let x=140;x<WW-380;x+=300)if(R()<.7){cont(x,130,240,80);}
+    for(let x=100;x<WW-340;x+=300)if(R()<.7){cont(x,WH-210,240,80);}
+    for(let y=380;y<WH-560;y+=480){if(R()<.8)cont(150,y,80,240);if(R()<.8)cont(WW-230,y,80,240);}
+    scatter(dens(1.5),170,(x,y)=>R()<.5?cont(x-120,y-40,240,80):cont(x-40,y-120,80,240));
+    scatter(dens(3.5),44,(x,y)=>rect(x-28,y-28,56,56,'crate'));
+    scatter(dens(2.4),30,(x,y)=>circ(x,y,17,'barrel'));
   }
   return M;
 }
@@ -175,7 +207,7 @@ function hitsObs(x,y,r){
   return false;
 }
 function buildGrid(){
-  grid=new Uint8Array(GC*GR);freeCells=[];
+  GC=WW/CELL;GR=WH/CELL;grid=new Uint8Array(GC*GR);gS=new Float32Array(GC*GR);came=new Int32Array(GC*GR);stamp=new Uint32Array(GC*GR);freeCells=[];
   for(let j=0;j<GR;j++)for(let i=0;i<GC;i++){const x=i*CELL+CELL/2,y=j*CELL+CELL/2;const b=x<PR+4||y<PR+4||x>WW-PR-4||y>WH-PR-4||hitsObs(x,y,PR+3);grid[j*GC+i]=b?1:0;}
   for(let j=1;j<GR-1;j++)for(let i=1;i<GC-1;i++){let ok=true;for(let dj=-1;dj<=1&&ok;dj++)for(let di=-1;di<=1;di++)if(grid[(j+dj)*GC+i+di]){ok=false;break;}if(ok)freeCells.push(j*GC+i);}
 }
@@ -193,14 +225,14 @@ function farthest(n,R,pre){
   return out;
 }
 // A*-Wegsuche auf dem Raster (8 Richtungen, keine Abkürzung über Ecken)
-const gS=new Float32Array(GC*GR),came=new Int32Array(GC*GR),stamp=new Uint32Array(GC*GR);let stampN=0;
+let gS,came,stamp,stampN=0;
 function astar(sx,sy,gx,gy){
   const s=nearestFree(cellOf(sx,sy)),g=nearestFree(cellOf(gx,gy));if(s===g)return[{x:gx,y:gy}];
   stampN++;const heap=[],push=(f,c)=>{heap.push([f,c]);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}},
     pop=()=>{const top=heap[0],last=heap.pop();if(heap.length){heap[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<heap.length&&heap[l][0]<heap[m][0])m=l;if(r<heap.length&&heap[r][0]<heap[m][0])m=r;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return top;};
   const gi=g%GC,gj=Math.floor(g/GC),hh=c=>{const dx=Math.abs(c%GC-gi),dy=Math.abs(Math.floor(c/GC)-gj);return Math.max(dx,dy)+.414*Math.min(dx,dy);};
   stamp[s]=stampN;gS[s]=0;came[s]=-1;push(hh(s),s);let it=0;
-  while(heap.length&&it++<4000){
+  while(heap.length&&it++<12000){
     const[,c]=pop();if(c===g)break;const ci=c%GC,cj=Math.floor(c/GC);
     for(let dj=-1;dj<=1;dj++)for(let di=-1;di<=1;di++){if(!di&&!dj)continue;const i=ci+di,j=cj+dj;if(i<0||j<0||i>=GC||j>=GR)continue;const n=j*GC+i;if(grid[n])continue;
       if(di&&dj&&(grid[cj*GC+i]||grid[j*GC+ci]))continue;const ng=gS[c]+(di&&dj?1.414:1);
@@ -235,13 +267,13 @@ function rayObs(x0,y0,x1,y1){
 const los=(x0,y0,x1,y1)=>rayObs(x0,y0,x1,y1)==null;
 
 /* ---------- Bodenbild und Farbspritzer ---------- */
-const ground=document.createElement('canvas');ground.width=WW;ground.height=WH;const gctx=ground.getContext('2d');
-const paint=document.createElement('canvas');paint.width=WW/2;paint.height=WH/2;const pctx=paint.getContext('2d');
+const ground=document.createElement('canvas'),gctx=ground.getContext('2d'),paint=document.createElement('canvas'),pctx=paint.getContext('2d');let GSC=1;
 const GROUND={wald:DARK?'#1f2a22':'#dcebc6',siedlung:DARK?'#24252a':'#e9efdc',graben:DARK?'#2a261f':'#ebe0c6',lager:DARK?'#1f2329':'#e4e6ea'};
 function paintGround(){
-  const g=gctx,R=GG.rng(7);g.fillStyle=GROUND[MAP.key];g.fillRect(0,0,WW,WH);
+  GSC=WW*WH>7e6?.75:1;if(ground.width!==Math.round(WW*GSC)){ground.width=Math.round(WW*GSC);ground.height=Math.round(WH*GSC);paint.width=WW/2;paint.height=WH/2;}
+  const g=gctx,R=GG.rng(7);g.setTransform(GSC,0,0,GSC,0,0);g.fillStyle=GROUND[MAP.key];g.fillRect(0,0,WW,WH);
   // feine Struktur
-  for(let i=0;i<2600;i++){const x=R()*WW,y=R()*WH;g.fillStyle=DARK?`rgba(255,255,255,${.02+R()*.03})`:`rgba(60,70,40,${.03+R()*.05})`;
+  for(let i=0;i<WW*WH/1500;i++){const x=R()*WW,y=R()*WH;g.fillStyle=DARK?`rgba(255,255,255,${.02+R()*.03})`:`rgba(60,70,40,${.03+R()*.05})`;
     if(MAP.key==='wald'){g.fillRect(x,y,2,6);g.fillRect(x+3,y+1,2,5);}else{g.beginPath();g.arc(x,y,1+R()*2,0,7);g.fill();}}
   const road=DARK?'#33313a':'#d5d0c8',floor=DARK?'#2f2a35':'#f6eee2';
   MAP.roads.forEach(r=>{g.fillStyle=road;g.fillRect(r.x,r.y,r.w,r.h);g.strokeStyle=DARK?'#58525e':'#fffaf2';g.lineWidth=5;g.setLineDash([36,30]);g.beginPath();
@@ -251,7 +283,7 @@ function paintGround(){
     for(let k=0;k<(z.w>z.h?z.w:z.h);k+=46){g.beginPath();if(z.w>z.h){g.moveTo(z.x+k,z.y+6);g.lineTo(z.x+k,z.y+z.h-6);}else{g.moveTo(z.x+6,z.y+k);g.lineTo(z.x+z.w-6,z.y+k);}g.stroke();}});
   MAP.floors.forEach(f=>{g.fillStyle=f.kind==='hall'?(DARK?'#2a2d33':'#eef0f2'):f.kind==='bunker'?(DARK?'#29262b':'#dedad6'):floor;g.fillRect(f.x,f.y,f.w,f.h);
     g.strokeStyle=DARK?'rgba(255,255,255,.04)':'rgba(120,90,60,.10)';g.lineWidth=1;for(let y=f.y+22;y<f.y+f.h;y+=22){g.beginPath();g.moveTo(f.x,y);g.lineTo(f.x+f.w,y);g.stroke();}});
-  if(MAP.key==='lager'){g.strokeStyle=DARK?'rgba(255,255,255,.08)':'rgba(60,60,80,.12)';g.lineWidth=4;for(let x=120;x<WW;x+=180){g.beginPath();g.moveTo(x,560);g.lineTo(x,520);g.stroke();}}
+  if(MAP.key==='lager'){g.strokeStyle=DARK?'rgba(255,255,255,.08)':'rgba(60,60,80,.12)';g.lineWidth=4;}
   pctx.clearRect(0,0,paint.width,paint.height);
 }
 function splat(x,y,col,size=10){
@@ -263,19 +295,23 @@ function splat(x,y,col,size=10){
 
 /* ---------- Spielzustand ---------- */
 let seed,mapKey,state='menu',T=0,cd=0,players=[],bullets=[],items=[],spawns=[],spots=[],respawnQ=[],feed=[],pops=[],me=null,startChoice='pistole',cam={x:0,y:0},hitMark=0,hurt=0;
-const BOTS=['Kolben','Zündi','Turbo','Mutter','Ventil','Kurbel'];
+const BOTS=['Kolben','Zündi','Turbo','Mutter','Ventil','Kurbel','Bolzen','Düse','Funke','Ritzel','Feder','Nocke','Spule','Schraube','Lager'];
 const keys={};let mouse={x:W/2,y:H/2},firing=false,scope=false,board=false;
 
 function prepare(){
-  MAP=makeMap(mapKey);buildGrid();paintGround();
+  const SZ=SIZES[sizeKey];WW=SZ.w;WH=SZ.h;MATCH=SZ.time;
+  MAP=makeMap(mapKey,sizeKey);buildGrid();paintGround();
   const R=GG.rng(seed^0x5bd1);
-  spawns=farthest(16,R,[]);
+  const SZ2=SIZES[sizeKey];spawns=farthest(SZ2.spawns,R,[]);
   const hs=MAP.hints.map(([x,y])=>cellXY(nearestFree(cellOf(x,y))));
-  spots=hs.slice(0,7);if(spots.length<7)spots.push(...farthest(7-spots.length,R,[...spawns,...spots]));
+  spots=R.shuffle(hs).slice(0,SZ2.spots);if(spots.length<SZ2.spots)spots.push(...farthest(SZ2.spots-spots.length,R,[...spawns,...spots]));
 }
-function newGame(){
+async function newGame(){
   seed=GG.newSeed();const R=GG.rng(seed);
-  mapKey=GG.room?R.pick(MAP_KEYS):(mapKey&&!GG.room?mapKey:R.pick(MAP_KEYS));
+  mapKey=GG.room?R.pick(MAP_KEYS):(mapKey||R.pick(MAP_KEYS));
+  // Im Turnier richtet sich die Kartengröße nach der Zahl der Leute im Raum
+  if(GG.room&&window.GGNet){try{const r=await Promise.race([GGNet.call({action:'poll',code:GG.room.code}),new Promise(ok=>setTimeout(ok,2500))]);
+    const n=r&&r.room&&r.room.players&&r.room.players.length;if(n)sizeKey=sizeFor(n);}catch(e){}}
   prepare();state='menu';players=[];showStart();
 }
 function makePlayer(i,R){
@@ -288,9 +324,9 @@ function makePlayer(i,R){
 }
 function begin(){
   const R=GG.rng(seed+31);
-  players=[];for(let i=0;i<6;i++)players.push(makePlayer(i,R));me=players[0];
+  players=[];for(let i=0;i<SIZES[sizeKey].max;i++)players.push(makePlayer(i,R));me=players[0];
   bullets=[];items=[];respawnQ=[];feed=[];pops=[];T=0;paintGround();
-  const types=['sturm','schrot','sniper','minigun','sturm','schrot',R.pick(['sturm','sniper','schrot'])];
+  const base=['sturm','schrot','sniper','minigun','sturm','schrot','sturm','sniper','schrot','minigun','sturm','schrot'],types=base.slice(0,spots.length);
   R.shuffle(spots.slice()).forEach((s,k)=>dropItem(types[k],s.x,s.y,WEAPONS[types[k]].mag,WEAPONS[types[k]].ammo-WEAPONS[types[k]].mag,true));
   const sp=R.shuffle(spawns.slice());players.forEach((p,k)=>spawn(p,sp[k]));
   cam.x=clamp(me.x-W/2,0,WW-W);cam.y=clamp(me.y-H/2,0,WH-H);
@@ -476,8 +512,8 @@ const STYLE={
 };
 function drawObs(o){
   const c=ctx;
-  if(o.t==='r'&&(o.x>cam.x+W+10||o.x+o.w<cam.x-10||o.y>cam.y+H+10||o.y+o.h<cam.y-10))return;
-  if(o.t==='c'&&(o.x-o.r>cam.x+W||o.x+o.r<cam.x||o.y-o.r>cam.y+H||o.y+o.r<cam.y))return;
+  if(!overviewMode&&o.t==='r'&&(o.x>cam.x+W+10||o.x+o.w<cam.x-10||o.y>cam.y+H+10||o.y+o.h<cam.y-10))return;
+  if(!overviewMode&&o.t==='c'&&(o.x-o.r>cam.x+W||o.x+o.r<cam.x||o.y-o.r>cam.y+H||o.y+o.r<cam.y))return;
   let[f,s]=STYLE[o.kind]||[COL.steel,COL.steelDark];
   if(o.kind==='container'||o.kind==='car')f=CONT[o.c%CONT.length];
   c.lineWidth=2;c.strokeStyle=o.kind==='container'||o.kind==='car'?OUT:s;c.fillStyle=f;
@@ -538,9 +574,9 @@ function draw(dt){
   GG.clear(ctx);
   if(!MAP)return;
   if(!me){ // Vorschau der Karte hinter der Startkarte
-    ctx.drawImage(ground,0,0,WW,WH,0,0,W,W*WH/WW);return;}
+    drawOverview();return;}
   ctx.save();ctx.translate(-Math.round(cam.x),-Math.round(cam.y));
-  ctx.drawImage(ground,cam.x,cam.y,W,H,cam.x,cam.y,W,H);
+  ctx.drawImage(ground,cam.x*GSC,cam.y*GSC,W*GSC,H*GSC,cam.x,cam.y,W,H);
   ctx.drawImage(paint,cam.x/2,cam.y/2,W/2,H/2,cam.x,cam.y,W,H);
   MAP.obs.forEach(drawObs);
   items.forEach(drawItem);
@@ -558,6 +594,17 @@ function draw(dt){
   ctx.restore();
   drawHud(dt);
 }
+// Ganze Karte verkleinert (hinter der Startkarte)
+function drawOverview(){
+  const sc=Math.min(W/WW,H/WH),ox=(W-WW*sc)/2,oy=(H-WH*sc)/2,c0={...cam};
+  ctx.save();ctx.translate(ox,oy);ctx.scale(sc,sc);ctx.drawImage(ground,0,0,ground.width,ground.height,0,0,WW,WH);
+  cam.x=0;cam.y=0;const w0=W,h0=H;overviewMode=true;MAP.obs.forEach(drawObs);
+  ctx.fillStyle=DARK?'#4f7d5c':'#a9d8b0';ctx.strokeStyle=DARK?'#36573f':'#79b58a';ctx.lineWidth=2.5;
+  MAP.canopy.forEach(t=>{ctx.beginPath();ctx.arc(t.x,t.y,t.r*.9,0,7);ctx.fill();ctx.stroke();});
+  spots.forEach(p=>{ctx.fillStyle=COL.rose;ctx.beginPath();ctx.arc(p.x,p.y,22,0,7);ctx.fill();});
+  overviewMode=false;Object.assign(cam,c0);ctx.restore();
+}
+let overviewMode=false;
 function rayDist(p){const x1=p.x+Math.cos(p.aim)*1700,y1=p.y+Math.sin(p.aim)*1700,t=rayObs(p.x,p.y,x1,y1);return t==null?1700:1700*t;}
 
 /* ---------- Anzeigen ---------- */
@@ -594,7 +641,7 @@ function drawHud(dt){
   // Hinweis zum Aufheben
   if(me.alive&&me.slots[1]){const it=nearItem(me);if(it){const t=`E · ${WEAPONS[it.type].name} nehmen (${it.mag+it.res} Schuss)`;c.font=`600 14px ${DISPLAY}`;const w=c.measureText(t).width+32;hudPanel(W/2-w/2,H-150,w,34);GG.text(c,t,W/2,H-128,{size:14,weight:600,align:'center'});}}
   // unten rechts: Übersichtskarte
-  const ms=1/12,mw=WW*ms,mh=WH*ms,mx=W-16-mw,my=H-16-mh;
+  const ms=Math.min(220/WW,150/WH),mw=WW*ms,mh=WH*ms,mx=W-16-mw,my=H-16-mh;
   hudPanel(mx-6,my-6,mw+12,mh+12);c.fillStyle=GROUND[MAP.key];c.fillRect(mx,my,mw,mh);
   c.fillStyle=DARK?'rgba(255,255,255,.25)':'rgba(59,51,70,.3)';
   MAP.obs.forEach(o=>{if(!KIND[o.kind].bullet&&o.kind!=='pond')return;if(o.t==='c'){if(o.r>20){c.beginPath();c.arc(mx+o.x*ms,my+o.y*ms,o.r*ms,0,7);c.fill();}}else c.fillRect(mx+o.x*ms,my+o.y*ms,Math.max(1,o.w*ms),Math.max(1,o.h*ms));});
@@ -624,9 +671,9 @@ function drawHud(dt){
 }
 const ranking=()=>players.slice().sort((a,b)=>b.score-a.score||b.kills-a.kills||a.deaths-b.deaths);
 function drawBoard(){
-  const c=ctx,rows=ranking(),x=W/2-260,y=120;hudPanel(x,y,520,70+rows.length*40);
+  const c=ctx,rows=ranking(),rh=rows.length>8?33:40,x=W/2-260,y=rows.length>8?40:120;hudPanel(x,y,520,56+rows.length*rh);
   GG.label(c,'RANGLISTE',x+24,y+30);[['ABSCH.',300],['KOPF',370],['TODE',430],['PUNKTE',496]].forEach(([t,xx])=>GG.label(c,t,x+xx,y+30,'right'));
-  rows.forEach((p,k)=>{const yy=y+62+k*40;GG.drawAvatar(c,p.av,x+44,yy,28,null,p.col);GG.text(c,`${k+1}. ${p.name}`,x+66,yy+5,{size:15,weight:700,color:p===me?COL.roseInk:COL.ink});
+  rows.forEach((p,k)=>{const yy=y+58+k*rh;GG.drawAvatar(c,p.av,x+44,yy,rh-12,null,p.col);GG.text(c,`${k+1}. ${p.name}`,x+66,yy+5,{size:15,weight:700,color:p===me?COL.roseInk:COL.ink});
     [[p.kills,300],[p.hs,370],[p.deaths,430],[GG.num(p.score),496]].forEach(([v,xx])=>GG.text(c,String(v),x+xx,yy+5,{size:15,align:'right',font:MONO}));});
 }
 GG.loop(draw);
@@ -656,17 +703,21 @@ cv.addEventListener('wheel',e=>{if(state!=='play'||!me||!me.alive)return;e.preve
 /* ---------- Karten (Overlay) ---------- */
 function showStart(){
   me=null;cv.style.cursor='default';
-  const mapPick=GG.room?`<div class="next"><strong>${MAPS[mapKey].name}</strong> · ${MAPS[mapKey].text}</div>`
-    :`<div class="lbl">Karte</div><div class="pick" id="pickMap">${MAP_KEYS.map(k=>`<button type="button" data-map="${k}" aria-pressed="${k===mapKey}">${MAPS[k].name}</button>`).join('')}</div><div class="next" id="mapText">${MAPS[mapKey].text}</div>`;
+  const SZ=SIZES[sizeKey],sizeTxt=k=>`${SIZES[k].name} · bis ${SIZES[k].max} Spieler`;
+  const mapPick=GG.room?`<div class="next"><strong>${MAPS[mapKey].name}</strong>, ${sizeTxt(sizeKey)} · ${MAPS[mapKey].text}</div>`
+    :`<div class="lbl">Größe</div><div class="pick three" id="pickSize">${SIZE_KEYS.map(k=>`<button type="button" data-size="${k}" aria-pressed="${k===sizeKey}">${SIZES[k].name}<small>bis ${SIZES[k].max} Spieler · ${SIZES[k].time/60} Min.</small></button>`).join('')}</div>
+    <div class="lbl">Karte</div><div class="pick" id="pickMap">${MAP_KEYS.map(k=>`<button type="button" data-map="${k}" aria-pressed="${k===mapKey}">${MAPS[k].name}</button>`).join('')}</div><div class="next" id="mapText">${MAPS[mapKey].text}</div>`;
   ov.show(`<div class="eyebrow">Minispiel · Action</div><h2>Farbschlacht</h2>
-    <p>Farbkugeln, jeder gegen jeden, 4 Minuten. Wer die meisten Punkte hat, gewinnt.</p>
-    <ul><li>Abschuss 100 Punkte, mit Kopfschuss 150. Ein Kopftreffer macht doppelten Schaden.</li>
+    <p id="introTxt">Farbkugeln, jeder gegen jeden, ${SZ.max} Spieler (du und ${SZ.max-1} Bots), ${SZ.time/60} Minuten. Wer die meisten Punkte hat, gewinnt.</p>
+    <ul><li>Abschuss 100 Punkte, mit Kopfschuss 150. Kopftreffer machen doppelten Schaden.</li>
     <li>Bessere Waffen liegen auf der Karte, aber nur wenige. Wer stirbt, lässt seine fallen.</li>
-    <li>Nach dem Einstieg bis zu 5 Sekunden Schutz, der beim ersten Schuss endet.</li></ul>
+    <li>Nach dem Einstieg bis zu 5 Sekunden Schutz, bis zum ersten eigenen Schuss.</li></ul>
     ${mapPick}
     <div class="lbl">Startwaffe</div><div class="pick three" id="pickGun">${START.map(k=>`<button type="button" data-gun="${k}" aria-pressed="${k===startChoice}">${WEAPONS[k].name}<small>${WEAPONS[k].info}</small></button>`).join('')}</div>
     <button class="go" type="button">Los geht’s</button>`,()=>{cv.style.cursor='none';begin();});
   ovEl.querySelectorAll('[data-map]').forEach(b=>b.addEventListener('click',()=>{mapKey=b.dataset.map;prepare();ovEl.querySelectorAll('[data-map]').forEach(x=>x.setAttribute('aria-pressed',x===b));ovEl.querySelector('#mapText').textContent=MAPS[mapKey].text;GG.sfx('tick');}));
+  ovEl.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{sizeKey=b.dataset.size;prepare();const z=SIZES[sizeKey];ovEl.querySelectorAll('[data-size]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+    ovEl.querySelector('#introTxt').textContent=`Farbkugeln, jeder gegen jeden, ${z.max} Spieler (du und ${z.max-1} Bots), ${z.time/60} Minuten. Wer die meisten Punkte hat, gewinnt.`;GG.sfx('tick');}));
   ovEl.querySelectorAll('[data-gun]').forEach(b=>b.addEventListener('click',()=>{startChoice=b.dataset.gun;ovEl.querySelectorAll('[data-gun]').forEach(x=>x.setAttribute('aria-pressed',x===b));GG.sfx('tick');}));
 }
 function finish(){
@@ -674,7 +725,7 @@ function finish(){
   const rows=ranking(),place=rows.indexOf(me)+1;
   if(place===1)GG.sfx('win');
   GG.report(me.score);
-  ov.show(`<div class="eyebrow">${MAPS[mapKey].name} · Zeit abgelaufen</div><h2>${place===1?'Gewonnen!':`Platz ${place} von ${rows.length}`}</h2>
+  ov.show(`<div class="eyebrow">${MAPS[mapKey].name} · ${SIZES[sizeKey].name} · Zeit abgelaufen</div><h2>${place===1?'Gewonnen!':`Platz ${place} von ${rows.length}`}</h2>
     <div class="big">${GG.num(me.score)}</div>
     <table class="board"><tr><th>#</th><th>Name</th><th>Absch.</th><th>Kopf</th><th>Tode</th><th>Punkte</th></tr>
     ${rows.map((p,k)=>`<tr${p===me?' class="me"':''}><td>${k+1}</td><td>${p.name.replace(/[<>&]/g,'')}</td><td>${p.kills}</td><td>${p.hs}</td><td>${p.deaths}</td><td>${GG.num(p.score)}</td></tr>`).join('')}</table>
