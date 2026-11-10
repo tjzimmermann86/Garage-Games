@@ -102,6 +102,7 @@ const LEVELS=[
     {veh:'lkw',tpl:'yard',theme:'hafen',pos:'right',mw:.4,ml:.2,course:'weg',bends:2,lane:2.8,amp:.7,dir:'rück',seeds:[1,2,3,4],time:100},
     {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'right',mw:.25,ml:.2,course:'weg',bends:2,lane:2.4,cross:2,dir:'rück',seeds:[1,6,8,9],time:120},
     {veh:'pkw',tpl:'court',theme:'stadt',mw:.35,ml:.4,size:[3.6,2.6],cars:2,time:60},
+    {veh:'pkw',tpl:'kreisel',theme:'wohn',mw:.25,ml:.5,time:80},
   ],
   [ // Stufe 4: sperrige Fahrzeuge auf engem Raum, vier Hindernisse
     {veh:'bus',tpl:'court',theme:'busbahnhof',mw:.4,ml:.2,size:[2.5,1.75],time:110},
@@ -112,6 +113,7 @@ const LEVELS=[
     {veh:'traktor',tpl:'yard',theme:'hof',pos:'top',mw:.27,ml:.2,course:'weg',bends:3,lane:2.6,cross:3,dir:'rück',seeds:[1,2,3,4],time:125},
     {veh:'bagger',tpl:'yard',theme:'baustelle',pos:'right',mw:.27,ml:.2,course:'weg',bends:3,lane:2.7,cross:2,dir:'rück',seeds:[1,2,3,4],time:130},
     {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.26,ml:.18,dir:'rück',far:1,time:110},
+    {veh:'pkw',tpl:'kreisel',theme:'wohn',mw:.2,ml:.34,time:85},
   ],
   [ // Stufe 5: Meisterprüfung
     {veh:'lkwh',tpl:'yard',theme:'hafen',pos:'left',mw:.55,ml:.15,dir:'rück',time:150},
@@ -120,6 +122,7 @@ const LEVELS=[
     {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.18,ml:.14,dir:'rück',far:1,time:110},
     {veh:'pkw',tpl:'street',theme:'wohn',wohn:1,mw:.22,ml:.4,dir:'wende',side:1.9,time:100},
     {veh:'lkw',tpl:'court',theme:'hafen',mw:.3,ml:.16,size:[2.4,1.7],cars:1,time:130},
+    {veh:'lkw',tpl:'kreisel',theme:'wohn',mw:.2,ml:.3,time:120},
     {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.38,top:1,narrow:.36,dir:'wende',side:1.8,time:90},
     {veh:'traktor',tpl:'yard',theme:'hof',pos:'right',mw:.2,ml:.15,course:'weg',bends:4,lane:2.3,cross:4,dir:'rück',seeds:[1,2,3,4],time:150},
     {veh:'bagger',tpl:'yard',theme:'baustelle',pos:'right',mw:.2,ml:.15,course:'weg',bends:3,lane:2.5,cross:3,dir:'rück',seeds:[1,2,3,4],time:160},
@@ -183,6 +186,23 @@ function build(def,R){
         if(R()<.6)S.decor.push({k:'tree',x:x+w+22,y:up?y1-34-R.range(30,d0-30):y2+34+R.range(30,d0-30),r:R.range(16,24)});
         x+=w+R.range(40,90);}}
     S.start={x:sx,y:wohn?y1+TS+LW/2:y1+TS+LW*1.5,a:0};
+  }else if(def.tpl==='kreisel'){ // Wohnsiedlung: eine Zufahrt, am Ende ein Wendekreis mit Insel, ringsum zugeparkt
+    const Cx=870,Cy=FH/2,Ro=274,pw=Math.max(sw,46),RW=106,y1=Cy-RW/2,y2=Cy+RW/2,Ri=Ro-pw-(def.ring||92);
+    S.obs.push({t:'o',x:Cx,y:Cy,r:Ro,y1,y2,kind:'Bordstein'});
+    const nx=Cx-Math.sqrt(Ro*Ro-(RW/2)**2);circ(nx,y1-4,3,'ecke');circ(nx,y2+4,3,'ecke');circ(Cx,Cy,Ri,'insel');
+    const th0=R.range(-1.8,1.8),de=Math.sqrt(Ro*Ro-(sl/2)**2),rs=de-pw/2-1,rp=Math.sqrt(Ro*Ro-44*44)-23,ra=Ro-25;
+    S.slot={cx:Cx+Math.cos(th0)*rs,cy:Cy+Math.sin(th0)*rs,hw:sl/2,hh:pw/2,a:th0+PI/2,need:null};
+    S.decor.push({k:'kreisel',Cx,Cy,Ro,Ri,y1,y2,pw});
+    for(const dir of[1,-1]){let th=th0+dir*(sl/2+R.range(4,12)+42)/ra;
+      for(let k=0;k<20&&Math.abs(angd(th,PI))>.6;k++){
+        if(k===0||R()>.2)parked(Cx+Math.cos(th)*(rp+R.range(-4,2)),Cy+Math.sin(th)*(rp+R.range(-4,2)),th+PI/2+(R()<.5?0:PI)+R.range(-.05,.05),'pkw');
+        else{for(const o2 of[-.035,.035])circ(Cx+Math.cos(th+o2)*(Ro-13),Cy+Math.sin(th+o2)*(Ro-13),8,'bin');S.decor.push({k:'einfahrt',x:Cx+Math.cos(th)*(Ro+18),y:Cy+Math.sin(th)*(Ro+18),a:th});}
+        th+=dir*(84+(R()<.25?R.range(20,34):R.range(6,14)))/ra;}}
+    // Häuser am Kreis und an der Zufahrt
+    for(let t=-2.2;t<=2.2;t+=.55){const hx=Cx+Math.cos(t)*(Ro+104),hy=Cy+Math.sin(t)*(Ro+104);if(hx<FW-40&&hy>40&&hy<FH-40)S.decor.push({k:'house',x:hx-55,y:hy-42,w:110,h:84,c:R.int(0,5),up:hy<Cy});}
+    for(let x=30;x<nx-150;x+=R.range(170,210))for(const up of[1,0])S.decor.push({k:'house',x,y:up?y1-34-18-R.range(90,120):y2+34+18,w:R.range(120,150),h:R.range(90,110),c:R.int(0,5),up});
+    for(let k=0;k<7;k++)S.decor.push({k:'tree',x:R.range(30,nx-60),y:R()<.5?R.range(20,y1-170):R.range(y2+170,FH-20),r:R.range(16,24)});
+    S.start={x:sx,y:Cy+Math.min(RW/4,RW/2-V.wid/2-9),a:0};
   }else if(def.tpl==='court'){ // enger Hof: erst wenden, dann einparken
     const cw=Math.min(FW-40,def.size[0]*TL),ch=Math.min(FH-30,def.size[1]*TL),x0=(FW-cw)/2,y0=(FH-ch)/2,x1=x0+cw,y1=y0+ch;
     wall(0,0,FW,y0,'block');wall(0,y1,FW,FH,'block');wall(0,y0,x0,y1,'block');wall(x1,y0,FW,y1,'block');
@@ -291,7 +311,10 @@ function percentIn(){let n=0,m=0;for(const B of parts()){const c=Math.cos(B.a),s
 function collides(){
   for(const B of parts()){
     for(const p of corners(B))if(p[0]<0||p[1]<0||p[0]>FW||p[1]>FH)return'Rand';
-    for(const o of S.obs)if(o.t==='c'?circHit(B,o):satHit(B,o))return o.kind;
+    const B2={cx:B.cx,cy:B.cy,hw:B.hw-2,hh:B.hh-2,a:B.a},B5={cx:B.cx,cy:B.cy,hw:B.hw-5,hh:B.hh-5,a:B.a};
+    for(const o of S.obs){
+      if(o.t==='o'){for(const q of corners(B2))if(Math.hypot(q[0]-o.x,q[1]-o.y)>o.r+3&&!(q[0]<o.x&&q[1]>o.y1-3&&q[1]<o.y2+3))return o.kind;}
+      else if(o.t==='c'?circHit(B2,o):satHit(o.kind==='curb'?B5:B2,o))return o.kind;}
   }
   if(S.V.trailer&&Math.abs(angd(car.a,car.ta))>1.35)return'knick';
   return null;
@@ -394,9 +417,12 @@ function drawSite(o){ // Baufahrzeuge von oben: Kipper, Betonmischer, Walze, Aut
   c.restore();
 }
 function drawObs(o){
-  const c=ctx;c.lineWidth=2;
+  const c=ctx;c.lineWidth=2;if(o.t==='o')return;
   if(o.t==='c'){
     if(o.kind==='cone'){c.fillStyle='#f08a5d';c.strokeStyle=OUT;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(o.x,o.y,o.r*.55,0,7);c.fill();c.fillStyle='#f08a5d';c.beginPath();c.arc(o.x,o.y,o.r*.28,0,7);c.fill();}
+    else if(o.kind==='insel'){c.fillStyle=DARK?'#27302a':'#dcebc6';c.strokeStyle=DARK?'#58525e':'#cfc5b6';c.lineWidth=4;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.lineWidth=2.5;
+      for(const[a,b,r]of[[0,0,.34],[-.5,.35,.2],[.45,-.4,.18]]){c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';c.strokeStyle=DARK?'#36573f':'#79b58a';c.beginPath();c.arc(o.x+a*o.r,o.y+b*o.r,o.r*r,0,7);c.fill();c.stroke();}}
+    else if(o.kind==='ecke'){}
     else if(o.kind==='teich'){c.fillStyle=DARK?'#2f4a63':'#bcdcf3';c.strokeStyle=DARK?'#4d7396':'#86b6dc';c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.strokeStyle=DARK?'rgba(255,255,255,.14)':'rgba(255,255,255,.75)';c.beginPath();c.ellipse(o.x-o.r*.2,o.y-o.r*.25,o.r*.45,o.r*.14,0,0,7);c.stroke();c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';for(const[a,b]of[[.6,.5],[-.5,.6]]){c.beginPath();c.arc(o.x+a*o.r,o.y+b*o.r,5,0,7);c.fill();}}
     else if(o.kind==='silo'){c.fillStyle=COL.steel;c.strokeStyle=COL.steelDark;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();for(const k of[.72,.4]){c.beginPath();c.arc(o.x,o.y,o.r*k,0,7);c.stroke();}c.fillStyle=DARK?'rgba(255,255,255,.12)':'rgba(255,255,255,.5)';c.beginPath();c.arc(o.x-o.r*.3,o.y-o.r*.3,o.r*.22,0,7);c.fill();}
     else if(o.kind==='obst'){c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';c.strokeStyle=DARK?'#36573f':'#79b58a';c.beginPath();c.arc(o.x,o.y,o.r+5,0,7);c.fill();c.stroke();c.fillStyle='#e2557c';for(const[a,b]of[[-6,-5],[7,-2],[-2,8],[5,7]]){c.beginPath();c.arc(o.x+a,o.y+b,2.6,0,7);c.fill();}}
@@ -433,6 +459,12 @@ function draw(dt){
   c.fillStyle=th.ground[dk];c.fillRect(0,0,FW,FH);
   // Bodenstruktur
   const R=GG.rng(seed+li*31);c.fillStyle=DARK?'rgba(255,255,255,.03)':'rgba(59,51,70,.05)';for(let k=0;k<260;k++){c.beginPath();c.arc(R()*FW,R()*FH,1+R()*2.2,0,7);c.fill();}
+  S.decor.forEach(d=>{if(d.k==='kreisel'){const lawn=DARK?'#27302a':'#dcebc6',walk=DARK?'#35313b':'#f3ecdf',edge=DARK?'#58525e':'#cfc5b6';
+    c.fillStyle=lawn;c.fillRect(0,0,FW,FH);c.fillStyle=walk;c.beginPath();c.arc(d.Cx,d.Cy,d.Ro+30,0,7);c.fill();c.fillRect(0,d.y1-30,d.Cx,d.y2-d.y1+60);
+    c.fillStyle=th.ground[dk];c.beginPath();c.arc(d.Cx,d.Cy,d.Ro,0,7);c.fill();c.fillRect(0,d.y1,d.Cx,d.y2-d.y1);
+    c.strokeStyle=edge;c.lineWidth=4;const a0=Math.asin((d.y2-d.y1)/2/d.Ro);c.beginPath();c.arc(d.Cx,d.Cy,d.Ro,-PI+a0,PI-a0);c.stroke();const ex=d.Cx-Math.cos(a0)*d.Ro;c.beginPath();c.moveTo(0,d.y1);c.lineTo(ex,d.y1);c.moveTo(0,d.y2);c.lineTo(ex,d.y2);c.stroke();
+    c.strokeStyle=th.line[dk];c.globalAlpha=.5;c.lineWidth=3;c.beginPath();c.arc(d.Cx,d.Cy,d.Ro-d.pw,-PI+a0+.25,PI-a0-.25);c.stroke();c.globalAlpha=.9;c.setLineDash([30,26]);c.beginPath();c.moveTo(0,d.Cy);c.lineTo(ex-10,d.Cy);c.stroke();c.setLineDash([]);c.globalAlpha=1;}
+    if(d.k==='einfahrt'){c.save();c.translate(d.x,d.y);c.rotate(d.a);c.fillStyle=DARK?'#3a363f':'#e2ddd6';c.fillRect(-22,-30,60,60);c.restore();}});
   S.decor.forEach(d=>{if(d.k==='weg'){c.strokeStyle=DARK?'rgba(255,255,255,.05)':'rgba(255,255,255,.42)';c.lineWidth=d.w;c.lineCap='round';c.lineJoin='round';c.beginPath();d.pts.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.stroke();c.lineCap='butt';}});
   S.decor.forEach(d=>{if(d.k==='lane'){c.strokeStyle=th.line[dk];c.lineWidth=4;c.setLineDash([34,30]);c.beginPath();c.moveTo(0,d.y);c.lineTo(FW,d.y);c.stroke();c.setLineDash([]);}});
   c.strokeStyle=th.line[dk];c.lineWidth=4;c.lineCap='round';S.lines.forEach(l=>{c.globalAlpha=l[4]?.5:.9;c.beginPath();c.moveTo(l[0],l[1]);c.lineTo(l[2],l[3]);c.stroke();});c.globalAlpha=1;c.lineCap='butt';
@@ -481,7 +513,7 @@ addEventListener('keyup',e=>{keys[e.key.toLowerCase()]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 
 /* ---------- Karten ---------- */
-const TPL={lot:'Querparken',street:'Längsparken',court:'enger Hof',yard:'Parkbucht'},CRS={chicane:'einer Schikane',slalom:'einem Slalom',tor:'einer engen Durchfahrt'};
+const TPL={lot:'Querparken',street:'Längsparken',court:'enger Hof',yard:'Parkbucht',kreisel:'Wendekreis am Ende der Sackgasse'},CRS={chicane:'einer Schikane',slalom:'einem Slalom',tor:'einer engen Durchfahrt'};
 const lvText=d=>`<strong>${VEH[d.veh].name}</strong> · ${THEMES[d.theme].name} · ${TPL[d.tpl]}${d.course?' hinter '+(d.course==='weg'?`einer gewundenen Strecke (${d.bends} ${d.bends>1?'Kurven':'Kurve'}${d.cross?`, ${d.cross} ${d.cross>1?'Hindernisse':'Hindernis'} quer`:''})`:CRS[d.course]):''}${d.far?' in der hinteren Fahrgasse':''}${d.wohn?' zwischen Einfahrten und Mülltonnen':''}${d.narrow?' an einer Baustelle':''} · ${d.time} Sekunden.${vorgabe(d)?` <strong>Vorgabe: ${vorgabe(d)}.</strong>`:''} ${VEH[d.veh].hint}`;
 function showStart(){
   ov.show(`<div class="eyebrow">Minispiel · Geschick</div><h2>Parklücke</h2>
