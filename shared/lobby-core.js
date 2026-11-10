@@ -18,6 +18,7 @@
     {id:'startampel',  name:'Startampel',  tag:'Reaktion'},
     {id:'turmbau',     name:'Turmbau',     tag:'Geschick'},
     {id:'schubsarena', name:'Schubsarena', tag:'Action'},
+    {id:'farbschlacht',name:'Farbschlacht',tag:'Shooter'},
   ];
   const GAME_IDS=GAMES.map(g=>g.id);
   const MODES={vote:'Abstimmung',host:'Gastgeber wählt',random:'Zufall'};

@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 6 Minispiele spielen |
+| Kopfhörer | Alle 7 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -69,6 +69,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Startampel** – Reaktionstest, Fehlstart = raus | [`startampel/`](startampel/) | Prototyp (Einzelspieler) |
 | **Turmbau** – Blöcke stapeln | [`turmbau/`](turmbau/) | Prototyp (Einzelspieler) |
 | **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
+| **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
 
 ### Scherbenwerk
 
@@ -127,6 +128,15 @@ Blöcke hängen am Kran und werden mit Klick/Leertaste fallen gelassen. Überste
 ### Schubsarena
 
 Gegen 3–6 Bots auf einer schrumpfenden Plattform. Rollen mit WASD/Pfeiltasten, Rammstoß mit der Leertaste. Arenen: Scheibe, Quadrat, Sechseck, Ring mit Loch, teils mit Glatteis, Prellböcken oder schweren Gegnern. Nach 75 Sekunden verschwindet die Plattform ganz. Platzpunkte 10/6/4/3/2/1.
+
+### Farbschlacht
+
+Farbkugel-Shooter von oben, jeder gegen jeden gegen 5 Bots, 4 Minuten. Laufen mit WASD, zielen und schießen mit der Maus, Rechtsklick schaut weiter voraus, `R` lädt nach, `E` nimmt eine Waffe auf, `Q`/`1`/`2`/Mausrad wechseln, `Tab` zeigt die Rangliste.
+
+- **Punkte:** Abschuss 100, Abschuss per Kopfschuss 150. Trifft eine Kugel nah an der Mitte der Figur, ist es ein Kopftreffer (doppelter Schaden, Scharfschützengewehr dreifach) mit Einblendung „Kopftreffer!“.
+- **Karten:** Wald (Bäume mit Kronen zum Verstecken, Felsen, Teiche, Hütte), Siedlung (Häuser mit Türen und Fenstern, Autos, Zäune), Schützengraben (Gräben mit Sandsäcken, Bunker, Stacheldraht), Lagerhalle (Halle mit Säulen, Container, Kisten). Im Turnier bestimmt der Seed die Karte.
+- **Waffen:** Startwaffe nach Wahl mit endlos Nachschub (Pistole, MP, Revolver). Auf der Karte liegen 7 bessere Waffen mit begrenzter Munition (Sturmgewehr, Schrotflinte, Scharfschützengewehr, Minigun). Wer stirbt, lässt sie fallen. Leer geschossene Waffen tauchen nach 25 Sekunden an einem Waffenplatz wieder auf.
+- **Einstieg:** 16 Startpunkte, gewählt wird der weiteste weg von den Gegnern. Danach bis zu 5 Sekunden Schutz, der beim ersten Schuss endet. Nach einem Abschuss geht es nach 3 Sekunden weiter, die Startwaffe kann man währenddessen mit `1`/`2`/`3` wechseln.
 
 ## Technik
 

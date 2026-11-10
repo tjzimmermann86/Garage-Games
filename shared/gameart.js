@@ -8,6 +8,7 @@
     startampel:  {title:'Startampel',  text:'Klick, sobald das Signal kommt. Wer zu früh klickt, ist raus. Fünf Runden, verschiedene Signale.'},
     turmbau:     {title:'Turmbau',     text:'Lass die Blöcke vom Kran fallen. Was übersteht, wird abgeschnitten. Der höchste Turm gewinnt.'},
     schubsarena: {title:'Schubsarena', text:'Schubs die anderen Kugeln von der schrumpfenden Plattform. Der Letzte oben gewinnt.'},
+    farbschlacht:{title:'Farbschlacht',text:'Farbkugel-Shooter von oben, jeder gegen jeden. Abschüsse bringen Punkte, Kopfschüsse extra. Bessere Waffen liegen auf der Karte.'},
   };
   // Logos: 64 × 64, runde Kachel
   const ICON={
@@ -17,6 +18,7 @@
     startampel:`<rect x="8" y="20" width="48" height="24" rx="6" fill="${C.ink}"/>${[16,26,36,46].map((x,i)=>`<circle cx="${x+2}" cy="32" r="4.6" fill="${i<3?'#ff5a4f':'#5a2a2a'}"/>`).join('')}<rect x="30" y="44" width="4" height="12" fill="${C.ink}"/>`,
     turmbau:`<rect x="20" y="46" width="26" height="9" rx="1.5" fill="${C.aprD}"/><rect x="23" y="37" width="22" height="9" rx="1.5" fill="${C.mintD}"/><rect x="21" y="28" width="21" height="9" rx="1.5" fill="${C.lavD}"/><path d="M14 8H52" stroke="${C.ink}" stroke-width="3"/><path d="M36 8L38 16" stroke="${C.ink}" stroke-width="1.6"/><rect x="31" y="16" width="16" height="7" rx="1.5" fill="${C.roseD}"/>`,
     schubsarena:`<circle cx="32" cy="34" r="22" fill="${C.cream}" stroke="${C.vanD}" stroke-width="3" stroke-dasharray="5 4"/><circle cx="24" cy="30" r="6" fill="${C.roseD}"/><circle cx="38" cy="38" r="6" fill="${C.skyD}"/><circle cx="44" cy="25" r="6" fill="${C.mintD}"/><path d="M29 33L33 35" stroke="${C.ink}" stroke-width="1.5" stroke-linecap="round"/>`,
+    farbschlacht:`<rect x="8" y="8" width="48" height="48" rx="10" fill="${C.mint}"/><circle cx="20" cy="22" r="7" fill="${C.mintD}"/><rect x="34" y="34" width="16" height="16" rx="3" fill="${C.apr}" stroke="${C.aprD}" stroke-width="2"/><circle cx="26" cy="40" r="7" fill="${C.roseD}"/><path d="M24 22l10 4" stroke="${C.ink}" stroke-width="1" fill="none"/><circle cx="42" cy="20" r="5" fill="${C.skyD}"/><path d="M38 18l-8 1" stroke="${C.ink}" stroke-width="2.5" stroke-linecap="round"/><circle cx="29" cy="25" r="2.5" fill="${C.skyD}"/><circle cx="33" cy="40" r="3" fill="${C.roseD}" opacity=".6"/>`,
   };
   // Vorschaubilder: 240 × 135
   const PREV={
@@ -36,6 +38,13 @@
       <rect x="84" y="120" width="72" height="6" fill="${C.steelD}"/>`,
     schubsarena:`<rect width="240" height="135" fill="${C.steel}"/><circle cx="120" cy="68" r="56" fill="#fff" stroke="${C.vanD}" stroke-width="4" stroke-dasharray="9 7"/>
       <circle cx="100" cy="56" r="10" fill="${C.vanD}"/><circle cx="100" cy="56" r="15" fill="none" stroke="${C.aprD}" stroke-width="2"/><circle cx="132" cy="80" r="10" fill="${C.roseD}"/><circle cx="148" cy="48" r="10" fill="${C.skyD}"/><circle cx="96" cy="94" r="10" fill="${C.mintD}"/><path d="M108 62L124 74" stroke="${C.ink}" stroke-width="2" stroke-linecap="round" stroke-dasharray="3 3"/>`,
+    farbschlacht:`<rect width="240" height="135" fill="#dcebc6"/><circle cx="40" cy="30" r="22" fill="#a9d8b0" stroke="#79b58a" stroke-width="2"/><circle cx="196" cy="104" r="24" fill="#a9d8b0" stroke="#79b58a" stroke-width="2"/>
+      <rect x="96" y="40" width="64" height="54" rx="3" fill="#f6eee2" stroke="#a57d58" stroke-width="5"/><rect x="118" y="37" width="20" height="6" fill="#f6eee2"/>
+      <circle cx="64" cy="96" r="14" fill="${C.roseD}" opacity=".5"/><circle cx="182" cy="40" r="10" fill="${C.skyD}" opacity=".5"/>
+      <circle cx="70" cy="90" r="10" fill="${C.van}" stroke="#ef9f2f" stroke-width="3"/><path d="M78 86l14-7" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="176" cy="50" r="10" fill="${C.lav}" stroke="#e2557c" stroke-width="3"/><path d="M167 54l-14 7" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="104" cy="74" r="3.5" fill="#ef9f2f"/><circle cx="118" cy="67" r="3.5" fill="#ef9f2f"/><circle cx="140" cy="64" r="3.5" fill="#e2557c"/>
+      <circle cx="128" cy="67" r="13" fill="none" stroke="${C.roseD}" stroke-width="2" stroke-dasharray="4 3"/>`,
   };
   const icon=(id,size=36)=>`<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" style="flex:none;display:block">${ICON[id]||''}</svg>`;
   const preview=id=>`<svg viewBox="0 0 240 135" width="240" height="135" aria-hidden="true" style="display:block;border-radius:8px">${PREV[id]||''}</svg>`;
