@@ -9,7 +9,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../shared/garage.css">
-<style>:root{--accent:var(--water);--accent-ink:var(--water-ink)}</style>
+<style>:root{--accent:var(--water);--accent-ink:var(--water-ink)}
+.card.wide{width:min(980px,100%)}
+.probe{appearance:none;border:1px solid var(--lead);border-radius:10px;padding:11px 18px;background:transparent;color:var(--ink);font:600 1rem var(--display);cursor:pointer}
+.probe:hover{background:var(--plate)}
+.szgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.szgrid button{appearance:none;border:1px solid var(--panel-edge);background:var(--plate);color:var(--ink);border-radius:10px;padding:8px 10px;font:600 .9rem var(--display);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:2px}
+.szgrid button:hover{border-color:var(--water-ink)}
+.szgrid small{font:500 .7rem var(--mono);color:var(--muted);line-height:1.35}
+.stufe{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-ink);margin:4px 0 -6px}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -43,7 +52,7 @@
 <script>
 (()=>{
 const{W,H,COL,MONO,DISPLAY}=GG;
-const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ov=GG.overlay(document.getElementById('ov'));
+const cv=document.getElementById('cv'),ctx=GG.canvas(cv),ovEl=document.getElementById('ov'),ov=GG.overlay(ovEl);
 const DARK=GG.dark,TOP=64,FW=W,FH=H-TOP,PI=Math.PI;
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 
@@ -321,7 +330,8 @@ function collides(){
 }
 const angd=(a,b)=>{let d=a-b;while(d>PI)d-=2*PI;while(d<-PI)d+=2*PI;return d;};
 function resetCar(){car={x:S.start.x,y:S.start.y,a:S.start.a,ta:S.start.a,v:0,st:0};parkT=0;}
-function newGame(){seed=GG.newSeed();const R=GG.rng(seed);LV=LEVELS.map(p=>R.pick(p));total=0;results=[];setup(0);showStart();}
+let probe=null; // Probefahrt: ein einzelnes Szenario, ohne Wertung
+function newGame(){probe=null;layOverride=null;seed=GG.newSeed();const R=GG.rng(seed);LV=LEVELS.map(p=>R.pick(p));total=0;results=[];setup(0);showStart();}
 let layOverride=null; // nur für Tests
 function setup(i){li=i;const d=LV[i],pick=GG.rng(seed+i*7919+3);S=build(d,GG.rng(layOverride!=null?layOverride:d.seeds?d.seeds[pick.int(0,d.seeds.length-1)]:seed+i*7919+3));resetCar();tLeft=S.limit;started=false;crashes=0;state='idle';pct=0;freeze=0;}
 function begin(){ov.hide();state='drive';hintT=7;}
@@ -493,7 +503,7 @@ function draw(dt){
   c.restore();
   // Kopfleiste
   c.fillStyle=COL.panel;c.fillRect(0,0,W,TOP);c.strokeStyle=COL.edge;c.lineWidth=1;c.beginPath();c.moveTo(0,TOP+.5);c.lineTo(W,TOP+.5);c.stroke();
-  GG.label(c,`STUFE ${li+1} / ${LV.length} · ${th.name.toUpperCase()}`,20,24,'left',COL.accentInk);GG.text(c,S.V.name,20,50,{size:22,weight:800});if(vorgabe(S.def)){const nw=c.measureText(S.V.name).width;GG.text(c,'↳ '+vorgabe(S.def),32+nw,49,{size:12,weight:600,font:MONO,color:COL.amberInk});}
+  GG.label(c,probe?`PROBEFAHRT · STUFE ${probe.lv+1} · ${th.name.toUpperCase()}`:`STUFE ${li+1} / ${LV.length} · ${th.name.toUpperCase()}`,20,24,'left',COL.accentInk);GG.text(c,S.V.name,20,50,{size:22,weight:800});if(vorgabe(S.def)){const nw=c.measureText(S.V.name).width;GG.text(c,'↳ '+vorgabe(S.def),32+nw,49,{size:12,weight:600,font:MONO,color:COL.amberInk});}
   GG.label(c,'ZEIT',470,24);const f=tLeft/S.limit;GG.rr(c,470,34,220,12,6);c.fillStyle=COL.board;c.fill();if(f>0){GG.rr(c,470,34,Math.max(12,220*f),12,6);c.fillStyle=f<.25?COL.rose:COL.accent;c.fill();}
   GG.text(c,`${tLeft.toFixed(1)} s`,700,46,{size:15,weight:600,font:MONO,color:f<.25?COL.roseInk:COL.ink});
   if(!started&&state==='drive')GG.text(c,'Die Zeit läuft ab der ersten Taste',470,60,{size:11,font:MONO,color:COL.muted});
@@ -524,8 +534,32 @@ function showStart(){
     <li>Zeit um? Dann zählt, wie viel vom Fahrzeug schon drin ist oder wie nah du dran bist.</li></ul>
     <div class="next">Stufe 1 · ${lvText(LV[0])}</div>
     <button class="go" type="button">Stufe 1 starten</button>`,begin);
+  if(!GG.room){const row=ovEl.querySelector('.btnrow'),b=document.createElement('button');b.type='button';b.className='probe';b.textContent='Alle Szenarien zum Probefahren';b.addEventListener('click',showPicker);row.insertBefore(b,row.children[1]);}
+}
+// Auswahl aller Szenarien (nur Einzelspieler)
+const szName=d=>`${VEH[d.veh].name} · ${THEMES[d.theme].name}`;
+const szInfo=d=>[TPL[d.tpl].replace(' am Ende der Sackgasse',''),d.course==='weg'?`${d.bends} ${d.bends>1?'Kurven':'Kurve'}${d.cross?`, ${d.cross} quer`:''}`:d.course?'enge Durchfahrt':'',d.far?'hintere Gasse':'',d.narrow?'Baustelle':'',d.side?'Seitenstraße':'',vorgabe(d),`${d.time} s`].filter(Boolean).join(' · ');
+function showPicker(){
+  ovEl.innerHTML=`<div class="card wide"><div class="eyebrow">Probefahrt · ohne Wertung</div><h2>Alle Szenarien</h2>
+    <p>Such dir ein Szenario aus. Strecken mit mehreren Anordnungen wechseln bei „Andere Anordnung“.</p>
+    ${LEVELS.map((L,i)=>`<div class="stufe">Stufe ${i+1}</div><div class="szgrid">${L.map((d,k)=>`<button type="button" data-sz="${i}-${k}">${szName(d)}<small>${szInfo(d)}</small></button>`).join('')}</div>`).join('')}
+    <div class="btnrow"><button class="probe" type="button" id="pkBack">Zurück</button></div></div>`;
+  ovEl.hidden=false;ovEl.scrollTop=0;
+  ovEl.querySelector('#pkBack').addEventListener('click',newGame);
+  ovEl.querySelectorAll('[data-sz]').forEach(b=>b.addEventListener('click',()=>{const[i,k]=b.dataset.sz.split('-').map(Number);startProbe(i,k,0);}));
+}
+function startProbe(lv,k,n){
+  const d=LEVELS[lv][k];probe={lv,k,n};GG.audio();
+  layOverride=d.seeds?d.seeds[n%d.seeds.length]:1000+n*77+lv*13+k;LV=[d];total=0;results=[];setup(0);begin();
 }
 function showSummary(ok,pts,detail){
+  if(probe){const d=LEVELS[probe.lv][probe.k],nv=d.seeds?d.seeds.length:0;
+    ov.show(`<div class="eyebrow">Probefahrt · Stufe ${probe.lv+1} · ${szName(d)}</div><h2>${ok?(crashes?'Eingeparkt!':'Sauber eingeparkt!'):'Zeit abgelaufen'}</h2>
+      ${GG.rowsHtml([...detail,['Angeeckt',`${crashes}×`],['Punkte (zählen nicht)',GG.num(pts),'total']])}
+      <div class="next">${nv?`Anordnung ${probe.n%nv+1} von ${nv}.`:'Lücke, Nachbarn und Hindernisse wechseln bei jeder Anordnung.'}</div>
+      <button class="go" type="button">Nochmal</button>`,()=>startProbe(probe.lv,probe.k,probe.n));
+    const row=ovEl.querySelector('.btnrow'),mk=(t,fn)=>{const b=document.createElement('button');b.type='button';b.className='probe';b.textContent=t;b.addEventListener('click',fn);row.insertBefore(b,row.children[row.children.length-1]);};
+    mk('Andere Anordnung',()=>startProbe(probe.lv,probe.k,probe.n+1));mk('Zur Auswahl',showPicker);return;}
   const last=li>=LV.length-1,nx=LV[li+1];
   if(last)GG.report(total);
   ov.show(`<div class="eyebrow">Stufe ${li+1} · ${S.V.name}</div><h2>${ok?(crashes?'Eingeparkt!':'Sauber eingeparkt!'):'Zeit abgelaufen'}</h2>
