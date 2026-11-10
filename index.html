@@ -449,9 +449,11 @@ function setupHtml(r,isHost){
       :`<div class="field"><label class="label" for="sCount">Anzahl Spiele</label><select id="sCount"${dis}>${counts.map(n=>`<option${n===r.count?' selected':''}>${n}</option>`).join('')}</select></div>`}
     <div class="field"><span class="label">Wertung</span><div class="seg" role="radiogroup" aria-label="Wertung">${radio('scoring',SCORING,r.scoring)}</div>
       <span class="hint">${r.scoring==='place'?'Pro Spiel gibt es Platzpunkte (10, 8, 6, 5 …). Jedes Spiel zählt gleich viel.':'Die Punkte aller Spiele werden addiert. Spiele mit vielen Punkten zählen stärker.'} Am Ende zeigt das Siegerpodest die Plätze 1 bis 3.</span></div>
+    <div class="field"><span class="label">Zufallsereignisse</span><div class="seg" role="radiogroup" aria-label="Zufallsereignisse">${radio('events',LobbyCore.EVENTS,r.events||'normal')}</div>
+      <span class="hint">Gilt für Farbschlacht: fahrende Autos, Blitze, Bombenabwürfe, explodierende Fässer und Versorgungsabwürfe. ${(r.events||'normal')==='off'?'Ausgeschaltet.':'Warnkreise zeigen vorher, wo es einschlägt.'}</span></div>
     ${isHost?`<div class="row"><button class="btn" type="button" id="beginBtn"></button></div>`:''}</section>`;
 }
-function phaseKey(r){return JSON.stringify([r.status,r.mode,r.count,r.scoring,r.games,r.host===me.pid,r.playlist,r.results.length,r.current&&r.current.idx]);}
+function phaseKey(r){return JSON.stringify([r.status,r.mode,r.count,r.scoring,r.events,r.games,r.host===me.pid,r.playlist,r.results.length,r.current&&r.current.idx]);}
 function renderPhase(){
   const r=S.room,isHost=r.host===me.pid,P=$('#phase');if(!P)return;
   const k=phaseKey(r);if(P.dataset.k===k)return;P.dataset.k=k;
@@ -587,6 +589,7 @@ const bind={
       const t=e.target;
       if(t.name==='mode')act('settings',{mode:t.value});
       if(t.name==='scoring')act('settings',{scoring:t.value});
+      if(t.name==='events')act('settings',{events:t.value});
       if(t.id==='sCount')act('settings',{count:t.value});
       if(t.dataset.g){const games=[...document.querySelectorAll('[data-g]:checked')].map(i=>i.dataset.g);if(!games.length){t.checked=true;toast('Mindestens ein Minispiel muss dabei sein.');return;}act('settings',{games});}
     });

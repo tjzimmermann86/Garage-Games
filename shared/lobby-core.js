@@ -23,6 +23,7 @@
   const GAME_IDS=GAMES.map(g=>g.id);
   const MODES={vote:'Abstimmung',host:'Gastgeber wählt',random:'Zufall'};
   const SCORING={sum:'Punkte addieren',place:'Platzwertung'};
+  const EVENTS={off:'Aus',few:'Selten',normal:'Normal',many:'Oft'};   // Zufallsereignisse in Farbschlacht
   const PLACE_POINTS=[10,8,6,5,4,3,2,1];
 
   const clean=(s,max=20)=>String(s||'').replace(/[<>&"]/g,'').replace(/\s+/g,' ').trim().slice(0,max);
@@ -69,6 +70,7 @@
     if(req.max!==undefined)room.max=Math.max(2,Math.min(16,parseInt(req.max,10)||16));
     if(MODES[req.mode])room.mode=req.mode;
     if(SCORING[req.scoring])room.scoring=req.scoring;
+    if(EVENTS[req.events])room.events=req.events;
     if(req.count!==undefined)room.count=Math.max(1,Math.min(10,parseInt(req.count,10)||3));
     if(room.mode==='vote')room.count=Math.min(room.count,GAME_IDS.length);
     if(Array.isArray(req.games)){const g=req.games.filter(id=>GAME_IDS.includes(id));if(g.length)room.games=[...new Set(g)];}
@@ -132,7 +134,7 @@
     if(action==='create'){
       await touch(s,pid,name,avatar,null);
       const room={code:await newCode(s),title:clean(req.title,32)||`Garage von ${name}`,host:pid,public:req.public!==false,max:16,
-        mode:'vote',count:3,scoring:'place',games:GAME_IDS.slice(),
+        mode:'vote',count:3,scoring:'place',events:'normal',games:GAME_IDS.slice(),
         players:[{pid,name,avatar,ready:false,joined:now()}],status:'lobby',votes:{},playlist:[],results:[],current:null,created:now()};
       applySettings(req,room);
       await saveRoom(s,room);await setIndex(s,[...(await getIndex(s)),room.code]);
@@ -217,6 +219,6 @@
     return err('Unbekannte Aktion.');
   }
 
-  const api={handle,standings,voteResult,totalGames,GAMES,GAME_IDS,MODES,SCORING,PLACE_POINTS};
+  const api={handle,standings,voteResult,totalGames,GAMES,GAME_IDS,MODES,SCORING,EVENTS,PLACE_POINTS};
   if(typeof module!=='undefined'&&module.exports)module.exports=api;else root.LobbyCore=api;
 })(typeof window!=='undefined'?window:globalThis);
