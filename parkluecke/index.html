@@ -64,6 +64,7 @@ const totLen=V=>V.trailer?V.len-V.ro+V.trailer.from+V.trailer.len:V.len;
 const THEMES={
   supermarkt:{name:'Supermarkt',ground:['#e6e3ea','#2b2931'],line:['#ffffff','#7c7686'],flank:'wall'},
   busbahnhof:{name:'Busbahnhof',ground:['#e3e7ec','#272a30'],line:['#fff3c4','#8a7f55'],flank:'wall'},
+  wohn:{name:'Wohnstraße',ground:['#dedbe2','#2a2830'],line:['#ffffff','#7c7686'],flank:'wall'},
   stadt:{name:'Altstadt',ground:['#dedbe2','#2a2830'],line:['#ffffff','#7c7686'],flank:'wall'},
   hof:{name:'Bauernhof',ground:['#e3eccb','#232b22'],line:['#fffdf5','#77806a'],flank:'bale',scatter:['bale','roundbale','trough']},
   baustelle:{name:'Baustelle',ground:['#eee0c2','#2c271f'],line:['#f08a5d','#b26a45'],flank:'barrier',scatter:['cone','cone','pile','pallet']},
@@ -72,7 +73,7 @@ const THEMES={
 };
 // Fünf Stufen mit je sechs Szenarien, jede Partie zieht pro Stufe eines.
 // mw/ml = Luft in der Lücke quer/längs (Anteil der Fahrzeuggröße) · dir = verlangte Parkrichtung
-// course = Hindernisse auf dem Weg · aisle = enge Gasse vor der Parkreihe · narrow = Baustelle auf der Straße
+// course = Hindernisse auf dem Weg · far = Lücke in der hinteren Fahrgasse · narrow = Baustelle · wohn = Wohnstraße · side = Seitenstraße zum Wenden
 const LEVELS=[
   [ // Stufe 1: Platz genug, Richtung egal
     {veh:'pkw',tpl:'lot',theme:'supermarkt',mw:.85,ml:.4,time:45},
@@ -87,13 +88,15 @@ const LEVELS=[
     {veh:'bus',tpl:'lot',theme:'busbahnhof',mw:.45,ml:.18,dir:'vor',time:60},
     {veh:'lkw',tpl:'yard',theme:'hafen',pos:'right',mw:.5,ml:.25,course:'chicane',gap:3.2,time:70},
     {veh:'pkw',tpl:'street',theme:'stadt',mw:.3,ml:.5,top:1,time:50},
+    {veh:'pkw',tpl:'street',theme:'wohn',wohn:1,mw:.3,ml:.55,time:55},
     {veh:'traktor',tpl:'yard',theme:'hof',pos:'right',mw:.5,ml:.3,course:'slalom',gap:2.5,time:80},
     {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'diag',mw:.3,ml:.25,course:'tor',gap:1.8,dir:'rück',time:80},
   ],
   [ // Stufe 3: eng, mit Wenden und Rückwärtsfahren
     {veh:'bus',tpl:'lot',theme:'busbahnhof',mw:.36,ml:.14,dir:'rück',time:75},
     {veh:'pkw',tpl:'street',theme:'stadt',mw:.3,ml:.42,top:1,dir:'wende',time:65},
-    {veh:'bagger',tpl:'lot',theme:'baustelle',mw:.4,ml:.22,dir:'rück',aisle:1.5,time:90},
+    {veh:'bagger',tpl:'lot',theme:'baustelle',mw:.4,ml:.22,dir:'rück',far:1,time:90},
+    {veh:'pkw',tpl:'street',theme:'wohn',wohn:1,mw:.25,ml:.4,time:65},
     {veh:'lkw',tpl:'yard',theme:'hafen',pos:'right',mw:.4,ml:.2,course:'chicane',gap:2.7,dir:'rück',time:90},
     {veh:'panzer',tpl:'yard',theme:'kaserne',pos:'right',mw:.25,ml:.2,course:'slalom',gap:1.7,dir:'rück',time:120},
     {veh:'pkw',tpl:'court',theme:'stadt',mw:.35,ml:.4,size:[3.6,2.6],cars:2,time:60},
@@ -102,17 +105,19 @@ const LEVELS=[
     {veh:'bus',tpl:'court',theme:'busbahnhof',mw:.4,ml:.2,size:[2.5,1.75],time:110},
     {veh:'lkwh',tpl:'yard',theme:'hafen',pos:'right',mw:.4,ml:.15,course:'tor',gap:2.6,dir:'vor',time:110},
     {veh:'pkw',tpl:'street',theme:'stadt',mw:.25,ml:.32,top:1,narrow:.38,time:70},
-    {veh:'traktor',tpl:'lot',theme:'hof',mw:.3,ml:.2,dir:'rück',aisle:1.25,time:80},
+    {veh:'traktor',tpl:'lot',theme:'hof',mw:.3,ml:.2,dir:'rück',far:1,time:80},
+    {veh:'lkw',tpl:'street',theme:'wohn',wohn:1,mw:.2,ml:.36,time:100},
     {veh:'lkw',tpl:'street',theme:'stadt',mw:.25,ml:.36,top:1,time:95},
     {veh:'bagger',tpl:'yard',theme:'baustelle',pos:'right',mw:.3,ml:.2,course:'slalom',gap:2,dir:'rück',time:115},
   ],
   [ // Stufe 5: Meisterprüfung
     {veh:'lkwh',tpl:'yard',theme:'hafen',pos:'left',mw:.55,ml:.15,dir:'rück',time:150},
     {veh:'bus',tpl:'court',theme:'busbahnhof',mw:.32,ml:.16,size:[2.3,1.6],quer:1,time:130},
-    {veh:'bus',tpl:'street',theme:'stadt',mw:.25,ml:.34,dir:'wende',time:130},
-    {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.2,ml:.15,dir:'rück',aisle:1.25,time:110},
+    {veh:'bus',tpl:'street',theme:'stadt',mw:.25,ml:.34,dir:'wende',side:2.6,time:140},
+    {veh:'panzer',tpl:'lot',theme:'kaserne',mw:.2,ml:.15,dir:'rück',far:1,time:110},
+    {veh:'pkw',tpl:'street',theme:'wohn',wohn:1,mw:.22,ml:.4,dir:'wende',side:1.9,time:100},
     {veh:'lkw',tpl:'court',theme:'hafen',mw:.3,ml:.16,size:[2.4,1.7],cars:1,time:130},
-    {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.27,top:1,narrow:.45,dir:'wende',time:90},
+    {veh:'pkw',tpl:'street',theme:'stadt',mw:.22,ml:.32,top:1,narrow:.38,dir:'wende',side:1.8,time:90},
   ],
 ];
 const PARKCOL=['rose','sea','water','violet','apricot','amber','lime','steel'];
@@ -128,34 +133,48 @@ function build(def,R){
   const circ=(x,y,r,kind)=>S.obs.push({t:'c',x,y,r,kind});
   const parked=(cx,cy,a,vt)=>{const P=VEH[vt],tl=totLen(P);rect(cx,cy,tl/2,P.wid/2,a,'veh',{vt,col:R.pick(PARKCOL)});};
   const need=a=>def.dir==='rück'?a+PI:def.dir==='vor'?a:null;
-  if(def.tpl==='lot'){
-    const both=FH-2*sl>=Math.max(250,TL*2.3),n=Math.floor((FW-160)/sw),x0=(FW-n*sw)/2,rows=both?[0,1]:[0];
-    const ti=R.int(Math.floor(n*.4),n-3),tr=both&&R()<.5?1:0,jit=(sw-V.wid)*.22,pv=def.veh==='lkwh'?'lkw':def.veh;
-    rows.forEach(r=>{const cy=r?FH-sl/2:sl/2,a=r?PI/2:-PI/2;
-      for(let i=0;i<=n;i++)S.lines.push([x0+i*sw,r?FH-sl:0,x0+i*sw,r?FH:sl]);
+  if(def.tpl==='lot'){ // Parkplatz in echten Maßen: Fahrgasse nur gut eine Fahrzeuglänge breit
+    const aw=Math.max((def.aisle||1.45)*TL,TL+V.wid),pv=def.veh==='lkwh'?'lkw':def.veh,jit=(sw-V.wid)*.22,conn=Math.max(aw,TL*1.15+V.wid);
+    const rows=[{y:0,a:-PI/2,x1:40,x2:FW-40,aisle:0}];let y=sl+aw,aisles=[sl+aw/2];
+    if(FH-y>=2*sl+aw+16){rows.push({y,a:PI/2,x1:conn,x2:FW-conn,aisle:0},{y:y+sl,a:-PI/2,x1:conn,x2:FW-conn,aisle:1});y+=2*sl+aw;aisles.push(y-aw/2);}
+    else if(FH-y>=sl+6){rows.push({y,a:PI/2,x1:40,x2:FW-40,aisle:0});y+=sl;}
+    if(FH-y>14)wall(0,y,FW,FH,'planter');
+    // Ziel: nah = an der Startgasse, far = in der hinteren Gasse (um die Mittelreihe herum)
+    const sa=aisles.length-1,cand=rows.filter(r=>aisles.length<2||(def.far?r.aisle===0:r.aisle===sa)),trow=R.pick(cand);
+    rows.forEach(r=>{const n=Math.floor((r.x2-r.x1)/sw),x0=(r.x1+r.x2-n*sw)/2,cy=r.y+sl/2,ti=r===trow?R.int(Math.floor(n*.35),Math.max(1,n-3)):-9;
+      for(let i=0;i<=n;i++)S.lines.push([x0+i*sw,r.y,x0+i*sw,r.y+sl]);
+      if(rows.some(q=>q.y===r.y+sl))S.lines.push([x0,r.y+sl,x0+n*sw,r.y+sl]);
       for(let i=0;i<n;i++){const cx=x0+(i+.5)*sw;
-        if(r===tr&&i===ti){S.slot={cx,cy,hw:sl/2,hh:sw/2,a,need:need(a)};continue;}
-        const nb=r===tr&&Math.abs(i-ti)===1;
-        if(nb&&def.mw<.8||R()<.72)parked(cx+R.range(-jit,jit),cy+R.range(-1,1)*(sl-TL)*.25,R()<.5?a:a+PI,pv);}
+        if(i===ti){S.slot={cx,cy,hw:sl/2,hh:sw/2,a:r.a,need:need(r.a)};continue;}
+        if(Math.abs(i-ti)===1&&def.mw<.8||R()<.8)parked(cx+R.range(-jit,jit),cy+R.range(-1,1)*(sl-TL)*.25,R()<.5?r.a:r.a+PI,pv);}
     });
-    let sy=both?FH/2:sl+(FH-sl)/2+20;
-    if(def.aisle){ // Insel vor der Parkreihe: Man muss außen herum in eine enge Gasse
-      const aw=def.aisle*TL,open=Math.max(TL*1.25,190);
-      if(tr){const y=FH-sl-aw;wall(0,y-TH,FW-open,y,'planter');sy=Math.min(sy,y-TH-V.wid/2-40);}
-      else{const y=sl+aw;wall(0,y,FW-open,y+TH,'planter');sy=Math.max(sy,y+TH+V.wid/2+40);}
-    }
-    S.start={x:sx,y:sy,a:0};
-  }else if(def.tpl==='street'){
-    const y1=120,y2=FH-120,pw=Math.max(sw,54),cy=y2-pw/2;
-    rect(FW/2,y1/2,FW/2,y1/2,0,'curb');rect(FW/2,(y2+FH)/2,FW/2,(FH-y2)/2,0,'curb');
-    S.decor.push({k:'lane',y:(y1+y2-pw)/2});S.lines.push([0,y2-pw,FW,y2-pw,1]);
-    const cx=R.range(660,820);S.slot={cx,cy,hw:sl/2,hh:pw/2,a:0,need:def.dir==='wende'?PI:null};
-    for(let x=cx-sl/2-R.range(5,9),k=0;x>150;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x-l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x-=l+g;}
-    for(let x=cx+sl/2+R.range(5,9),k=0;x<FW-90;k++){const g=R.range(8,16),l=84;if(k===0||R()>.14)parked(x+l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');x+=l+g;}
-    if(def.top)for(let x=R.range(front+260,front+340);x<FW-100;x+=R.range(150,330))if(!def.narrow||Math.abs(x-cx)>sl*.9+70)parked(x,y1+24,PI,'pkw');
-    if(def.narrow){const nh=(y2-y1)*def.narrow;wall(cx-sl*.9,y1,cx+sl*.9,y1+nh,'barrier');for(const k of[-1,1])circ(cx+k*(sl*.9+22),y1+nh-10,11,'cone');}
-    for(let x=60;x<FW;x+=R.range(120,220)){S.decor.push({k:'tree',x,y:R.range(28,y1-40),r:R.range(22,30)});S.decor.push({k:'tree',x:x+60,y:FH-R.range(28,80),r:R.range(22,30)});}
-    S.start={x:sx,y:y1+(def.top?130:100),a:0};
+    S.start={x:sx,y:aisles[sa],a:0};
+  }else if(def.tpl==='street'){ // Straße in echten Maßen: Fahrstreifen höchstens zwei Autobreiten
+    const wohn=def.wohn,LW=wohn?92:72,TS=wohn?44:50,pw=Math.max(sw,TS),lanes=wohn?1:2,roadH=TS+lanes*LW+pw,y1=Math.round((FH-roadH)/2),y2=y1+roadH,cy=y2-pw/2;
+    const cx=R.range(660,820),sideW=def.side?def.side*LW:0,sideX=def.side?front+90+sideW/2+R.range(0,60):-999;
+    if(def.side){rect((sideX-sideW/2)/2,y1/2,(sideX-sideW/2)/2,y1/2,0,'curb');const xr=sideX+sideW/2;rect((xr+FW)/2,y1/2,(FW-xr)/2,y1/2,0,'curb');}
+    else rect(FW/2,y1/2,FW/2,y1/2,0,'curb');
+    rect(FW/2,(y2+FH)/2,FW/2,(FH-y2)/2,0,'curb');
+    if(!wohn)S.decor.push({k:'lane',y:y1+TS+LW});
+    S.lines.push([0,y2-pw,FW,y2-pw,1],[0,y1+TS,FW,y1+TS,1]);
+    S.slot={cx,cy,hw:sl/2,hh:pw/2,a:0,need:def.dir==='wende'?PI:null};
+    const bins=(x,yy)=>{if(wohn||R()<.3){circ(x-9,yy,8,'bin');circ(x+9,yy,8,'bin');}};
+    const strip=(x,dir,stop)=>{for(let k=0;dir<0?x>stop:x<stop;k++){const g=R.range(7,14),l=84;
+        if(k===0||R()>(wohn?.2:.12))parked(x+dir*l/2,cy+R.range(-3,3),R()<.85?0:PI,'pkw');else{if(wohn)S.decor.push({k:'drive',x:x+dir*l/2,y:y2,w:l-14,up:0});bins(x+dir*(l-16),y2-11);}
+        x+=dir*(l+g);}};
+    strip(cx-sl/2-R.range(5,9),-1,70);strip(cx+sl/2+R.range(5,9),1,FW-90);
+    const blk=def.narrow?sl*.9+70:0,dens=def.top?.85:wohn?.8:.45;
+    for(let x=R.range(60,120);x<FW-60;x+=84+R.range(7,14)){
+      if(Math.abs(x-sideX)<sideW/2+70||Math.abs(x-cx)<blk)continue;
+      if(R()<dens)parked(x,y1+TS/2+R.range(-2,2),R()<.85?PI:0,'pkw');else if(wohn){S.decor.push({k:'drive',x,y:y1,w:70,up:1});bins(x+34,y1+11);}}
+    if(def.narrow){const nh=TS+LW*def.narrow*2;wall(cx-sl*.9,y1,cx+sl*.9,y1+nh,'barrier');for(const k of[-1,1])circ(cx+k*(sl*.9+20),y1+nh-10,11,'cone');}
+    // Häuser, Vorgärten und Bäume hinter dem Gehweg
+    for(const up of[1,0]){const d0=up?y1-34:FH-y2-34;if(d0<70)continue;
+      for(let x=R.range(10,60);x<FW-100;){const w=R.range(120,190),h=Math.min(d0-22,R.range(80,130));
+        if(!(up&&x<sideX+sideW/2+10&&x+w>sideX-sideW/2-10))S.decor.push({k:'house',x,y:up?y1-34-12-h:y2+34+12,w,h,c:R.int(0,5),up});
+        if(R()<.6)S.decor.push({k:'tree',x:x+w+22,y:up?y1-34-R.range(30,d0-30):y2+34+R.range(30,d0-30),r:R.range(16,24)});
+        x+=w+R.range(40,90);}}
+    S.start={x:sx,y:wohn?y1+TS+LW/2:y1+TS+LW*1.5,a:0};
   }else if(def.tpl==='court'){ // enger Hof: erst wenden, dann einparken
     const cw=Math.min(FW-40,def.size[0]*TL),ch=Math.min(FH-30,def.size[1]*TL),x0=(FW-cw)/2,y0=(FH-ch)/2,x1=x0+cw,y1=y0+ch;
     wall(0,0,FW,y0,'block');wall(0,y1,FW,FH,'block');wall(0,y0,x0,y1,'block');wall(x1,y0,FW,y1,'block');
@@ -315,14 +334,16 @@ function drawObs(o){
   const c=ctx;c.lineWidth=2;
   if(o.t==='c'){
     if(o.kind==='cone'){c.fillStyle='#f08a5d';c.strokeStyle=OUT;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.fillStyle='#fff';c.beginPath();c.arc(o.x,o.y,o.r*.55,0,7);c.fill();c.fillStyle='#f08a5d';c.beginPath();c.arc(o.x,o.y,o.r*.28,0,7);c.fill();}
+    else if(o.kind==='bin'){c.fillStyle=DARK?'#4d5b52':'#6f8f7a';c.strokeStyle=OUT;GG.rr(c,o.x-o.r,o.y-o.r,o.r*2,o.r*2,3);c.fill();c.stroke();c.fillStyle=DARK?'#27302a':'#4f6b59';c.fillRect(o.x-o.r+2,o.y-o.r+2,o.r*2-4,5);}
     else if(o.kind==='barrel'){c.fillStyle=COL.water;c.strokeStyle=COL.waterInk;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.beginPath();c.arc(o.x,o.y,o.r*.55,0,7);c.stroke();}
     else if(o.kind==='roundbale'){c.fillStyle=COL.amber;c.strokeStyle=DARK?'#8a7a3a':'#c9a94a';c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();for(const k of[.65,.35]){c.beginPath();c.arc(o.x,o.y,o.r*k,0,7);c.stroke();}}
     else if(o.kind==='pile'){c.fillStyle=DARK?'#6f6142':'#d9c08e';c.strokeStyle=DARK?'#4f4530':'#b49d64';c.beginPath();for(let k=0;k<8;k++){const a=k/8*7,r=o.r*(.85+.15*Math.sin(k*2.7));c.lineTo(o.x+Math.cos(a)*r,o.y+Math.sin(a)*r);}c.closePath();c.fill();c.stroke();c.fillStyle=DARK?'rgba(255,255,255,.08)':'rgba(255,255,255,.4)';c.beginPath();c.arc(o.x-6,o.y-6,o.r*.4,0,7);c.fill();}
     else{c.strokeStyle=COL.steelDark;c.lineWidth=5;c.lineCap='round';for(let k=0;k<3;k++){const a=k*PI/3;c.beginPath();c.moveTo(o.x-Math.cos(a)*o.r,o.y-Math.sin(a)*o.r);c.lineTo(o.x+Math.cos(a)*o.r,o.y+Math.sin(a)*o.r);c.stroke();}c.lineCap='butt';}
     return;}
   if(o.kind==='veh'){const P=VEH[o.vt],d=P.len/2-P.ro;drawVehicle(c,o.vt,o.cx-Math.cos(o.a)*d,o.cy-Math.sin(o.a)*d,o.a,o.col,0,o.a,false);return;}
-  if(o.kind==='curb'){c.fillStyle=DARK?'#35313b':'#f3ecdf';c.fillRect(o.cx-o.hw,o.cy-o.hh,o.hw*2,o.hh*2);c.strokeStyle=DARK?'#58525e':'#cfc5b6';c.lineWidth=4;c.beginPath();const y=o.cy<FH/2?o.cy+o.hh:o.cy-o.hh;c.moveTo(0,y);c.lineTo(FW,y);c.stroke();
-    c.strokeStyle=DARK?'rgba(255,255,255,.04)':'rgba(120,100,80,.12)';c.lineWidth=1;for(let x=40;x<FW;x+=40){c.beginPath();c.moveTo(x,o.cy-o.hh);c.lineTo(x,o.cy+o.hh);c.stroke();}return;}
+  if(o.kind==='curb'){const up=o.cy<FH/2,ye=up?o.cy+o.hh:o.cy-o.hh,x0=o.cx-o.hw,w=o.hw*2;c.fillStyle=DARK?'#27302a':'#dcebc6';c.fillRect(x0,o.cy-o.hh,w,o.hh*2);
+    c.fillStyle=DARK?'#35313b':'#f3ecdf';c.fillRect(x0,up?ye-34:ye,w,34);c.strokeStyle=DARK?'rgba(255,255,255,.05)':'rgba(120,100,80,.14)';c.lineWidth=1;for(let x=x0+20;x<x0+w;x+=34){c.beginPath();c.moveTo(x,up?ye-34:ye);c.lineTo(x,up?ye:ye+34);c.stroke();}
+    c.strokeStyle=DARK?'#58525e':'#cfc5b6';c.lineWidth=4;c.beginPath();c.moveTo(x0,ye);c.lineTo(x0+w,ye);if(x0>1){c.moveTo(x0,o.cy-o.hh);c.lineTo(x0,ye);}if(x0+w<FW-1){c.moveTo(x0+w,o.cy-o.hh);c.lineTo(x0+w,ye);}c.stroke();return;}
   c.save();c.translate(o.cx,o.cy);c.rotate(o.a);const w=o.hw*2,h=o.hh*2;
   const st={wall:[DARK?'#8b7f95':'#cbb9d6',DARK?'#5e5566':'#9f8bae'],bale:[COL.amber,DARK?'#8a7a3a':'#c9a94a'],barrier:['#fff','#e2557c'],container:[COL.water,COL.waterInk],sandbag:[DARK?'#a8946a':'#e6d4a4',DARK?'#6f6142':'#b49d64'],
     crate:[COL.apricot,COL.apricotInk],planter:[DARK?'#4f7d5c':'#a9d8b0',DARK?'#36573f':'#79b58a'],block:[DARK?'#35313b':'#efe6d8',DARK?'#58525e':'#cfc5b6'],pallet:[DARK?'#8a6f5c':'#d9b48f',DARK?'#5a4638':'#a57d58'],trough:[COL.steel,COL.steelDark]}[o.kind]||[COL.steel,COL.steelDark];
@@ -350,6 +371,11 @@ function draw(dt){
     c.beginPath();c.moveTo(d*(sl.hw-12),0);c.lineTo(d*(sl.hw-12-w*1.6),-w);c.lineTo(d*(sl.hw-12-w*1.6),-w*.4);c.lineTo(d*(sl.hw-12-L),-w*.4);c.lineTo(d*(sl.hw-12-L),w*.4);c.lineTo(d*(sl.hw-12-w*1.6),w*.4);c.lineTo(d*(sl.hw-12-w*1.6),w);c.closePath();c.fill();c.globalAlpha=1;c.translate(-d*sl.hw*.45,0);}
   c.rotate(-sl.a);c.font=`800 ${Math.min(44,sl.hh*1.4)}px ${DISPLAY}`;c.textAlign='center';c.textBaseline='middle';c.fillStyle=ok?COL.seaInk:COL.waterInk;c.globalAlpha=.75;c.fillText('P',0,2);c.globalAlpha=1;c.textBaseline='alphabetic';c.restore();
   S.obs.forEach(o=>{if(o.kind==='curb')drawObs(o);});
+  S.decor.forEach(d=>{const HC=[COL.rose,COL.apricot,COL.amber,COL.water,COL.violet,COL.sea];
+    if(d.k==='drive'){c.fillStyle=DARK?'#3a363f':'#e2ddd6';c.fillRect(d.x-d.w/2,d.up?d.y-46:d.y,d.w,46);c.strokeStyle=COL.amberInk;c.globalAlpha=.55;c.lineWidth=2;for(let k=-d.w/2+6;k<d.w/2-4;k+=12){c.beginPath();c.moveTo(d.x+k,d.up?d.y+4:d.y-4);c.lineTo(d.x+k+8,d.up?d.y+16:d.y-16);c.stroke();}c.globalAlpha=1;}
+    if(d.k==='house'){c.fillStyle=DARK?'#3a4a3e':'#cfe6c0';GG.rr(c,d.x-8,d.y-8,d.w+16,d.h+16,8);c.fill();c.fillStyle=HC[d.c];c.strokeStyle=OUT;c.lineWidth=2;GG.rr(c,d.x+10,d.y+6,d.w-20,d.h-12,5);c.fill();c.stroke();
+      c.beginPath();c.moveTo(d.x+10,d.y+d.h/2);c.lineTo(d.x+d.w-10,d.y+d.h/2);c.stroke();c.fillStyle=DARK?'rgba(0,0,0,.2)':'rgba(255,255,255,.35)';c.fillRect(d.x+12,d.y+8,d.w-24,d.h/2-8);
+      c.fillStyle=DARK?'#58525e':'#e9e2d6';c.fillRect(d.x+d.w/2-7,d.up?d.y+d.h-6:d.y-14,14,20);}});
   S.decor.forEach(d=>{if(d.k==='tree'){c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';c.strokeStyle=DARK?'#36573f':'#79b58a';c.lineWidth=2.5;c.beginPath();c.arc(d.x,d.y,d.r,0,7);c.fill();c.stroke();c.fillStyle=DARK?'#6a9a76':'#c8e8cb';c.beginPath();c.arc(d.x-d.r*.25,d.y-d.r*.25,d.r*.35,0,7);c.fill();}});
   S.obs.forEach(o=>{if(o.kind!=='curb')drawObs(o);});
   // Startfeld
@@ -383,7 +409,7 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 
 /* ---------- Karten ---------- */
 const TPL={lot:'Querparken',street:'Längsparken',court:'enger Hof',yard:'Parkbucht'},CRS={chicane:'einer Schikane',slalom:'einem Slalom',tor:'einem schmalen Tor'};
-const lvText=d=>`<strong>${VEH[d.veh].name}</strong> · ${THEMES[d.theme].name} · ${TPL[d.tpl]}${d.course?' hinter '+CRS[d.course]:''}${d.aisle?' in enger Gasse':''}${d.narrow?' an einer Baustelle':''} · ${d.time} Sekunden.${vorgabe(d)?` <strong>Vorgabe: ${vorgabe(d)}.</strong>`:''} ${VEH[d.veh].hint}`;
+const lvText=d=>`<strong>${VEH[d.veh].name}</strong> · ${THEMES[d.theme].name} · ${TPL[d.tpl]}${d.course?' hinter '+CRS[d.course]:''}${d.far?' in der hinteren Fahrgasse':''}${d.wohn?' zwischen Einfahrten und Mülltonnen':''}${d.narrow?' an einer Baustelle':''} · ${d.time} Sekunden.${vorgabe(d)?` <strong>Vorgabe: ${vorgabe(d)}.</strong>`:''} ${VEH[d.veh].hint}`;
 function showStart(){
   ov.show(`<div class="eyebrow">Minispiel · Geschick</div><h2>Parklücke</h2>
     <p>Fünf Stufen, jede deutlich schwerer: engere Lücken, Schikanen auf dem Weg, sperrige Fahrzeuge, Wenden auf engem Raum.</p>

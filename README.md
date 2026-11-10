@@ -142,12 +142,13 @@ Farbkugel-Shooter von oben, jeder gegen jeden. Jede Karte gibt es in drei Größ
 
 ### Parklücke
 
-Fünf Stufen, jede zieht eines von sechs Szenarien (30 insgesamt), dazu wechseln Lücke, Nachbarn und Hindernisse mit dem Seed. Gas mit `W`/`↑`, bremsen und rückwärts mit `S`/`↓`, lenken mit `A`/`D`, Handbremse mit der Leertaste, `Enter` bricht die Zeit ab und lässt werten.
+Fünf Stufen, jede zieht eines von sechs bis sieben Szenarien (34 insgesamt), dazu wechseln Lücke, Nachbarn und Hindernisse mit dem Seed. Gas mit `W`/`↑`, bremsen und rückwärts mit `S`/`↓`, lenken mit `A`/`D`, Handbremse mit der Leertaste, `Enter` bricht die Zeit ab und lässt werten.
 
 - **Fahrzeuge:** Kleinwagen (wendig), Traktor (langsam, enger Wendekreis), Bagger (Hinterachslenkung, das Heck schwenkt aus), Bus (sehr lang), LKW (träge), Panzer (Kettenlenkung, dreht auf der Stelle), LKW mit Hänger (Hänger schneidet Kurven und knickt rückwärts ein).
 - **Stufen:** 1 = viel Platz, Richtung egal. 2 = erste Vorgaben (rückwärts/vorwärts) und Hindernisse auf dem Weg (Schikane, Slalom, schmales Tor). 3 = enge Lücken, Wenden auf der Straße, enge Gasse vor der Parkreihe, enger Hof. 4 = Bus im engen Hof wenden, Hänger durchs Tor, Längsparken an der Baustelle. 5 = Hänger rückwärts in die Bucht, Bus im Hof rückwärts quer, Bus auf der Straße wenden, Panzer und LKW auf engstem Raum.
 - **Parkrichtung:** Zeigt die Lücke einen Pfeil, muss die Front am Ende in Pfeilrichtung stehen. Falsch herum zählt nicht als eingeparkt.
-- **Plätze:** Supermarkt und Busbahnhof (Querparken), Altstadt (Längsparken am Bordstein), Bauernhof, Baustelle, Hafen und Kaserne (Bucht zwischen Ballen, Absperrungen, Containern oder Sandsäcken), enger Hof zwischen Häusern.
+- **Maßstab:** Straßen und Parkplätze sind an der Fahrzeuggröße ausgerichtet. Ein Fahrstreifen ist 1,8 Autobreiten breit, die Fahrgasse auf dem Parkplatz knapp anderthalb Fahrzeuglängen. Zum Wenden gibt es bei manchen Szenarien eine Seitenstraße.
+- **Plätze:** Supermarkt und Busbahnhof (Querparken, mehrere Reihen und Fahrgassen), Altstadt (Längsparken am Bordstein, zwei Fahrstreifen mit Parkstreifen), Wohnstraße (ein Fahrstreifen zwischen beidseitig parkenden Autos, Einfahrten und Mülltonnen), Bauernhof, Baustelle, Hafen und Kaserne (Bucht zwischen Ballen, Absperrungen, Containern oder Sandsäcken), enger Hof zwischen Häusern.
 - **Punkte:** Ganz in der Lücke stehen bringt 1.000 Punkte plus bis zu 1.000 Zeitbonus. Wer aneckt, startet wieder am Anfang, die Zeit läuft weiter. Läuft die Zeit ab, gibt es 300 bis 800 Punkte nach dem Anteil des Fahrzeugs in der Lücke, sonst bis zu 300 für die Nähe zur Lücke.
 - **Geprüft:** Ein Suchprogramm (Hybrid-A*) hat für die Szenarien mit mehreren Seeds einen anstoßfreien Weg gefunden. Daraus sind auch die Zeitlimits abgeleitet.
 
