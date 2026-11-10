@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 7 Minispiele spielen |
+| Kopfhörer | Alle 8 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -70,6 +70,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Turmbau** – Blöcke stapeln | [`turmbau/`](turmbau/) | Prototyp (Einzelspieler) |
 | **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
 | **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
+| **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
 
 ### Scherbenwerk
 
@@ -138,6 +139,14 @@ Farbkugel-Shooter von oben, jeder gegen jeden. Jede Karte gibt es in drei Größ
 - **Waffen:** Startwaffe nach Wahl mit endlos Nachschub (Pistole, MP, Revolver). Auf der Karte liegen 4/7/12 bessere Waffen (je nach Größe) mit begrenzter Munition (Sturmgewehr, Schrotflinte, Scharfschützengewehr, Minigun). Wer stirbt, lässt sie fallen. Leer geschossene Waffen tauchen nach 25 Sekunden an einem Waffenplatz wieder auf.
 - **Zufallsereignisse:** Je nach Karte fahren Autos über die Straßen (Siedlung), schlagen Blitze ein (Wald, Siedlung, Graben), fallen Bomben (Graben, Lagerhalle), explodieren Fässer (Lagerhalle) oder landet ein Versorgungsabwurf mit einer Extrawaffe (alle Karten). Gelbe, rote oder dunkle Warnkreise zeigen vorher, wo es einschlägt, Autos kündigen sich mit einer blinkenden Spur an. Deckung schützt vor Explosionen, der Startschutz auch. Abschüsse durch Ereignisse bringen niemandem Punkte. Häufigkeit: Aus, Selten, Normal oder Oft. Im Einzelspieler auf der Startkarte, im Turnier stellt sie der Gastgeber im Warteraum ein.
 - **Einstieg:** 10/16/28 Startpunkte, gewählt wird der weiteste weg von den Gegnern. Danach bis zu 5 Sekunden Schutz, der beim ersten Schuss endet. Nach einem Abschuss geht es nach 3 Sekunden weiter, die Startwaffe kann man währenddessen mit `1`/`2`/`3` wechseln.
+
+### Parklücke
+
+Fünf Stufen, jede mit einem anderen Fahrzeug auf einem anderen Platz. Die Lücken werden von Stufe zu Stufe enger. Gas mit `W`/`↑`, bremsen und rückwärts mit `S`/`↓`, lenken mit `A`/`D`, Handbremse mit der Leertaste, `Enter` bricht die Zeit ab und lässt werten.
+
+- **Fahrzeuge:** Kleinwagen (wendig), Traktor (langsam, enger Wendekreis), Bagger (Hinterachslenkung, das Heck schwenkt aus), Bus (sehr lang), LKW (träge), Panzer (Kettenlenkung, dreht auf der Stelle), LKW mit Hänger (Hänger schneidet Kurven und knickt rückwärts ein).
+- **Plätze:** Supermarkt und Busbahnhof (Querparken), Altstadt (Längsparken am Bordstein), Bauernhof, Baustelle, Hafen und Kaserne (Bucht zwischen Ballen, Absperrungen, Containern oder Sandsäcken, dazu lose Hindernisse).
+- **Punkte:** Ganz in der Lücke stehen bringt 1.000 Punkte plus bis zu 1.000 Zeitbonus. Wer aneckt, startet wieder am Anfang, die Zeit läuft weiter. Läuft die Zeit ab, gibt es 300 bis 800 Punkte nach dem Anteil des Fahrzeugs in der Lücke, sonst bis zu 300 für die Nähe zur Lücke.
 
 ## Technik
 

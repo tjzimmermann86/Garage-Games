@@ -3,7 +3,7 @@
 (function(root){
   const ss={get(k){try{return sessionStorage.getItem(k);}catch(e){return null;}},set(k,v){try{v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,v);}catch(e){}}};
   const ls={get(k){try{return localStorage.getItem(k);}catch(e){return null;}},set(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}};
-  const base=location.pathname.replace(/[^/]*$/,'').replace(/\/(scherbenwerk|rohrleitung|farbfolge|startampel|turmbau|schubsarena|farbschlacht)\/$/,'/');
+  const base=location.pathname.replace(/[^/]*$/,'').replace(/\/(scherbenwerk|rohrleitung|farbfolge|startampel|turmbau|schubsarena|farbschlacht|parkluecke)\/$/,'/');
   const LocalStore={
     async get(k){try{const r=JSON.parse(localStorage.getItem('gglocal:'+k)||'null');if(!r)return null;if(r.exp<Date.now()){localStorage.removeItem('gglocal:'+k);return null;}return r.v;}catch(e){return null;}},
     async set(k,v,ttl){try{localStorage.setItem('gglocal:'+k,JSON.stringify({v,exp:Date.now()+(ttl||3600)*1000}));}catch(e){}},

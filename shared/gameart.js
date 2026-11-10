@@ -9,6 +9,7 @@
     turmbau:     {title:'Turmbau',     text:'Lass die Blöcke vom Kran fallen. Was übersteht, wird abgeschnitten. Der höchste Turm gewinnt.'},
     schubsarena: {title:'Schubsarena', text:'Schubs die anderen Kugeln von der schrumpfenden Plattform. Der Letzte oben gewinnt.'},
     farbschlacht:{title:'Farbschlacht',text:'Farbkugel-Shooter von oben, jeder gegen jeden. Abschüsse bringen Punkte, Kopfschüsse extra. Bessere Waffen liegen auf der Karte.'},
+    parkluecke:  {title:'Parklücke',   text:'Park Kleinwagen, Bus, Bagger, Panzer und LKW mit Hänger ein, ohne anzuecken. Die Lücken werden immer enger, Tempo bringt Punkte.'},
   };
   // Logos: 64 × 64, runde Kachel
   const ICON={
@@ -19,6 +20,7 @@
     turmbau:`<rect x="20" y="46" width="26" height="9" rx="1.5" fill="${C.aprD}"/><rect x="23" y="37" width="22" height="9" rx="1.5" fill="${C.mintD}"/><rect x="21" y="28" width="21" height="9" rx="1.5" fill="${C.lavD}"/><path d="M14 8H52" stroke="${C.ink}" stroke-width="3"/><path d="M36 8L38 16" stroke="${C.ink}" stroke-width="1.6"/><rect x="31" y="16" width="16" height="7" rx="1.5" fill="${C.roseD}"/>`,
     schubsarena:`<circle cx="32" cy="34" r="22" fill="${C.cream}" stroke="${C.vanD}" stroke-width="3" stroke-dasharray="5 4"/><circle cx="24" cy="30" r="6" fill="${C.roseD}"/><circle cx="38" cy="38" r="6" fill="${C.skyD}"/><circle cx="44" cy="25" r="6" fill="${C.mintD}"/><path d="M29 33L33 35" stroke="${C.ink}" stroke-width="1.5" stroke-linecap="round"/>`,
     farbschlacht:`<rect x="8" y="8" width="48" height="48" rx="10" fill="${C.mint}"/><circle cx="20" cy="22" r="7" fill="${C.mintD}"/><rect x="34" y="34" width="16" height="16" rx="3" fill="${C.apr}" stroke="${C.aprD}" stroke-width="2"/><circle cx="26" cy="40" r="7" fill="${C.roseD}"/><path d="M24 22l10 4" stroke="${C.ink}" stroke-width="1" fill="none"/><circle cx="42" cy="20" r="5" fill="${C.skyD}"/><path d="M38 18l-8 1" stroke="${C.ink}" stroke-width="2.5" stroke-linecap="round"/><circle cx="29" cy="25" r="2.5" fill="${C.skyD}"/><circle cx="33" cy="40" r="3" fill="${C.roseD}" opacity=".6"/>`,
+    parkluecke:`<rect x="8" y="8" width="48" height="48" rx="10" fill="#e6e3ea"/><rect x="24" y="12" width="16" height="30" rx="2" fill="${C.sky}" opacity=".55" stroke="${C.skyD}" stroke-width="2" stroke-dasharray="4 3"/><rect x="12" y="14" width="9" height="20" rx="3" fill="${C.mintD}"/><rect x="43" y="14" width="9" height="20" rx="3" fill="${C.lavD}"/><g transform="rotate(-28 34 44)"><rect x="29" y="34" width="11" height="21" rx="4" fill="${C.roseD}"/><rect x="31" y="38" width="7" height="4" rx="1" fill="#fff"/></g>`,
   };
   // Vorschaubilder: 240 × 135
   const PREV={
@@ -45,6 +47,12 @@
       <circle cx="176" cy="50" r="10" fill="${C.lav}" stroke="#e2557c" stroke-width="3"/><path d="M167 54l-14 7" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>
       <circle cx="104" cy="74" r="3.5" fill="#ef9f2f"/><circle cx="118" cy="67" r="3.5" fill="#ef9f2f"/><circle cx="140" cy="64" r="3.5" fill="#e2557c"/>
       <circle cx="128" cy="67" r="13" fill="none" stroke="${C.roseD}" stroke-width="2" stroke-dasharray="4 3"/>`,
+    parkluecke:`<rect width="240" height="135" fill="#e6e3ea"/><path d="M30 0V52M70 0V52M110 0V52M150 0V52M190 0V52" stroke="#fff" stroke-width="3"/>
+      <rect x="38" y="6" width="24" height="42" rx="7" fill="${C.mintD}"/><rect x="78" y="8" width="24" height="42" rx="7" fill="${C.vanD}"/><rect x="158" y="6" width="24" height="42" rx="7" fill="${C.lavD}"/>
+      <rect x="112" y="2" width="36" height="50" fill="${C.sky}" opacity=".6" stroke="${C.skyD}" stroke-width="2.5" stroke-dasharray="6 4"/><text x="130" y="34" font-family="sans-serif" font-weight="800" font-size="20" fill="${C.skyD}" text-anchor="middle">P</text>
+      <path d="M40 104C80 104 118 100 128 66" stroke="${C.ink}" stroke-width="2" stroke-dasharray="5 5" fill="none" opacity=".5"/>
+      <g transform="rotate(-18 60 104)"><rect x="34" y="92" width="52" height="24" rx="8" fill="${C.roseD}"/><rect x="64" y="95" width="8" height="18" rx="2" fill="#fff"/></g>
+      <circle cx="180" cy="100" r="6" fill="${C.aprD}"/><circle cx="180" cy="100" r="2.5" fill="#fff"/><circle cx="206" cy="84" r="6" fill="${C.aprD}"/><circle cx="206" cy="84" r="2.5" fill="#fff"/>`,
   };
   const icon=(id,size=36)=>`<svg viewBox="0 0 64 64" width="${size}" height="${size}" aria-hidden="true" style="flex:none;display:block">${ICON[id]||''}</svg>`;
   const preview=id=>`<svg viewBox="0 0 240 135" width="240" height="135" aria-hidden="true" style="display:block;border-radius:8px">${PREV[id]||''}</svg>`;
