@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 8 Minispiele spielen |
+| Kopfhörer | Alle 9 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -71,6 +71,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
 | **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
 | **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
+| **Simson-Rennen** – Mopedrennen mit der S50 | [`simson/`](simson/) | Prototyp (gegen Bots) |
 
 ### Scherbenwerk
 
@@ -159,6 +160,29 @@ Fünf Stufen, jede zieht eines von sechs bis sieben Szenarien (43 insgesamt), da
 - **Plätze:** Supermarkt und Busbahnhof (Querparken, mehrere Reihen und Fahrgassen), Altstadt (Längsparken am Bordstein, zwei Fahrstreifen mit Parkstreifen), Wohnstraße (ein Fahrstreifen zwischen beidseitig parkenden Autos, Einfahrten und Mülltonnen), Bauernhof, Baustelle, Hafen und Kaserne (Bucht zwischen Ballen, Absperrungen, Containern oder Sandsäcken), enger Hof zwischen Häusern.
 - **Punkte:** Ganz in der Lücke stehen bringt 1.000 Punkte plus bis zu 1.000 Zeitbonus. Wer aneckt, startet wieder am Anfang, die Zeit läuft weiter. Läuft die Zeit ab, gibt es 300 bis 800 Punkte nach dem Anteil des Fahrzeugs in der Lücke, sonst bis zu 300 für die Nähe zur Lücke.
 - **Geprüft:** Ein Suchprogramm (Hybrid-A*) hat für die Szenarien mit mehreren Seeds einen anstoßfreien Weg gefunden. Daraus sind auch die Zeitlimits abgeleitet.
+
+### Simson-Rennen
+
+Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mandy und Ronny. Strecke von oben, die Kamera fährt mit.
+
+- Jede Strecke wird bei jedem Spiel neu erzeugt: Asphalt, Feldweg, Kopfsteinpflaster, Pfützen, dazu Felder, Bäume, Häuser und Strohballen.
+- Nach dem Countdown wird angetreten: Die Leertaste muss treffen, wenn die Nadel im grünen Bereich ist.
+- Drei Gänge, von Hand geschaltet. Wer zu lange am Drehzahlbegrenzer hängt oder zu früh runterschaltet, riskiert einen Kolbenklemmer: Motor aus, abkühlen lassen, neu antreten.
+- Feldweg und Pfützen sind rutschig, Kopfsteinpflaster bremst, auf der Wiese geht fast nichts.
+- 5 Rennen, jedes zieht pro Spiel eine von drei Varianten. Die Gegner werden mit jedem Rennen schneller, der grüne Bereich beim Antreten kleiner:
+
+  | Rennen | Varianten |
+  |---|---|
+  | 1 | Dorfrunde · Um den Dorfteich · Sportplatzrunde (Asphalt, mit Schaltlampe) |
+  | 2 | Feldwegrunde · Rübenacker · Kiesgrube (Feldweg und Pfützen, mit Schaltlampe) |
+  | 3 | Altstadt · Marktplatz · Kirchberg (Kopfsteinpflaster) |
+  | 4 | Nachtfahrt · Disco-Heimweg · Nebel am Moor (nur Scheinwerferlicht bzw. Nebel) |
+  | 5 | Großer Preis von Lübtheen · Regenrennen · Nacht-Grand-Prix (lange Strecke, alles gemischt) |
+
+- Steuerung: `W`/`↑` Gas, `S`/`↓` Bremse, `A`/`D`/`←`/`→` lenken, `E`/`Shift` hochschalten, `Q`/`Strg` runterschalten, `Leertaste` antreten, `R` zurück auf die Strecke.
+- Punkte: Platz 1 bis 4 gibt 100, 70, 45 oder 25 Punkte, dazu 8 Punkte für jede Sekunde unter der Zielzeit. Die Zielzeit hängt nur an der Strecke, nicht an den Gegnern, damit ist sie für alle Spieler gleich fair.
+
+**Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier fahren alle dieselben Strecken.
 
 ## Technik
 
