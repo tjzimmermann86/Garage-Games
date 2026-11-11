@@ -75,10 +75,10 @@ const THEMES={
   busbahnhof:{name:'Busbahnhof',ground:['#e3e7ec','#272a30'],line:['#fff3c4','#8a7f55'],flank:'wall'},
   wohn:{name:'Wohnstraße',ground:['#dedbe2','#2a2830'],line:['#ffffff','#7c7686'],flank:'wall'},
   stadt:{name:'Altstadt',ground:['#dedbe2','#2a2830'],line:['#ffffff','#7c7686'],flank:'wall'},
-  hof:{name:'Bauernhof',ground:['#e3eccb','#232b22'],line:['#fffdf5','#77806a'],flank:'barn',label:'STALL',scatter:['bale','roundbale','trough','obst','obst'],big:['wheat','wheat','roundbale','scheune']},
-  baustelle:{name:'Baustelle',ground:['#eee0c2','#2c271f'],line:['#f08a5d','#b26a45'],flank:'barrier',scatter:['poller','poller','cone','pallet','pipes','pile'],big:['kipper','mischer','walze','kran','bauwagen']},
+  hof:{name:'Bauernhof',ground:['#e3eccb','#232b22'],line:['#fffdf5','#77806a'],flank:'barn',label:'STALL',scatter:['bale','roundbale','trough','obst','obst','baum','baum'],big:['wheat','mais','mais','roundbale','scheune'],roof:'stall'},
+  baustelle:{name:'Baustelle',ground:['#eee0c2','#2c271f'],line:['#f08a5d','#b26a45'],flank:'barrier',scatter:['poller','cone','pallet','pipes','pile','rolle','rolle','stamm','stamm'],big:['kipper','mischer','walze','kran','bauwagen','mulde','mulde']},
   hafen:{name:'Hafen',ground:['#e2e6ea','#22262b'],line:['#fff3c4','#8a7f55'],flank:'container',scatter:['barrel','pallet','cone'],big:['container2','halle']},
-  kaserne:{name:'Kaserne',ground:['#e4e6d0','#25281f'],line:['#fffdf5','#77806a'],flank:'sandbag',scatter:['crate','barrel','hedgehog','poller'],big:['zelt','zelt','lkwpark']},
+  kaserne:{name:'Kaserne',ground:['#e4e6d0','#25281f'],line:['#fffdf5','#77806a'],flank:'sandbag',scatter:['crate','barrel','hedgehog','poller'],big:['zelt','zelt','lkwpark'],roof:'netz',label:'UNTERSTAND'},
 };
 // Fünf Stufen mit je sechs Szenarien, jede Partie zieht pro Stufe eines.
 // mw/ml = Luft in der Lücke quer/längs (Anteil der Fahrzeuggröße) · dir = verlangte Parkrichtung
@@ -216,9 +216,10 @@ function build(def,R){
     S.start={x:sx,y:Cy+Math.min(RW/4,RW/2-V.wid/2-9),a:0};
   }else if(def.tpl==='court'){ // enger Hof: erst wenden, dann einparken
     const cw=Math.min(FW-40,def.size[0]*TL),ch=Math.min(FH-30,def.size[1]*TL),x0=(FW-cw)/2,y0=(FH-ch)/2,x1=x0+cw,y1=y0+ch;
-    wall(0,0,FW,y0,'block');wall(0,y1,FW,FH,'block');wall(0,y0,x0,y1,'block');wall(x1,y0,FW,y1,'block');
+    const zy=y1-(V.wid+44); // Zufahrt: Straße von links in den Hof
+    wall(0,0,FW,y0,'block');wall(0,y1,FW,FH,'block');wall(0,y0,x0,zy,'block');wall(x1,y0,FW,y1,'block');S.decor.push({k:'zufahrt',x:0,y:zy,w:x0,h:y1-zy});
     {const D=GG.rng(def.time*131+7),hk=def.theme==='stadt'?'house':'hallendach',row=(xa,xb,ya,yb)=>{const h=yb-ya-24;if(h<50||xb-xa<110)return;for(let x=xa+12;x<xb-100;){const w=Math.min(xb-x-12,D.range(110,190));S.decor.push({k:hk,x,y:ya+12,w,h:Math.min(h,D.range(90,150)),c:D.int(0,5),up:0,flat:1});if(D()<.4&&hk==='house')S.decor.push({k:'tree',x:x+w+18,y:ya+12+D.range(20,h-10),r:D.range(14,20)});x+=w+D.range(26,60);}};
-      row(0,FW,0,y0);row(0,FW,y1,FH);row(0,x0,y0,y1);row(x1,FW,y0,y1);}
+      row(0,FW,0,y0);row(0,FW,y1,FH);row(0,x0,y0,zy);row(x1,FW,y0,y1);}
     if(def.quer){const cx=x1-14-sw/2,cy=y0+sl/2+8;S.slot={cx,cy,hw:sl/2,hh:sw/2,a:-PI/2,need:PI/2};S.lines.push([cx-sw/2,y0,cx-sw/2,y0+sl+8]);}
     else{const cx=x0+12+sl/2,cy=y0+10+sw/2;S.slot={cx,cy,hw:sl/2,hh:sw/2,a:0,need:PI};S.lines.push([x0,cy+sw/2,cx+sl/2,cy+sw/2],[cx+sl/2,y0,cx+sl/2,cy+sw/2]);}
     for(let k=0;k<(def.cars||0);k++)parked(x1-30-(k*.9+.5)*60,y1-52,PI/2*(R()<.5?1:-1),'pkw');
@@ -268,21 +269,21 @@ function build(def,R){
       path.push([ex,ey]);S.decor.push({k:'weg',pts:path,w:hwc*2});
       const dist=(x,y)=>{let m=1e9;for(const q of path){const d=Math.hypot(q[0]-x,q[1]-y);if(d<m)m=d;}return m;},bay={cx,cy,hw:sl/2+34,hh:sw/2+34,a};
       const free=(x,y,r)=>!circHit(bay,{x,y,r});
-      const TB={hof:['obst','obst','obst','roundbale'],baustelle:['poller','cone','poller','pile'],hafen:['barrel','barrel','cone','poller'],kaserne:['hedgehog','barrel','poller','hedgehog']}[th]||['cone'];
+      const TB={hof:['obst','obst','baum','roundbale'],baustelle:['poller','cone','rolle','pile'],hafen:['barrel','barrel','cone','poller'],kaserne:['hedgehog','barrel','poller','hedgehog']}[th]||['cone'];
       for(let gy=18;gy<FH;gy+=34)for(let gx=14+((gy/34|0)%2)*17;gx<FW-10;gx+=34){const x=gx+R.range(-6,6),y=gy+R.range(-6,6),r=R.range(14,18),d=dist(x,y);
         if(d<hwc+r||d>hwc+r+62||!free(x,y,r))continue;circ(x,y,r,R.pick(TB));}
       // quer im Weg: Balken ragen abwechselnd von links und rechts in die Strecke
-      const nc=def.cross||0,ck={hof:'log',baustelle:'beton',hafen:'beton',kaserne:'sandbag'}[th]||'beton';
+      const nc=def.cross||0,ck={hof:'log',baustelle:'stamm',hafen:'beton',kaserne:'sandbag'}[th]||'beton';
       for(let j=0;j<nc;j++){const i=Math.round(path.length*(.22+.56*(nc===1?.5:j/(nc-1)))),q=path[i],q2=path[Math.min(path.length-1,i+2)],q1=path[Math.max(0,i-2)],tl=Math.hypot(q2[0]-q1[0],q2[1]-q1[1])||1,nx=-(q2[1]-q1[1])/tl,ny=(q2[0]-q1[0])/tl,sd=j%2?1:-1,L=hwc*.42;
         if(free(q[0],q[1],hwc))rect(q[0]+nx*sd*(hwc-L+6),q[1]+ny*sd*(hwc-L+6),L,8,Math.atan2(ny,nx),ck);}
       // Rest der Fläche passend zum Schauplatz füllen
-      const FB={hof:[['wheat',70,42],['wheat',90,50],['bale',26,18],['scheune',58,40],['wheat',60,60],['trough',40,14]],baustelle:[['kipper',55,24],['mischer',60,23],['walze',40,22],['kran',75,23],['pipes',34,18],['bauwagen',50,22],['pallet',24,24],['pipes',34,18]],hafen:[['container',70,22],['container',70,22],['pallet',24,24],['halle',70,46],['container',70,22],['crate',24,24]],kaserne:[['crate',24,24],['sandbag',50,14],['crate',24,24],['zelt',42,30],['zelt',42,30],['lkwpark',60,24]]}[th]||[],put=[];
+      const FB={hof:[['wheat',70,42],['wheat',90,50],['bale',26,18],['scheune',58,40],['wheat',60,60],['trough',40,14],['mais',70,42],['mais',84,50]],baustelle:[['mulde',46,24],['stamm',62,9],['mulde',46,24],['kipper',55,24],['mischer',60,23],['walze',40,22],['kran',75,23],['pipes',34,18],['bauwagen',50,22],['pallet',24,24],['pipes',34,18]],hafen:[['container',70,22],['container',70,22],['pallet',24,24],['halle',70,46],['container',70,22],['crate',24,24]],kaserne:[['crate',24,24],['sandbag',50,14],['crate',24,24],['zelt',42,30],['zelt',42,30],['lkwpark',60,24]]}[th]||[],put=[];
       for(let n=0,tries=0;n<(def.fill||22)&&tries<1400&&FB.length;tries++){const[kind,w2,h2]=R.pick(FB),rad=Math.hypot(w2,h2),x=R.range(front+90,FW-rad),y=R.range(rad,FH-rad);
         if(dist(x,y)<hwc+70+rad||!free(x,y,rad)||put.some(q=>Math.hypot(q[0]-x,q[1]-y)<q[2]+rad+10))continue;put.push([x,y,rad]);n++;
         rect(x,y,w2,h2,R.pick([0,PI/2,PI,-PI/2])+R.range(-.15,.15),kind,{col:R.pick(['amber','apricot','amber','lime']),c:R.int(0,5)});}
     }
     // lose Hindernisse, aber nicht im Startbereich, nicht in den Durchfahrten und nicht direkt vor der Einfahrt
-    const pts=[],BIG={kipper:[55,24],mischer:[60,23],walze:[40,22],kran:[75,23],wheat:[70,42],scheune:[58,40],bauwagen:[50,22],zelt:[42,30],lkwpark:[60,24],container2:[70,22],halle:[70,46]},SM={pallet:[24,24],crate:[24,24],trough:[40,14],pipes:[34,18],bale:[26,18]},CR={cone:11,barrel:16,roundbale:24,pile:30,hedgehog:18,poller:12,obst:16};
+    const pts=[],BIG={kipper:[55,24],mischer:[60,23],walze:[40,22],kran:[75,23],wheat:[70,42],scheune:[58,40],bauwagen:[50,22],zelt:[42,30],lkwpark:[60,24],container2:[70,22],halle:[70,46],mais:[70,42],mulde:[46,24]},SM={stamm:[62,9],pallet:[24,24],crate:[24,24],trough:[40,14],pipes:[34,18],bale:[26,18]},CR={baum:22,rolle:19,cone:11,barrel:16,roundbale:24,pile:30,hedgehog:18,poller:12,obst:16};
     for(let i=0,tries=0;i<(def.clutter||0)&&tries<600;tries++){
       const big=S.theme.big&&(!def.course||def.course==='tor')&&R()<.5,kind=R.pick(big?S.theme.big:S.theme.scatter),dim=BIG[kind]||SM[kind],rad=dim?Math.hypot(dim[0],dim[1]):CR[kind]||16;
       const x=R.range(240,FW-80),y=R.range(50,FH-50);
@@ -446,6 +447,8 @@ function drawObs(o){
     else if(o.kind==='teich'){c.fillStyle=DARK?'#2f4a63':'#bcdcf3';c.strokeStyle=DARK?'#4d7396':'#86b6dc';c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.strokeStyle=DARK?'rgba(255,255,255,.14)':'rgba(255,255,255,.75)';c.beginPath();c.ellipse(o.x-o.r*.2,o.y-o.r*.25,o.r*.45,o.r*.14,0,0,7);c.stroke();c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';for(const[a,b]of[[.6,.5],[-.5,.6]]){c.beginPath();c.arc(o.x+a*o.r,o.y+b*o.r,5,0,7);c.fill();}}
     else if(o.kind==='silo'){c.fillStyle=COL.steel;c.strokeStyle=COL.steelDark;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();for(const k of[.72,.4]){c.beginPath();c.arc(o.x,o.y,o.r*k,0,7);c.stroke();}c.fillStyle=DARK?'rgba(255,255,255,.12)':'rgba(255,255,255,.5)';c.beginPath();c.arc(o.x-o.r*.3,o.y-o.r*.3,o.r*.22,0,7);c.fill();}
     else if(o.kind==='obst'){c.fillStyle=DARK?'#4f7d5c':'#a9d8b0';c.strokeStyle=DARK?'#36573f':'#79b58a';c.beginPath();c.arc(o.x,o.y,o.r+5,0,7);c.fill();c.stroke();c.fillStyle='#e2557c';for(const[a,b]of[[-6,-5],[7,-2],[-2,8],[5,7]]){c.beginPath();c.arc(o.x+a,o.y+b,2.6,0,7);c.fill();}}
+    else if(o.kind==='baum'){c.fillStyle=DARK?'#3f6b4c':'#8fc79c';c.strokeStyle=DARK?'#2c4a35':'#4f8f63';c.lineWidth=2.5;c.beginPath();for(let k=0;k<7;k++){const a=k/7*PI*2;c.arc(o.x+Math.cos(a)*o.r*.3,o.y+Math.sin(a)*o.r*.3,o.r*.75,0,7);}c.fill();c.fillStyle=DARK?'#6a9a76':'#bfe5c8';c.beginPath();c.arc(o.x-o.r*.25,o.y-o.r*.25,o.r*.35,0,7);c.fill();c.fillStyle=DARK?'#5a4638':'#8a6447';c.beginPath();c.arc(o.x,o.y,3.5,0,7);c.fill();}
+    else if(o.kind==='rolle'){c.fillStyle=DARK?'#8a6f5c':'#d9b48f';c.strokeStyle=DARK?'#5a4638':'#a57d58';c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.fillStyle=TIRE;c.beginPath();c.arc(o.x,o.y,o.r*.62,0,7);c.fill();c.fillStyle=DARK?'#8a6f5c':'#d9b48f';c.beginPath();c.arc(o.x,o.y,o.r*.3,0,7);c.fill();c.stroke();}
     else if(o.kind==='poller'){c.fillStyle=DARK?'#8f8580':'#cfc8c2';c.strokeStyle=DARK?'#5e5566':'#8f8580';c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.beginPath();c.arc(o.x,o.y,o.r*.5,0,7);c.stroke();}
     else if(o.kind==='bin'){c.fillStyle=DARK?'#4d5b52':'#6f8f7a';c.strokeStyle=OUT;GG.rr(c,o.x-o.r,o.y-o.r,o.r*2,o.r*2,3);c.fill();c.stroke();c.fillStyle=DARK?'#27302a':'#4f6b59';c.fillRect(o.x-o.r+2,o.y-o.r+2,o.r*2-4,5);}
     else if(o.kind==='barrel'){c.fillStyle=COL.water;c.strokeStyle=COL.waterInk;c.beginPath();c.arc(o.x,o.y,o.r,0,7);c.fill();c.stroke();c.beginPath();c.arc(o.x,o.y,o.r*.55,0,7);c.stroke();}
@@ -469,6 +472,11 @@ function drawObs(o){
     else{c.lineWidth=1;for(let k=14;k<w-6;k+=14){c.beginPath();c.moveTo(-o.hw+k,-o.hh+3);c.lineTo(-o.hw+k,o.hh-3);c.stroke();}}
     c.restore();return;}
   c.save();c.translate(o.cx,o.cy);c.rotate(o.a);const w=o.hw*2,h=o.hh*2;
+  if(o.kind==='mais'){GG.rr(c,-o.hw,-o.hh,w,h,6);c.fillStyle=DARK?'#3f6b4c':'#8fc79c';c.fill();c.strokeStyle=DARK?'#2c4a35':'#4f8f63';c.stroke();c.lineWidth=3;for(let y=-o.hh+8;y<o.hh-3;y+=10){c.beginPath();c.moveTo(-o.hw+5,y);c.lineTo(o.hw-5,y);c.stroke();}
+    c.fillStyle=COL.amber;for(let y=-o.hh+8;y<o.hh-3;y+=20)for(let x=-o.hw+12;x<o.hw-6;x+=18){c.beginPath();c.arc(x+(y%3),y,2.2,0,7);c.fill();}c.restore();return;}
+  if(o.kind==='stamm'){GG.rr(c,-o.hw,-o.hh,w,h,Math.min(o.hw,o.hh));c.fillStyle=DARK?'#8a6f5c':'#c49a74';c.fill();c.strokeStyle=DARK?'#5a4638':'#8a6447';c.stroke();c.lineWidth=1;const lg=w>h;for(const e of[-1,1]){c.beginPath();if(lg)c.ellipse(e*(o.hw-5),0,3,o.hh-3,0,0,7);else c.ellipse(0,e*(o.hh-5),o.hw-3,3,0,0,7);c.stroke();}c.beginPath();if(lg){c.moveTo(-o.hw+14,-2);c.lineTo(o.hw-14,-2);}else{c.moveTo(-2,-o.hh+14);c.lineTo(-2,o.hh-14);}c.stroke();c.restore();return;}
+  if(o.kind==='mulde'){c.fillStyle=DARK?'#b5673f':'#f08a5d';c.strokeStyle=DARK?'#7a4429':'#b9603a';c.beginPath();c.moveTo(-o.hw+8,-o.hh);c.lineTo(o.hw-8,-o.hh);c.lineTo(o.hw,-o.hh+8);c.lineTo(o.hw,o.hh-8);c.lineTo(o.hw-8,o.hh);c.lineTo(-o.hw+8,o.hh);c.lineTo(-o.hw,o.hh-8);c.lineTo(-o.hw,-o.hh+8);c.closePath();c.fill();c.stroke();
+    GG.rr(c,-o.hw+8,-o.hh+6,w-16,h-12,3);c.fillStyle=DARK?'#4a4152':'#8f8580';c.fill();c.fillStyle=DARK?'#6d6872':'#bdb7b1';for(const[a,b,r]of[[-.4,-.2,5],[.2,.3,6],[.5,-.3,4],[-.1,.1,4]]){c.beginPath();c.arc(a*o.hw,b*o.hh,r,0,7);c.fill();}c.restore();return;}
   if(o.kind==='wheat'){GG.rr(c,-o.hw,-o.hh,w,h,6);c.fillStyle=DARK?'#6f6436':'#f3dc94';c.fill();c.strokeStyle=DARK?'#8a7a3a':'#d2b354';c.stroke();c.lineWidth=1.5;
     for(let y=-o.hh+8;y<o.hh-4;y+=11)for(let x=-o.hw+7+((y/11|0)%2)*5;x<o.hw-4;x+=10){c.beginPath();c.moveTo(x,y+4);c.lineTo(x+2,y-3);c.stroke();}c.restore();return;}
   if(o.kind==='pipes'){c.fillStyle=DARK?'#6a7d93':'#b7cde3';c.strokeStyle=DARK?'#45556a':'#7f9bb8';for(let k=0;k<3;k++){GG.rr(c,-o.hw,-o.hh+k*h/3+1,w,h/3-2,5);c.fill();c.stroke();c.beginPath();c.arc(o.hw-6,-o.hh+(k+.5)*h/3,3,0,7);c.stroke();}c.restore();return;}
@@ -509,6 +517,7 @@ function draw(dt){
     const a0=Math.asin((d.y2-d.y1)/2/d.Ro),ex=d.Cx-Math.cos(a0)*d.Ro,a1=Math.asin(((d.y2-d.y1)/2+30)/(d.Ro+30)),ex1=d.Cx-Math.cos(a1)*(d.Ro+30);
     c.strokeStyle=DARK?'#3f6b4c':'#6fae82';c.lineWidth=9;c.beginPath();c.arc(d.Cx,d.Cy,d.Ro+34,-PI+a1,PI-a1);c.stroke();c.beginPath();c.moveTo(0,d.y1-34);c.lineTo(ex1,d.y1-34);c.moveTo(0,d.y2+34);c.lineTo(ex1,d.y2+34);c.stroke();
     c.strokeStyle=th.line[dk];c.globalAlpha=.5;c.lineWidth=3;c.beginPath();c.arc(d.Cx,d.Cy,d.Ro-d.pw,-PI+a0+.25,PI-a0-.25);c.stroke();c.globalAlpha=.9;c.setLineDash([30,26]);c.beginPath();c.moveTo(0,d.Cy);c.lineTo(ex-10,d.Cy);c.stroke();c.setLineDash([]);c.globalAlpha=1;}
+    if(d.k==='zufahrt'){c.fillStyle=th.ground[dk];c.fillRect(d.x,d.y,d.w+2,d.h);c.strokeStyle=th.line[dk];c.globalAlpha=.8;c.lineWidth=3;c.setLineDash([26,22]);c.beginPath();c.moveTo(d.x,d.y+d.h/2);c.lineTo(d.x+d.w-10,d.y+d.h/2);c.stroke();c.setLineDash([]);c.globalAlpha=1;}
     if(d.k==='gehweg'){c.fillStyle=DARK?'#35313b':'#f3ecdf';c.fillRect(d.x1,d.y,d.x2-d.x1,d.h);c.strokeStyle=DARK?'rgba(255,255,255,.05)':'rgba(120,100,80,.14)';c.lineWidth=1;for(let x=d.x1+20;x<d.x2;x+=34){c.beginPath();c.moveTo(x,d.y);c.lineTo(x,d.y+d.h);c.stroke();}}
     if(d.k==='einfahrt'){c.save();c.translate(d.x,d.y);c.rotate(d.a);c.fillStyle=DARK?'#3a363f':'#e2ddd6';c.fillRect(-22,-30,60,60);c.restore();}});
   S.decor.forEach(d=>{if(d.k==='weg'){c.strokeStyle=DARK?'rgba(255,255,255,.05)':'rgba(255,255,255,.42)';c.lineWidth=d.w;c.lineCap='round';c.lineJoin='round';c.beginPath();d.pts.forEach((q,i)=>i?c.lineTo(q[0],q[1]):c.moveTo(q[0],q[1]));c.stroke();c.lineCap='butt';}});
@@ -543,6 +552,12 @@ function draw(dt){
   if(!started){c.strokeStyle=COL.muted;c.lineWidth=2;c.setLineDash([6,6]);const B=parts()[0];c.save();c.translate(B.cx,B.cy);c.rotate(B.a);c.strokeRect(-B.hw-8,-B.hh-8,B.hw*2+16,B.hh*2+16);c.restore();c.setLineDash([]);}
   const blink=freeze>0&&Math.floor(freeze*10)%2;
   if(!blink)drawVehicle(c,S.def.veh,car.x,car.y,car.a,S.V.col,car.st,car.ta,true);
+  if(th.roof&&S.def.tpl==='yard'){const L=sl.hw*2+28,Wd=sl.hh*2+56;c.save();c.translate(sl.cx,sl.cy);c.rotate(sl.a);c.translate(14,0);
+    c.globalAlpha=.42;c.fillStyle=th.roof==='stall'?(DARK?'#8a5f52':'#c9806b'):(DARK?'#6b7a52':'#a9bb7c');GG.rr(c,-L/2,-Wd/2,L,Wd,6);c.fill();
+    c.globalAlpha=.75;c.strokeStyle=th.roof==='stall'?(DARK?'#5e3f36':'#96553f'):(DARK?'#48543a':'#75894c');c.lineWidth=3;c.stroke();c.beginPath();c.moveTo(-L/2,0);c.lineTo(L/2,0);c.stroke();
+    c.globalAlpha=.3;c.lineWidth=1.5;if(th.roof==='stall'){for(let k=-L/2+14;k<L/2;k+=14){c.beginPath();c.moveTo(k,-Wd/2+3);c.lineTo(k,Wd/2-3);c.stroke();}}
+    else{for(let k=-L/2;k<L/2+Wd;k+=22){c.beginPath();c.moveTo(Math.min(k,L/2),k>L/2?-Wd/2+(k-L/2):-Wd/2);c.lineTo(Math.max(k-Wd,-L/2),k-Wd<-L/2?Wd/2-(-L/2-(k-Wd)):Wd/2);c.stroke();}}
+    c.restore();c.globalAlpha=1;}
   if(freeze>0){c.fillStyle=`rgba(226,85,124,${freeze*.25})`;c.fillRect(0,0,FW,FH);}
   if(hintT>0&&state==='drive'){c.globalAlpha=Math.min(1,hintT);c.font=`600 15px ${DISPLAY}`;const t=`${S.V.name}: ${S.V.hint}`+(vorgabe(S.def)?` Vorgabe: ${vorgabe(S.def)}.`:''),w=c.measureText(t).width+36;const hy=S.slot.cy<FH/2&&Math.abs(S.slot.cx-FW/2)<w/2+S.slot.hw+S.slot.hh?FH-56:14;GG.rr(c,FW/2-w/2,hy,w,36,18);c.fillStyle=COL.panel;c.fill();c.strokeStyle=COL.accent;c.lineWidth=1;c.stroke();GG.text(c,t,FW/2,hy+23,{size:15,weight:600,align:'center'});c.globalAlpha=1;}
   if(parkT>0){c.strokeStyle=COL.seaInk;c.lineWidth=6;c.beginPath();c.arc(sl.cx,sl.cy,26,-PI/2,-PI/2+2*PI*Math.min(1,parkT/.7));c.stroke();}
