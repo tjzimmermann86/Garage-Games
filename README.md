@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 8 Minispiele spielen |
+| Kopfhörer | Alle 9 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -71,6 +71,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
 | **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
 | **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
+| **Grillmeister** – Grillgut auf den Punkt grillen | [`grillmeister/`](grillmeister/) | Prototyp (Einzelspieler) |
 
 ### Scherbenwerk
 
@@ -159,6 +160,28 @@ Fünf Stufen, jede zieht eines von sechs bis sieben Szenarien (43 insgesamt), da
 - **Plätze:** Supermarkt und Busbahnhof (Querparken, mehrere Reihen und Fahrgassen), Altstadt (Längsparken am Bordstein, zwei Fahrstreifen mit Parkstreifen), Wohnstraße (ein Fahrstreifen zwischen beidseitig parkenden Autos, Einfahrten und Mülltonnen), Bauernhof, Baustelle, Hafen und Kaserne (Bucht zwischen Ballen, Absperrungen, Containern oder Sandsäcken), enger Hof zwischen Häusern.
 - **Punkte:** Ganz in der Lücke stehen bringt 1.000 Punkte plus bis zu 1.000 Zeitbonus. Wer aneckt, startet wieder am Anfang, die Zeit läuft weiter. Läuft die Zeit ab, gibt es 300 bis 800 Punkte nach dem Anteil des Fahrzeugs in der Lücke, sonst bis zu 300 für die Nähe zur Lücke.
 - **Geprüft:** Ein Suchprogramm (Hybrid-A*) hat für die Szenarien mit mehreren Seeds einen anstoßfreien Weg gefunden. Daraus sind auch die Zeitlimits abgeleitet.
+
+### Grillmeister
+
+Die Gäste haben Hunger. Jede Bestellung soll auf den Punkt gegrillt sein: richtige Kerntemperatur, schöne Grillstreifen auf jeder Seite, nichts verkohlt.
+
+- Grillgut: Bratwurst, Rindersteak (englisch, medium rare, medium, well done), Nackensteak, Hähnchenspieß, Maiskolben, Grillkäse. Jedes gart und bräunt unterschiedlich schnell.
+- Über der Glut ist die Hitze direkt (bräunt schnell), am Rand indirekt (gart in Ruhe durch). Der Warmhalterost oben hält warm, ohne zu bräunen.
+- Steaks wenden und zwischendurch um 90° drehen gibt das Rautenmuster. Würste, Spieße und Mais werden gerollt, damit sie rundum gleichmäßig werden.
+- 5 Runden, jede zieht pro Spiel eine von drei Varianten (Bestellungen und Glutverteilung):
+
+  | Runde | Hilfe | Varianten |
+  |---|---|---|
+  | 1 | Kerntemperatur + Unterseite | Feierabendwurst · Nackensteak-Duo · Käse & Wurst |
+  | 2 | Kerntemperatur + Unterseite | Steakabend · Vereinsfest · Hähnchen-Grillen |
+  | 3 | nur Unterseite, Thermometer | Familienfeier · Gartenparty · Glutnester |
+  | 4 | nur Thermometer, Stichflammen, Nachbestellungen | Fußballabend · Grillclub · Dorffest |
+  | 5 | nur Thermometer, Stichflammen, Nachbestellungen | Garagen-Finale · Großes Grillen · Meisterprüfung |
+
+- Steuerung: Ziehen zum Auflegen, Verschieben und Servieren (auf den Bestellzettel). Klick oder `F` wendet bzw. rollt weiter. Rechtsklick, Mausrad oder `R` dreht ein Steak um 90°. `Leertaste`, `T` oder Mittelklick halten misst die Kerntemperatur.
+- Punkte: bis zu 100 pro Teil (50 Kerntemperatur, 40 Bräunung, 10 Rautenmuster bzw. gleichmäßig gerollt). Verkohlt −25, geplatzte Wurst oder zerlaufener Käse −15, rohes Hähnchen −20. Zeitbonus unter der Zielzeit, gewichtet mit der Qualität des Essens.
+
+**Starten:** im Menü unter Einzelspieler oder als Turnierspiel.
 
 ## Technik
 

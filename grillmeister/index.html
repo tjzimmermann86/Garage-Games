@@ -3,19 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>try{if(JSON.parse(localStorage.getItem('gg-settings')||'{}').theme==='dark')document.documentElement.dataset.theme='dark';}catch(e){}</script>
 <title>Grillmeister</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/garage.css">
 <style>
 /* Layout: Kühlbox links, Grill mit Warmhalterost in der Mitte, Bestellzettel rechts, HUD auf dem Canvas */
-:root{
-  --bg:#11181c; --panel:#18232a; --panel-edge:#2a3b44; --board:#0a1013; --lead:#33424a;
-  --ink:#ece4d4; --muted:#8f9d9f; --amber:#f0b24a; --rose:#e5626b; --sea:#5fc3b0; --ember:#ff7a2f;
-  --display:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
-  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
-  color-scheme:dark;
-}
+:root{--accent:var(--apricot);--accent-ink:var(--apricot-ink);--ember:#ff7a2f}
 body{margin:0}
 html,body{background:var(--bg);color:var(--ink)}
 [hidden]{display:none!important}
@@ -23,26 +19,26 @@ body{font-family:var(--display);padding-left:max(16px,env(safe-area-inset-left,0
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
 header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 20px}
 h1{font-size:1.7rem;font-weight:800;margin:0;letter-spacing:-.015em;text-wrap:balance}
-h1 em{font-style:normal;color:var(--amber)}
+h1 em{font-style:normal;color:var(--apricot-ink)}
 .sub{color:var(--muted);font-size:.92rem}
-.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px rgba(0,0,0,.35)}
+.stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px var(--shadow)}
 canvas{display:block;width:100%;height:100%;touch-action:none}
-.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:rgba(10,15,18,.72);backdrop-filter:blur(5px);overflow:auto;padding:12px}
-.card{width:min(500px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:var(--scrim);backdrop-filter:blur(5px);overflow:auto;padding:12px}
+.card{width:min(500px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px var(--shadow)}
+.eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--apricot-ink)}
 .card h2{margin:0;font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
 .card p{margin:0;color:var(--muted);line-height:1.5}
 .card ul{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:6px;line-height:1.45}
 .rows{display:grid;grid-template-columns:1fr auto;gap:6px 16px;font-variant-numeric:tabular-nums}
 .rows span:nth-child(even){font-family:var(--mono);text-align:right}
 .rows .total{border-top:1px solid var(--lead);padding-top:8px;font-weight:600;color:var(--ink)}
-.rows .bad{color:var(--rose)}
-.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--amber);font-variant-numeric:tabular-nums}
+.rows .bad{color:var(--rose-ink)}
+.big{font-family:var(--mono);font-size:2.6rem;font-weight:600;color:var(--apricot-ink);font-variant-numeric:tabular-nums}
 .next{background:var(--board);border:1px solid var(--lead);border-radius:10px;padding:10px 12px;color:var(--ink);font-size:.95rem;line-height:1.4}
-button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#1a1205;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
+button.go{appearance:none;border:0;border-radius:10px;padding:12px 18px;background:var(--amber);color:#2a1d05;font:700 1rem var(--display);cursor:pointer;align-self:flex-start}
 button.go:hover{filter:brightness(1.08)}
 button.go:focus-visible,button.ghost:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
-button.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
+button.ghost,a.ghost{appearance:none;background:transparent;border:1px solid var(--panel-edge);color:var(--ink);border-radius:8px;padding:6px 12px;font:600 .85rem var(--display);cursor:pointer}
 .keys{display:flex;flex-wrap:wrap;gap:6px 18px;color:var(--muted);font-size:.88rem}
 kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);border-bottom-width:2px;border-radius:5px;padding:1px 6px;color:var(--ink);background:var(--panel)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -54,9 +50,10 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   <header>
     <div>
       <h1>Grill<em>meister</em></h1>
-      <div class="sub">Minispiel der LAN-Sammlung · Prototyp, 5 Runden</div>
+      <div class="sub">Minispiel der Garage Games · 5 Runden</div>
     </div>
-    <button class="ghost" id="restart" type="button">Neu starten</button>
+    <div style="display:flex;gap:8px"><a class="ghost" href="../">Menü</a>
+    <button class="ghost" id="restart" type="button">Neu starten</button></div>
   </header>
 
   <div class="stage">
@@ -72,6 +69,11 @@ kbd{font-family:var(--mono);font-size:.78rem;border:1px solid var(--panel-edge);
   </div>
 </div>
 
+<script src="../shared/lobby-core.js"></script>
+<script src="../shared/net.js"></script>
+<script src="../shared/avatars.js"></script>
+<script src="../shared/progress.js"></script>
+<script src="../shared/garage.js"></script>
 <script>
 (()=>{
 const W=1280,H=720;
@@ -83,11 +85,13 @@ const GRATE={x:300,y:228,w:680,h:418};
 const BAR=17,SLOT=78,TK=80;
 const css=getComputedStyle(document.documentElement);
 const C=k=>css.getPropertyValue(k).trim();
-const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),ember:C('--ember')};
+const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),ember:C('--ember'),plate:C('--plate'),amberInk:C('--amber-ink'),roseInk:C('--rose-ink'),seaInk:C('--sea-ink'),apricotInk:C('--apricot-ink')};
+/* Auf dem dunklen Grill gelten feste helle Farben, egal ob hell oder dunkel eingestellt */
+const G2={ink:'#f4ede4',muted:'rgba(214,206,220,.8)',amber:'#f2d48a',sea:'#9ed8b1',rose:'#eeb0bd',ember:'#ff7a2f'};
 const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
 
 const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
-const DPR=Math.min(2,window.devicePixelRatio||1);
+const DPR=GG.DPR;
 cv.width=W*DPR;cv.height=H*DPR;
 
 /* ---------- helpers ---------- */
@@ -216,7 +220,7 @@ let playing=false,t0=0,endSecs=0,total=0,results=[],rngR=mkR(1),uid=0,flareTold=
 let drag=null,hover=null,mouse={x:-99,y:-99},probeKey=false,probeBtn=false,probeIt=null,probeVal=0,probeT=0,toastMsg='',toastT=0;
 
 function newGame(){
-  baseSeed=Math.floor(Math.random()*1e9);
+  baseSeed=GG.newSeed()%1000000000;
   planRounds(mkR(baseSeed^0x2545f491));
   total=0;results=[];
   setupRound(0);showStart();
@@ -418,6 +422,7 @@ function update(dt){
 
 /* ---------- Sound ---------- */
 let ac=null,noiseBuf=null;
+function sfxOut(){const v=ac.createGain();v.gain.value=GG.vol('sfx');v.connect(ac.destination);return v;}
 function sfx(type){
   try{
     ac=ac||new(window.AudioContext||window.webkitAudioContext)();
@@ -428,9 +433,9 @@ function sfx(type){
       f.type=type==='whoosh'?'lowpass':'highpass';f.frequency.value=type==='whoosh'?900:2800;
       const dur=type==='sizzle'?.9:type==='whoosh'?.6:.35,vol=type==='sizzle'?.16:type==='whoosh'?.25:.09;
       g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
-      s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t);s.stop(t+dur);return;
+      s.connect(f);f.connect(g);g.connect(sfxOut());s.start(t);s.stop(t+dur);return;
     }
-    const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);
+    const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(sfxOut());
     if(type==='ok'){o.type='sine';o.frequency.setValueAtTime(1320,t);o.frequency.exponentialRampToValueAtTime(1980,t+.06);g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+.35);}
     else if(type==='err'){o.type='triangle';o.frequency.setValueAtTime(220,t);o.frequency.exponentialRampToValueAtTime(130,t+.2);g.gain.setValueAtTime(.14,t);g.gain.exponentialRampToValueAtTime(.001,t+.25);}
     else if(type==='bell'){o.type='sine';o.frequency.setValueAtTime(1568,t);o.frequency.setValueAtTime(2093,t+.12);g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.5);}
@@ -576,8 +581,8 @@ function draw(t){
     const Rc=ticketRect(i),T=TYPES[tk.type],a=ease(Math.min(1,tk.appear));
     ctx.save();ctx.globalAlpha=a;ctx.translate((1-a)*40,0);
     const match=dragIt&&!tk.item&&dragIt.type===tk.type,hov=match&&inRect(mouse,Rc);
-    rr(Rc.x,Rc.y,Rc.w,Rc.h,10);ctx.fillStyle=tk.item?'rgba(10,16,19,.55)':hov?'#24333c':COL.board;ctx.fill();
-    ctx.strokeStyle=match?COL.amber:COL.lead;ctx.lineWidth=match?2:1;ctx.stroke();
+    rr(Rc.x,Rc.y,Rc.w,Rc.h,10);ctx.fillStyle=tk.item?COL.plate:hov?COL.lead:COL.board;ctx.fill();
+    ctx.strokeStyle=match?COL.apricotInk:COL.lead;ctx.lineWidth=match?2:1;ctx.stroke();
     // Zettel-Lochung
     ctx.fillStyle=COL.panel;ctx.beginPath();ctx.arc(Rc.x+Rc.w/2,Rc.y,4,0,Math.PI*2);ctx.fill();
     const sc=Math.min(.5,52/T.w);
@@ -586,12 +591,12 @@ function draw(t){
     ctx.textAlign='left';ctx.textBaseline='alphabetic';
     ctx.font=`600 14px ${DISPLAY}`;ctx.fillStyle=tk.item?COL.muted:COL.ink;ctx.fillText(T.name,Rc.x+66,Rc.y+24);
     const r=tk.done?DONENESS[tk.done].range:T.range;
-    ctx.font=`500 11.5px ${MONO}`;ctx.fillStyle=tk.done?COL.amber:COL.muted;
+    ctx.font=`500 11.5px ${MONO}`;ctx.fillStyle=tk.done?COL.apricotInk:COL.muted;
     ctx.fillText(tk.done?`${DONENESS[tk.done].name} ${r[0]}–${r[1]}°`:`Kern ${r[0]}–${r[1]} °C`,Rc.x+66,Rc.y+42);
     if(tk.item){
-      ctx.font=`600 12px ${DISPLAY}`;ctx.fillStyle=tk.pts>=70?COL.sea:tk.pts>=35?COL.ink:COL.rose;
+      ctx.font=`600 12px ${DISPLAY}`;ctx.fillStyle=tk.pts>=70?COL.seaInk:tk.pts>=35?COL.ink:COL.roseInk;
       ctx.fillText(`${tk.verdict} · ${Math.round(tk.ev.core)}°`,Rc.x+66,Rc.y+60);
-      ctx.textAlign='right';ctx.font=`600 17px ${MONO}`;ctx.fillStyle=tk.pts>=70?COL.amber:tk.pts>=0?COL.ink:COL.rose;
+      ctx.textAlign='right';ctx.font=`600 17px ${MONO}`;ctx.fillStyle=tk.pts>=70?COL.apricotInk:tk.pts>=0?COL.ink:COL.roseInk;
       ctx.fillText(tk.pts,Rc.x+Rc.w-12,Rc.y+26);
     }
     ctx.restore();
@@ -640,7 +645,7 @@ function draw(t){
   // HUD oben
   const hx=GRILL.x+4;
   ctx.textAlign='left';ctx.textBaseline='alphabetic';
-  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.amber;ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,hx,40);
+  ctx.font=`600 13px ${MONO}`;ctx.fillStyle=COL.apricotInk;ctx.fillText(`RUNDE ${roundIdx+1} / ${ROUNDS.length}`,hx,40);
   ctx.font=`800 32px ${DISPLAY}`;ctx.fillStyle=COL.ink;ctx.fillText(round.name,hx,78);
   ctx.font=`400 15px ${DISPLAY}`;ctx.fillStyle=COL.muted;
   ctx.fillText([COALS[round.coals].name,help.core?'Temperatur sichtbar':'nur Thermometer',help.under?'Unterseite sichtbar':'',help.flare?'Stichflammen':''].filter(Boolean).join(' · '),hx,104);
@@ -660,7 +665,7 @@ function draw(t){
     ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetY=12;
     drawItem(dragIt,dragIt.x,dragIt.y-4,1.05,dragIt.ang);ctx.restore();
     const z=zoneAt(mouse);
-    if(z==='grill'&&help.core){const hv=itemHeatAt(dragIt);ctx.font=`600 12px ${MONO}`;ctx.textAlign='center';ctx.fillStyle=hv>.7?COL.ember:hv>.45?COL.amber:COL.sea;ctx.fillText(hv>.7?'DIREKTE HITZE':hv>.45?'MITTLERE HITZE':'INDIREKT',dragIt.x,dragIt.y-h/2-14);}
+    if(z==='grill'&&help.core){const hv=itemHeatAt(dragIt);ctx.font=`600 12px ${MONO}`;ctx.textAlign='center';ctx.fillStyle=hv>.7?G2.ember:hv>.45?G2.amber:G2.sea;ctx.fillText(hv>.7?'DIREKTE HITZE':hv>.45?'MITTLERE HITZE':'INDIREKT',dragIt.x,dragIt.y-h/2-14);}
   }
 
   // Thermometer
@@ -669,7 +674,7 @@ function draw(t){
   if(toastT>0){
     ctx.globalAlpha=Math.min(1,toastT*2);ctx.font=`600 16px ${DISPLAY}`;ctx.textAlign='center';
     const w=ctx.measureText(toastMsg).width+36,cx=GRILL.x+GRILL.w/2,cy=GRATE.y+30;
-    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle='rgba(10,16,19,.92)';ctx.fill();ctx.strokeStyle=COL.amber;ctx.lineWidth=1;ctx.stroke();
+    rr(cx-w/2,cy-18,w,36,18);ctx.fillStyle=COL.panel;ctx.fill();ctx.strokeStyle=COL.apricotInk;ctx.lineWidth=1;ctx.stroke();
     ctx.fillStyle=COL.ink;ctx.textBaseline='middle';ctx.fillText(toastMsg,cx,cy+1);ctx.globalAlpha=1;
   }
 }
@@ -683,24 +688,24 @@ function drawGauge(it,w,h){
     rr(x,y,bw,6,3);ctx.fillStyle='rgba(10,16,19,.85)';ctx.fill();
     ctx.fillStyle='rgba(240,178,74,.55)';rs.forEach(r=>ctx.fillRect(toX(r[0]),y,Math.max(2,toX(r[1])-toX(r[0])),6));
     const c=it.core,inR=rs.some(r=>c>=r[0]&&c<=r[1]),over=rs.length&&rs.every(r=>c>r[1]);
-    ctx.fillStyle=inR?COL.sea:over?COL.rose:COL.ink;ctx.fillRect(toX(c)-1.5,y-3,3,12);
-    ctx.font=`600 11px ${MONO}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=inR?COL.sea:over?COL.rose:COL.ink;
+    ctx.fillStyle=inR?G2.sea:over?G2.rose:G2.ink;ctx.fillRect(toX(c)-1.5,y-3,3,12);
+    ctx.font=`600 11px ${MONO}`;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillStyle=inR?G2.sea:over?G2.rose:G2.ink;
     ctx.fillText(`${Math.round(c)}°`,x+bw+5,y+3);
     x+=bw+34;
   }
   if(help.under){
     const sd=it.sides[it.down],s=sideS(sd),c=colorAt(it.T,Math.min(2.2,s*.6+(s>.05?.15:0)));
     ctx.beginPath();ctx.arc(x,y+3,6,0,Math.PI*2);ctx.fillStyle=rgb(c);ctx.fill();
-    ctx.lineWidth=1.5;ctx.strokeStyle=s>1.3?COL.rose:s>=.85?COL.sea:'rgba(236,228,212,.5)';ctx.stroke();
-    ctx.font=`600 9px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('U',x+9,y+3.5);
+    ctx.lineWidth=1.5;ctx.strokeStyle=s>1.3?G2.rose:s>=.85?G2.sea:'rgba(236,228,212,.5)';ctx.stroke();
+    ctx.font=`600 9px ${MONO}`;ctx.fillStyle=G2.muted;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('U',x+9,y+3.5);
   }
 }
 function drawProbe(it){
   const[w,h]=dims(it),x=it.x,y=it.y,bx=x+w/2+12,byy=y-h/2-40;
   ctx.strokeStyle='#c9ced2';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+4,y);ctx.lineTo(bx+4,byy+28);ctx.stroke();
-  rr(bx-4,byy,78,30,8);ctx.fillStyle='#0b1114';ctx.fill();ctx.strokeStyle=COL.sea;ctx.lineWidth=1.5;ctx.stroke();
+  rr(bx-4,byy,78,30,8);ctx.fillStyle='#0b1114';ctx.fill();ctx.strokeStyle=G2.sea;ctx.lineWidth=1.5;ctx.stroke();
   const shown=probeT<.35?'…':`${Math.round(probeVal)} °C`;
-  ctx.font=`600 16px ${MONO}`;ctx.fillStyle=COL.sea;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(shown,bx+35,byy+16);
+  ctx.font=`600 16px ${MONO}`;ctx.fillStyle=G2.sea;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(shown,bx+35,byy+16);
 }
 
 let last=performance.now();
@@ -728,7 +733,7 @@ function frame(t){
 /* ---------- Overlays ---------- */
 const ov=document.getElementById('ov');
 function hideOverlay(){ov.hidden=true;}
-function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
+function showOverlay(html,onGo){ov.innerHTML=`<div class="card">${html}</div>`;ov.hidden=false;GG.addLeave(ov);const b=ov.querySelector('button.go');if(b){b.addEventListener('click',onGo);b.focus({preventScroll:true});}}
 function showStart(){
   showOverlay(`
     <div class="eyebrow">Minispiel · Geschick</div>
@@ -764,13 +769,14 @@ function showSummary(){
     <button class="go" type="button">Runde ${roundIdx+2} starten</button>`,()=>{setupRound(roundIdx+1);begin();});
 }
 function showFinal(){
+  GG.report(total);
   const rows=results.map((r,i)=>`<span>${i+1}. ${r.name} · ${fmt(r.secs)}</span><span>${de(r.pts)}</span>`).join('');
   showOverlay(`
     <div class="eyebrow">Alle ${ROUNDS.length} Runden serviert</div>
     <h2>Gesamtpunkte</h2>
     <div class="big">${de(total)}</div>
     <div class="rows">${rows}</div>
-    <button class="go" type="button">Nochmal grillen</button>`,()=>{newGame();});
+    <button class="go" type="button">${GG.room?'Zurück zum Warteraum':'Nochmal grillen'}</button>`,GG.room?GG.backToLobby:()=>{newGame();});
 }
 document.getElementById('restart').addEventListener('click',()=>newGame());
 

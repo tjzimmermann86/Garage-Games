@@ -1,13 +1,13 @@
 /* Fortschritt und freischaltbare Kopfbedeckungen (pro Rechner im Browser gespeichert). */
 (function(root){
   const KEY='gg-progress';
-  const GAME_IDS=['scherbenwerk','rohrleitung','farbfolge','startampel','turmbau','schubsarena','farbschlacht','parkluecke'];
+  const GAME_IDS=['scherbenwerk','rohrleitung','farbfolge','startampel','turmbau','schubsarena','farbschlacht','parkluecke','grillmeister'];
   // Kopfbedeckung (Nummer wie in avatars.js) und wie man sie bekommt
   const UNLOCKS=[
     {hat:1,text:'Ein Minispiel zu Ende spielen',     need:s=>[s.games,1]},
     {hat:2,text:'5 Minispiele zu Ende spielen',      need:s=>[s.games,5]},
     {hat:3,text:'3 verschiedene Minispiele spielen', need:s=>[Object.keys(s.played).length,3]},
-    {hat:4,text:'Alle 8 Minispiele spielen',         need:s=>[Object.keys(s.played).length,8]},
+    {hat:4,text:'Alle 9 Minispiele spielen',         need:s=>[Object.keys(s.played).length,9]},
     {hat:5,text:'Ein Turnier bis zur Siegerehrung spielen',need:s=>[s.tournaments,1]},
     {hat:6,text:'15 Minispiele zu Ende spielen',     need:s=>[s.games,15]},
     {hat:7,text:'Im Turnier aufs Siegerpodest kommen',need:s=>[s.podiums,1]},
