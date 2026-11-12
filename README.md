@@ -71,7 +71,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Schubsarena** – Kugeln von der Plattform schubsen | [`schubsarena/`](schubsarena/) | Prototyp (gegen Bots) |
 | **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
 | **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
-| **Simson-Rennen** – Mopedrennen mit der S50 | [`simson/`](simson/) | Prototyp (gegen Bots) |
+| **Grillmeister** – Grillgut auf den Punkt grillen | [`grillmeister/`](grillmeister/) | Prototyp (Einzelspieler) |
 
 ### Scherbenwerk
 
@@ -161,28 +161,27 @@ Fünf Stufen, jede zieht eines von sechs bis sieben Szenarien (43 insgesamt), da
 - **Punkte:** Ganz in der Lücke stehen bringt 1.000 Punkte plus bis zu 1.000 Zeitbonus. Wer aneckt, startet wieder am Anfang, die Zeit läuft weiter. Läuft die Zeit ab, gibt es 300 bis 800 Punkte nach dem Anteil des Fahrzeugs in der Lücke, sonst bis zu 300 für die Nähe zur Lücke.
 - **Geprüft:** Ein Suchprogramm (Hybrid-A*) hat für die Szenarien mit mehreren Seeds einen anstoßfreien Weg gefunden. Daraus sind auch die Zeitlimits abgeleitet.
 
-### Simson-Rennen
+### Grillmeister
 
-Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mandy und Ronny. Strecke von oben, die Kamera fährt mit.
+Die Gäste haben Hunger. Jede Bestellung soll auf den Punkt gegrillt sein: richtige Kerntemperatur, schöne Grillstreifen auf jeder Seite, nichts verkohlt.
 
-- Jede Strecke wird bei jedem Spiel neu erzeugt: Asphalt, Feldweg, Kopfsteinpflaster, Pfützen, dazu Felder, Bäume, Häuser und Strohballen.
-- Nach dem Countdown wird angetreten: Die Leertaste muss treffen, wenn die Nadel im grünen Bereich ist.
-- Drei Gänge, von Hand geschaltet. Wer zu lange am Drehzahlbegrenzer hängt oder zu früh runterschaltet, riskiert einen Kolbenklemmer: Motor aus, abkühlen lassen, neu antreten.
-- Feldweg und Pfützen sind rutschig, Kopfsteinpflaster bremst, auf der Wiese geht fast nichts.
-- 5 Rennen, jedes zieht pro Spiel eine von drei Varianten. Die Gegner werden mit jedem Rennen schneller, der grüne Bereich beim Antreten kleiner:
+- Grillgut: Bratwurst, Rindersteak (englisch, medium rare, medium, well done), Nackensteak, Hähnchenspieß, Maiskolben, Grillkäse. Jedes gart und bräunt unterschiedlich schnell.
+- Über der Glut ist die Hitze direkt (bräunt schnell), am Rand indirekt (gart in Ruhe durch). Der Warmhalterost oben hält warm, ohne zu bräunen.
+- Steaks wenden und zwischendurch um 90° drehen gibt das Rautenmuster. Würste, Spieße und Mais werden gerollt, damit sie rundum gleichmäßig werden.
+- 5 Runden, jede zieht pro Spiel eine von drei Varianten (Bestellungen und Glutverteilung):
 
-  | Rennen | Varianten |
-  |---|---|
-  | 1 | Dorfrunde · Um den Dorfteich · Sportplatzrunde (Asphalt, mit Schaltlampe) |
-  | 2 | Feldwegrunde · Rübenacker · Kiesgrube (Feldweg und Pfützen, mit Schaltlampe) |
-  | 3 | Altstadt · Marktplatz · Kirchberg (Kopfsteinpflaster) |
-  | 4 | Nachtfahrt · Disco-Heimweg · Nebel am Moor (nur Scheinwerferlicht bzw. Nebel) |
-  | 5 | Großer Preis von Lübtheen · Regenrennen · Nacht-Grand-Prix (lange Strecke, alles gemischt) |
+  | Runde | Hilfe | Varianten |
+  |---|---|---|
+  | 1 | Kerntemperatur + Unterseite | Feierabendwurst · Nackensteak-Duo · Käse & Wurst |
+  | 2 | Kerntemperatur + Unterseite | Steakabend · Vereinsfest · Hähnchen-Grillen |
+  | 3 | nur Unterseite, Thermometer | Familienfeier · Gartenparty · Glutnester |
+  | 4 | nur Thermometer, Stichflammen, Nachbestellungen | Fußballabend · Grillclub · Dorffest |
+  | 5 | nur Thermometer, Stichflammen, Nachbestellungen | Garagen-Finale · Großes Grillen · Meisterprüfung |
 
-- Steuerung: `W`/`↑` Gas, `S`/`↓` Bremse, `A`/`D`/`←`/`→` lenken, `E`/`Shift` hochschalten, `Q`/`Strg` runterschalten, `Leertaste` antreten, `R` zurück auf die Strecke.
-- Punkte: Platz 1 bis 4 gibt 100, 70, 45 oder 25 Punkte, dazu 8 Punkte für jede Sekunde unter der Zielzeit. Die Zielzeit hängt nur an der Strecke, nicht an den Gegnern, damit ist sie für alle Spieler gleich fair.
+- Steuerung: Ziehen zum Auflegen, Verschieben und Servieren (auf den Bestellzettel). Klick oder `F` wendet bzw. rollt weiter. Rechtsklick, Mausrad oder `R` dreht ein Steak um 90°. `Leertaste`, `T` oder Mittelklick halten misst die Kerntemperatur.
+- Punkte: bis zu 100 pro Teil (50 Kerntemperatur, 40 Bräunung, 10 Rautenmuster bzw. gleichmäßig gerollt). Verkohlt −25, geplatzte Wurst oder zerlaufener Käse −15, rohes Hähnchen −20. Zeitbonus unter der Zielzeit, gewichtet mit der Qualität des Essens.
 
-**Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier fahren alle dieselben Strecken.
+**Starten:** im Menü unter Einzelspieler oder als Turnierspiel.
 
 ## Technik
 
