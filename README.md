@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 9 Minispiele spielen |
+| Kopfhörer | Alle 10 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -72,6 +72,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Farbschlacht** – Farbkugel-Shooter von oben | [`farbschlacht/`](farbschlacht/) | Prototyp (gegen Bots) |
 | **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
 | **Grillmeister** – Grillgut auf den Punkt grillen | [`grillmeister/`](grillmeister/) | Prototyp (Einzelspieler) |
+| **Simson-Rennen** – Mopedrennen mit der S50 | [`simson/`](simson/) | Prototyp (gegen Bots) |
 
 ### Scherbenwerk
 
@@ -182,6 +183,29 @@ Die Gäste haben Hunger. Jede Bestellung soll auf den Punkt gegrillt sein: richt
 - Punkte: bis zu 100 pro Teil (50 Kerntemperatur, 40 Bräunung, 10 Rautenmuster bzw. gleichmäßig gerollt). Verkohlt −25, geplatzte Wurst oder zerlaufener Käse −15, rohes Hähnchen −20. Zeitbonus unter der Zielzeit, gewichtet mit der Qualität des Essens.
 
 **Starten:** im Menü unter Einzelspieler oder als Turnierspiel.
+
+### Simson-Rennen
+
+Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mandy und Ronny. Strecke von oben, die Kamera fährt mit.
+
+- Jede Strecke wird bei jedem Spiel neu erzeugt: Asphalt, Feldweg, Kopfsteinpflaster, Pfützen, dazu Felder, Bäume, Häuser und Strohballen.
+- Nach dem Countdown wird angetreten: Die Leertaste muss treffen, wenn die Nadel im grünen Bereich ist.
+- Drei Gänge, von Hand geschaltet. Wer zu lange am Drehzahlbegrenzer hängt oder zu früh runterschaltet, riskiert einen Kolbenklemmer: Motor aus, abkühlen lassen, neu antreten.
+- Feldweg und Pfützen sind rutschig, Kopfsteinpflaster bremst, auf der Wiese geht fast nichts.
+- 5 Rennen, jedes zieht pro Spiel eine von drei Varianten. Die Gegner werden mit jedem Rennen schneller, der grüne Bereich beim Antreten kleiner:
+
+  | Rennen | Varianten |
+  |---|---|
+  | 1 | Dorfrunde · Um den Dorfteich · Sportplatzrunde (Asphalt, mit Schaltlampe) |
+  | 2 | Feldwegrunde · Rübenacker · Kiesgrube (Feldweg und Pfützen, mit Schaltlampe) |
+  | 3 | Altstadt · Marktplatz · Kirchberg (Kopfsteinpflaster) |
+  | 4 | Nachtfahrt · Disco-Heimweg · Nebel am Moor (nur Scheinwerferlicht bzw. Nebel) |
+  | 5 | Großer Preis von Lübtheen · Regenrennen · Nacht-Grand-Prix (lange Strecke, alles gemischt) |
+
+- Steuerung: `W`/`↑` Gas, `S`/`↓` Bremse, `A`/`D`/`←`/`→` lenken, `E`/`Shift` hochschalten, `Q`/`Strg` runterschalten, `Leertaste` antreten, `R` zurück auf die Strecke.
+- Punkte: Platz 1 bis 4 gibt 100, 70, 45 oder 25 Punkte, dazu 8 Punkte für jede Sekunde unter der Zielzeit. Die Zielzeit hängt nur an der Strecke, nicht an den Gegnern, damit ist sie für alle Spieler gleich fair.
+
+**Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier fahren alle dieselben Strecken.
 
 ## Technik
 
