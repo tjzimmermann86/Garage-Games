@@ -24,6 +24,10 @@ h1 em{font-style:normal;color:var(--apricot-ink)}
 .stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:var(--bg);box-shadow:0 0 0 1px var(--panel-edge),0 18px 50px var(--shadow)}
 canvas{display:block;width:100%;height:100%;touch-action:none}
 .overlay{position:absolute;inset:0;display:grid;place-items:safe center;background:var(--scrim);backdrop-filter:blur(5px);overflow:auto;padding:12px}
+.card.wide{width:min(860px,100%)}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px}
+.cols ul{gap:5px}
+@media (max-width:720px){.cols{grid-template-columns:1fr}}
 .card{width:min(500px,100%);background:var(--panel);border:1px solid var(--panel-edge);border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 60px var(--shadow)}
 .eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--apricot-ink)}
 .card h2{margin:0;font-size:1.9rem;font-weight:800;line-height:1.05;text-wrap:balance}
@@ -87,6 +91,7 @@ const css=getComputedStyle(document.documentElement);
 const C=k=>css.getPropertyValue(k).trim();
 const COL={bg:C('--bg'),panel:C('--panel'),edge:C('--panel-edge'),board:C('--board'),lead:C('--lead'),ink:C('--ink'),muted:C('--muted'),amber:C('--amber'),rose:C('--rose'),sea:C('--sea'),ember:C('--ember'),plate:C('--plate'),amberInk:C('--amber-ink'),roseInk:C('--rose-ink'),seaInk:C('--sea-ink'),apricotInk:C('--apricot-ink')};
 /* Auf dem dunklen Grill gelten feste helle Farben, egal ob hell oder dunkel eingestellt */
+const DK=document.documentElement.dataset.theme==='dark',GC={body:DK?'#8a5f69':'#f6c6cf',bodyEdge:DK?'#5e3f47':'#c98a9a',box:DK?'#26222c':'#4a4152',rackBg:DK?'#1c1920':'#3b3346',bar:DK?'#8f8580':'#d6cfc8',barHi:'rgba(255,255,255,.45)',barEdge:DK?'#6d6872':'#b3aaa3',shadow:DK?'rgba(0,0,0,.5)':'rgba(90,66,80,.25)',dial:'#3b3346'};
 const G2={ink:'#f4ede4',muted:'rgba(214,206,220,.8)',amber:'#f2d48a',sea:'#9ed8b1',rose:'#eeb0bd',ember:'#ff7a2f'};
 const DISPLAY="'Bricolage Grotesque','Trebuchet MS',sans-serif",MONO="'IBM Plex Mono',Menlo,monospace";
 
@@ -190,18 +195,18 @@ function buildHeat(layout,R){
   }
   // Glühen
   const gg=glowCv.getContext('2d'),img=gg.createImageData(GW,GH);
-  for(let k=0;k<GW*GH;k++){const a=clamp((heat[k]-.3)*1.1,0,1);img.data[k*4]=255;img.data[k*4+1]=90+a*40;img.data[k*4+2]=30;img.data[k*4+3]=a*150;}
+  for(let k=0;k<GW*GH;k++){const a=clamp((heat[k]-.3)*1.1,0,1);img.data[k*4]=255;img.data[k*4+1]=120+a*40;img.data[k*4+2]=70;img.data[k*4+3]=a*150;}
   gg.putImageData(img,0,0);
   // Kohlen
   const g=coalCv.getContext('2d');g.setTransform(DPR,0,0,DPR,0,0);
-  g.fillStyle='#0a0b0c';g.fillRect(0,0,GRATE.w,GRATE.h);
+  g.fillStyle=GC.box;g.fillRect(0,0,GRATE.w,GRATE.h);
   for(let j=0;j<GH;j++)for(let i=0;i<GW;i++){
     const h=heat[j*GW+i],n=Math.floor(h*2.2+R.raw()*.9);
     for(let k=0;k<n;k++){
       const cx=(i+R.raw())*CELL,cy=(j+R.raw())*CELL,r=R(5,9.5),hot=clamp((h-.4)*1.4,0,1)*Math.pow(R.raw(),1.6);
       g.beginPath();for(let q=0;q<7;q++){const a=q/7*Math.PI*2,rr=r*R(.75,1.1);q?g.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr):g.moveTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}g.closePath();
       const gr=g.createRadialGradient(cx,cy,0,cx,cy,r);
-      gr.addColorStop(0,hot>.05?rgb(mix([58,50,46],[255,140,50],hot*.85)):'#45403d');gr.addColorStop(.55,hot>.05?rgb(mix([40,34,32],[190,60,22],hot*.7)):'#332e2b');gr.addColorStop(1,'#1d1a19');
+      gr.addColorStop(0,hot>.05?rgb(mix([122,110,128],[255,170,110],hot*.9)):'#7a6e80');gr.addColorStop(.55,hot>.05?rgb(mix([94,85,102],[240,120,80],hot*.75)):'#5e5566');gr.addColorStop(1,'#3b3346');
       g.fillStyle=gr;g.fill();
     }
   }
@@ -604,25 +609,28 @@ function draw(t){
   if(pending.length){const Rc=ticketRect(tickets.length);ctx.font=`500 12px ${MONO}`;ctx.fillStyle=COL.muted;ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('weitere Bestellungen folgen …',Rc.x+4,Rc.y+20);}
 
   // Grill
-  ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=10;
-  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,18);ctx.fillStyle='#1b1f22';ctx.fill();ctx.restore();
-  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,18);ctx.strokeStyle='#30373c';ctx.lineWidth=2;ctx.stroke();
+  ctx.save();ctx.shadowColor=GC.shadow;ctx.shadowBlur=26;ctx.shadowOffsetY=10;
+  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,22);ctx.fillStyle=GC.body;ctx.fill();ctx.restore();
+  rr(GRILL.x,GRILL.y,GRILL.w,GRILL.h,22);ctx.strokeStyle=GC.bodyEdge;ctx.lineWidth=3;ctx.stroke();
+  // Griffe und Regler am Kessel
+  for(const gx of[GRILL.x-10,GRILL.x+GRILL.w-6]){rr(gx,GRILL.y+GRILL.h/2-34,16,68,8);ctx.fillStyle=GC.dial;ctx.fill();}
+  for(let k=0;k<3;k++){const dx=GRILL.x+GRILL.w/2-60+k*60,dy=GRILL.y+GRILL.h-12;ctx.beginPath();ctx.arc(dx,dy,7,0,Math.PI*2);ctx.fillStyle=GC.dial;ctx.fill();ctx.strokeStyle=GC.bodyEdge;ctx.lineWidth=2;ctx.stroke();}
   // Warmhalterost
-  rr(RACK.x,RACK.y,RACK.w,RACK.h,8);ctx.fillStyle='#121517';ctx.fill();
-  ctx.strokeStyle='#3c4247';ctx.lineWidth=2;ctx.beginPath();
+  rr(RACK.x,RACK.y,RACK.w,RACK.h,8);ctx.fillStyle=GC.rackBg;ctx.fill();
+  ctx.strokeStyle=GC.barEdge;ctx.lineWidth=2;ctx.beginPath();
   for(let x=RACK.x+10;x<RACK.x+RACK.w;x+=12){ctx.moveTo(x,RACK.y+4);ctx.lineTo(x,RACK.y+RACK.h-4);}ctx.stroke();
-  ctx.strokeStyle='#4a5157';ctx.lineWidth=3;ctx.strokeRect(RACK.x+2,RACK.y+2,RACK.w-4,RACK.h-4);
-  ctx.font=`600 10.5px ${MONO}`;ctx.fillStyle='rgba(143,157,159,.75)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText('WARMHALTEROST · KEINE BRÄUNUNG',RACK.x+RACK.w-4,RACK.y-5);
+  ctx.strokeStyle=GC.bar;ctx.lineWidth=3;ctx.strokeRect(RACK.x+2,RACK.y+2,RACK.w-4,RACK.h-4);
+  ctx.font=`600 10.5px ${MONO}`;ctx.fillStyle=DK?'rgba(244,237,228,.7)':'rgba(59,51,70,.7)';ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText('WARMHALTEROST · KEINE BRÄUNUNG',RACK.x+RACK.w-4,RACK.y-5);
   // Glut und Rost
   ctx.drawImage(coalCv,GRATE.x,GRATE.y,GRATE.w,GRATE.h);
   ctx.save();ctx.globalCompositeOperation='lighter';ctx.imageSmoothingEnabled=true;ctx.globalAlpha=.5+.1*Math.sin(t*2.1)+.05*Math.sin(t*5.3);
   ctx.drawImage(glowCv,GRATE.x,GRATE.y,GRATE.w,GRATE.h);ctx.restore();
-  ctx.fillStyle='rgba(0,0,0,.25)';
+  ctx.fillStyle='rgba(30,24,36,.3)';
   for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-1,GRATE.y,6,GRATE.h);
-  ctx.fillStyle='#33383c';for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,6,GRATE.h);
-  ctx.fillStyle='rgba(255,255,255,.16)';for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,1.5,GRATE.h);
-  ctx.strokeStyle='#3d4347';ctx.lineWidth=6;ctx.strokeRect(GRATE.x+1,GRATE.y+1,GRATE.w-2,GRATE.h-2);
-  ctx.fillStyle='#3d4347';ctx.fillRect(GRATE.x,GRATE.y+GRATE.h/2-3,GRATE.w,6);
+  ctx.fillStyle=GC.bar;for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,6,GRATE.h);
+  ctx.fillStyle=GC.barHi;for(let x=GRATE.x+BAR/2;x<GRATE.x+GRATE.w;x+=BAR)ctx.fillRect(x-3,GRATE.y,1.5,GRATE.h);
+  ctx.strokeStyle=GC.barEdge;ctx.lineWidth=6;ctx.strokeRect(GRATE.x+1,GRATE.y+1,GRATE.w-2,GRATE.h-2);
+  ctx.fillStyle=GC.barEdge;ctx.fillRect(GRATE.x,GRATE.y+GRATE.h/2-3,GRATE.w,6);
 
   // Grillgut
   for(const it of items){
@@ -631,7 +639,7 @@ function draw(t){
     const sx=it.shake>0?Math.sin(it.shake*40)*5*it.shake:0;
     const[w,h]=dims(it);
     ctx.save();ctx.globalAlpha=Math.min(1,it.appear);
-    if(onG){ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(it.x+3,it.y+5,w/2,h/2,0,0,Math.PI*2);ctx.fill();}
+    if(onG){ctx.fillStyle='rgba(30,24,36,.35)';ctx.beginPath();ctx.ellipse(it.x+3,it.y+5,w/2,h/2,0,0,Math.PI*2);ctx.fill();}
     drawItem(it,it.x+sx,it.y,it.sc,it.ang,sq);
     if(hover===it&&!drag){ctx.strokeStyle='rgba(240,178,74,.7)';ctx.lineWidth=1.5;ctx.setLineDash([4,4]);ctx.strokeRect(it.x-w*it.sc/2-5,it.y-h*it.sc/2-5,w*it.sc+10,h*it.sc+10);ctx.setLineDash([]);}
     ctx.restore();
@@ -662,7 +670,7 @@ function draw(t){
   // Gezogenes Teil
   if(dragIt){
     const[w,h]=dims(dragIt);
-    ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=24;ctx.shadowOffsetY=12;
+    ctx.save();ctx.shadowColor=GC.shadow;ctx.shadowBlur=24;ctx.shadowOffsetY=12;
     drawItem(dragIt,dragIt.x,dragIt.y-4,1.05,dragIt.ang);ctx.restore();
     const z=zoneAt(mouse);
     if(z==='grill'&&help.core){const hv=itemHeatAt(dragIt);ctx.font=`600 12px ${MONO}`;ctx.textAlign='center';ctx.fillStyle=hv>.7?G2.ember:hv>.45?G2.amber:G2.sea;ctx.fillText(hv>.7?'DIREKTE HITZE':hv>.45?'MITTLERE HITZE':'INDIREKT',dragIt.x,dragIt.y-h/2-14);}
@@ -685,7 +693,7 @@ function drawGauge(it,w,h){
   const y=it.y+h/2+9,bw=58;let x=it.x-(help.core?bw/2+8:0);
   if(help.core){
     const rs=rangesFor(it.type),toX=v=>x+clamp(v/100,0,1)*bw;
-    rr(x,y,bw,6,3);ctx.fillStyle='rgba(10,16,19,.85)';ctx.fill();
+    rr(x,y,bw,6,3);ctx.fillStyle='rgba(59,51,70,.9)';ctx.fill();
     ctx.fillStyle='rgba(240,178,74,.55)';rs.forEach(r=>ctx.fillRect(toX(r[0]),y,Math.max(2,toX(r[1])-toX(r[0])),6));
     const c=it.core,inR=rs.some(r=>c>=r[0]&&c<=r[1]),over=rs.length&&rs.every(r=>c>r[1]);
     ctx.fillStyle=inR?G2.sea:over?G2.rose:G2.ink;ctx.fillRect(toX(c)-1.5,y-3,3,12);
@@ -702,8 +710,8 @@ function drawGauge(it,w,h){
 }
 function drawProbe(it){
   const[w,h]=dims(it),x=it.x,y=it.y,bx=x+w/2+12,byy=y-h/2-40;
-  ctx.strokeStyle='#c9ced2';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+4,y);ctx.lineTo(bx+4,byy+28);ctx.stroke();
-  rr(bx-4,byy,78,30,8);ctx.fillStyle='#0b1114';ctx.fill();ctx.strokeStyle=G2.sea;ctx.lineWidth=1.5;ctx.stroke();
+  ctx.strokeStyle=GC.bar;ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x+4,y);ctx.lineTo(bx+4,byy+28);ctx.stroke();
+  rr(bx-4,byy,78,30,8);ctx.fillStyle=GC.dial;ctx.fill();ctx.strokeStyle=G2.sea;ctx.lineWidth=1.5;ctx.stroke();
   const shown=probeT<.35?'…':`${Math.round(probeVal)} °C`;
   ctx.font=`600 16px ${MONO}`;ctx.fillStyle=G2.sea;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(shown,bx+35,byy+16);
 }
@@ -739,17 +747,19 @@ function showStart(){
     <div class="eyebrow">Minispiel · Geschick</div>
     <h2>Grillmeister</h2>
     <p>Die Gäste haben Hunger. Grill jede Bestellung auf den Punkt: richtige Kerntemperatur, schöne Grillstreifen, nichts verkohlt.</p>
-    <ul>
-      <li>Grillgut aus der Kühlbox auf den Rost ziehen. Über der Glut ist es heiß (direkte Hitze), am Rand mild (indirekt).</li>
-      <li>Direkte Hitze bräunt schnell, indirekte gart in Ruhe durch. Erst scharf anbraten, dann zum Garziehen zur Seite legen.</li>
+    <div class="cols"><ul>
+      <li>Grillgut aus der Kühlbox auf den Rost ziehen. Über der Glut ist es heiß, am Rand mild.</li>
+      <li>Erst scharf anbraten, dann zum Garziehen zur Seite legen.</li>
       <li>Klick wendet, Würste und Spieße rollen weiter. Jede Seite will Streifen, aber nicht schwarz.</li>
-      <li>Steaks nach halber Zeit pro Seite um 90° drehen (Rechtsklick) gibt das Rautenmuster und Bonuspunkte.</li>
-      <li>Fertiges Grillgut auf den passenden Bestellzettel ziehen. Der Warmhalterost oben hält warm, ohne zu bräunen.</li>
+    </ul><ul>
+      <li>Steaks pro Seite einmal um 90° drehen (Rechtsklick) gibt das Rautenmuster.</li>
+      <li>Fertiges auf den passenden Bestellzettel ziehen. Der Warmhalterost hält warm, ohne zu bräunen.</li>
       <li>Ab Runde 3 hilft nur noch das Thermometer: Maus aufs Grillgut, Leertaste halten.</li>
-    </ul>
-    <p>Pro Teil bis zu 100 Punkte: 50 für die Kerntemperatur, 40 für die Bräunung, 10 für Rautenmuster bzw. gleichmäßiges Rollen. Verkohlt, geplatzt oder rohes Hähnchen kostet Abzug. Schneller fertig gibt einen Zeitbonus, aber nur so viel, wie das Essen taugt.</p>
+    </ul></div>
+    <p>Bis zu 100 Punkte pro Teil (Kerntemperatur, Bräunung, Muster), Abzug für Verkohltes, Geplatztes oder rohes Hähnchen. Tempo gibt einen Zeitbonus.</p>
     <div class="next">Runde 1 · ${roundText(ROUNDS[0],0)}</div>
     <button class="go" type="button" id="go">Grill anheizen</button>`,begin);
+  ov.querySelector('.card').classList.add('wide');
 }
 function showSummary(){
   const r=results[results.length-1],last=roundIdx>=ROUNDS.length-1;
