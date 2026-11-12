@@ -186,7 +186,7 @@ Die Gäste haben Hunger. Jede Bestellung soll auf den Punkt gegrillt sein: richt
 
 ### Simson-Rennen
 
-Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mandy und Ronny. Strecke von oben, die Kamera fährt mit.
+Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mandy und Ronny. Strecke von oben, die Kamera fährt mit. Strecke und Dorf sind in den Pastelltönen der Garage Games gehalten (hell und dunkel), auf jeder S50 sitzt der Avatar des Fahrers.
 
 - Jede Strecke wird bei jedem Spiel neu erzeugt: Asphalt, Feldweg, Kopfsteinpflaster, Pfützen, dazu Felder, Bäume, Häuser und Strohballen.
 - Nach dem Countdown wird angetreten: Die Leertaste muss treffen, wenn die Nadel im grünen Bereich ist.
