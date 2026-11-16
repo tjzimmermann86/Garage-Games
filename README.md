@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 11 Minispiele spielen |
+| Kopfhörer | Alle 12 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -74,6 +74,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Grillmeister** – Grillgut auf den Punkt grillen | [`grillmeister/`](grillmeister/) | Prototyp (Einzelspieler) |
 | **Simson-Rennen** – Mopedrennen mit der S50 | [`simson/`](simson/) | Prototyp (gegen Bots) |
 | **Straßenhüpfer** – über die befahrene Straße hüpfen | [`huepfer/`](huepfer/) | Prototyp (Einzelspieler) |
+| **Blitzblank** – Häuser sauber saugen, Geräte kaufen | [`blitzblank/`](blitzblank/) | Prototyp (Einzelspieler) |
 
 ### Scherbenwerk
 
@@ -225,6 +226,28 @@ Der eigene Avatar muss von unten nach oben auf die andere Straßenseite hüpfen,
 - Rechtsverkehr: unten fahren alle nach rechts, oben nach links. Gehwege und Mittelinseln sind sicher.
 - Fahrzeuge: Autos, Sportwagen, Transporter, Busse, LKW, Traktoren, Fahrräder und Simsons. Langsame Fahrzeuge fahren auf eigenen, langsameren Spuren.
 - Punkte: drüben angekommen 1.000 plus bis zu 1.000 Zeitbonus, minus 100 pro Zusammenstoß. Wer angefahren wird, fängt unten wieder an, die Zeit läuft weiter. Läuft die Zeit ab, bis zu 600 Punkte nach dem geschafften Anteil.
+
+
+### Blitzblank
+
+Fünf Häuser sollen so schnell wie möglich sauber werden. Man läuft mit dem eigenen Avatar durchs Haus, das Gerät in der Hand putzt von allein. Jeder Krümel bringt Geld, und zwischen den Häusern kauft man im Laden neue Geräte oder verbessert die vorhandenen.
+
+- Häuser: Gartenhaus (2 Räume), Stadtwohnung (6), Einfamilienhaus (8), Altbau mit Hund (8, dicke Teppiche, der Hund haart weiter), Villa (10). Ab 95 % ist ein Haus fertig.
+- Schmutz: Staub und Krümel (alle Geräte außer Mopp), Flecken (nur Mopp), Staub unter Sofa und Bett (nur Flachdüse oder Roboter).
+- Technikbaum mit vier Zweigen:
+
+  | Zweig | Geräte und Verbesserungen |
+  |---|---|
+  | Besen, Schuhe, Mopp | Breiter Besen · Flinke Hausschuhe · Wischmopp → Dampfmopp |
+  | Handsauger | Handsauger → Großer Behälter, Flachdüse |
+  | Bodenstaubsauger | Bodenstaubsauger (braucht Handsauger) → Langes Kabel, XXL-Beutel, Turbo-Saugkraft, Akkusauger → Zweitakku |
+  | Saugroboter | Saugroboter → Kartierung, Schnelle Bürsten, Zweiter Roboter |
+
+- Jedes Gerät hat einen Haken: Sauger müssen am Mülleimer in der Küche geleert werden, der Bodensauger hängt am Kabel (an einer anderen Steckdose mit `E` umstecken), der Akkusauger lädt nur an der Ladestation.
+- Steuerung: WASD oder Pfeiltasten laufen, `1`–`5` oder `Q` Gerät wechseln, `E` umstecken, `Enter` Haus vorzeitig abgeben.
+- Punkte: sauberes Haus 1.000 plus bis zu 1.000 für die Restzeit, sonst anteilig nach Sauberkeit. Restgeld zählt am Ende 1 Punkt je 5 €. Das Geld reicht nicht für den ganzen Baum.
+
+**Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier bekommen alle dieselben Häuser mit demselben Schmutz.
 
 ## Technik
 
