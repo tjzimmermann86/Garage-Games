@@ -21,7 +21,7 @@ Die Avatare starten ohne Kopfbedeckung. Acht Stück lassen sich freispielen und 
 | Mütze | Ein Minispiel zu Ende spielen |
 | Basecap | 5 Minispiele zu Ende spielen |
 | Stirnband | 3 verschiedene Minispiele spielen |
-| Kopfhörer | Alle 10 Minispiele spielen |
+| Kopfhörer | Alle 11 Minispiele spielen |
 | Bauhelm | Ein Turnier bis zur Siegerehrung spielen |
 | Partyhut | 15 Minispiele zu Ende spielen |
 | Zylinder | Im Turnier aufs Siegerpodest kommen |
@@ -73,6 +73,7 @@ Ohne Datenbank läuft das Menü im **Offline-Modus**: Räume sind nur im selben 
 | **Parklücke** – verschiedene Fahrzeuge einparken | [`parkluecke/`](parkluecke/) | Prototyp (Einzelspieler) |
 | **Grillmeister** – Grillgut auf den Punkt grillen | [`grillmeister/`](grillmeister/) | Prototyp (Einzelspieler) |
 | **Simson-Rennen** – Mopedrennen mit der S50 | [`simson/`](simson/) | Prototyp (gegen Bots) |
+| **Straßenhüpfer** – über die befahrene Straße hüpfen | [`huepfer/`](huepfer/) | Prototyp (Einzelspieler) |
 
 ### Scherbenwerk
 
@@ -206,6 +207,24 @@ Mit der Simson S50 drei Runden durchs Dorf, gegen die Computerfahrer Kalle, Mand
 - Punkte: Platz 1 bis 4 gibt 100, 70, 45 oder 25 Punkte, dazu 8 Punkte für jede Sekunde unter der Zielzeit. Die Zielzeit hängt nur an der Strecke, nicht an den Gegnern, damit ist sie für alle Spieler gleich fair.
 
 **Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier fahren alle dieselben Strecken.
+
+### Straßenhüpfer
+
+Der eigene Avatar muss von unten nach oben auf die andere Straßenseite hüpfen, ohne angefahren zu werden. Pfeiltasten oder WASD hüpfen ein Feld weit, am Handy oder mit der Maus neben die Figur tippen.
+
+- 5 Stufen, jede zieht eine von drei Varianten. Mit jeder Stufe mehr Spuren und mehr, schnellerer Verkehr:
+
+  | Stufe | Spuren | Varianten |
+  |---|---|---|
+  | 1 | 2 | Dorfstraße · Feldweg-Kreuzung · Spielstraße |
+  | 2 | 4 | Ortsdurchfahrt · Am Marktplatz · Schulweg |
+  | 3 | 6 | Landstraße · Bundesstraße · Erntezeit |
+  | 4 | 8 | Schnellstraße · Feierabendverkehr · Umleitung |
+  | 5 | 10 | Autobahnauffahrt · Großstadt · Nachtverkehr |
+
+- Rechtsverkehr: unten fahren alle nach rechts, oben nach links. Gehwege und Mittelinseln sind sicher.
+- Fahrzeuge: Autos, Sportwagen, Transporter, Busse, LKW, Traktoren, Fahrräder und Simsons. Langsame Fahrzeuge fahren auf eigenen, langsameren Spuren.
+- Punkte: drüben angekommen 1.000 plus bis zu 1.000 Zeitbonus, minus 100 pro Zusammenstoß. Wer angefahren wird, fängt unten wieder an, die Zeit läuft weiter. Läuft die Zeit ab, bis zu 600 Punkte nach dem geschafften Anteil.
 
 ## Technik
 

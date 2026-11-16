@@ -22,6 +22,7 @@
     {id:'parkluecke',  name:'Parklücke',   tag:'Geschick'},
     {id:'grillmeister', name:'Grillmeister',tag:'Geschick'},
     {id:'simson',      name:'Simson-Rennen',tag:'Rennen'},
+    {id:'huepfer',     name:'Straßenhüpfer',tag:'Reaktion'},
   ];
   const GAME_IDS=GAMES.map(g=>g.id);
   const MODES={vote:'Abstimmung',host:'Gastgeber wählt',random:'Zufall'};
