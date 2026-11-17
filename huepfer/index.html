@@ -61,12 +61,6 @@ const SLOW_MAX=95;
    n = Fahrspuren, med = Mittelstreifen nach so vielen Spuren (von unten gezählt),
    sp = Tempo in px/s, gap = Abstand zwischen Fahrzeugen, mix = was fährt */
 const LEVELS=[
-  [{name:'Dorfstraße',     text:'Zwei Spuren, gemütlicher Verkehr.',n:2,med:[],sp:[70,105],gap:[260,430],mix:['pkw','pkw','fahrrad','traktor'],time:35},
-   {name:'Feldweg-Kreuzung',text:'Traktoren und ein paar Autos.',n:2,med:[],sp:[65,100],gap:[240,400],mix:['traktor','traktor','pkw','simson'],time:35},
-   {name:'Spielstraße',    text:'Langsame Autos, Fahrräder und Mopeds.',n:2,med:[],sp:[55,90],gap:[220,380],mix:['pkw','fahrrad','fahrrad','simson'],time:35}],
-  [{name:'Ortsdurchfahrt', text:'Vier Spuren, dazu der Linienbus.',n:4,med:[],sp:[90,140],gap:[200,360],mix:['pkw','transporter','bus','simson'],time:45},
-   {name:'Am Marktplatz',  text:'Vier Spuren mit Mittelinsel zum Verschnaufen.',n:4,med:[2],sp:[85,135],gap:[180,330],mix:['pkw','pkw','transporter','fahrrad','bus'],time:45},
-   {name:'Schulweg',       text:'Vier Spuren, Schulbusse und Radfahrer.',n:4,med:[2],sp:[90,140],gap:[185,340],mix:['pkw','bus','fahrrad','simson'],time:45}],
   [{name:'Landstraße',     text:'Sechs Spuren, LKW und Traktoren.',n:6,med:[3],sp:[120,190],gap:[180,320],mix:['pkw','transporter','lkw','traktor'],time:55},
    {name:'Bundesstraße',   text:'Sechs Spuren, schnelle Autos und Laster.',n:6,med:[3],sp:[130,200],gap:[170,300],mix:['pkw','lkw','transporter','sport'],time:55},
    {name:'Erntezeit',      text:'Sechs Spuren voller Traktoren und Laster.',n:6,med:[3],sp:[100,190],gap:[170,300],mix:['traktor','pkw','lkw','traktor'],time:55}],
@@ -76,6 +70,12 @@ const LEVELS=[
   [{name:'Autobahnauffahrt',text:'Zehn Spuren mit zwei Inseln, schnell und dicht.',n:10,med:[3,7],sp:[180,300],gap:[150,270],mix:['pkw','sport','lkw','transporter'],time:90},
    {name:'Großstadt',      text:'Zehn Spuren, Busse, Lieferwagen, Radfahrer.',n:10,med:[3,7],sp:[150,260],gap:[130,240],mix:['pkw','bus','transporter','simson','fahrrad'],time:90},
    {name:'Nachtverkehr',   text:'Zehn Spuren bei Nacht, nur Scheinwerfer und Laternen.',n:10,med:[3,7],sp:[160,270],gap:[140,250],mix:['pkw','lkw','sport','transporter'],time:90,night:true}],
+  [{name:'Autobahn',        text:'Zehn Spuren, nur noch eine Insel, sehr schnell.',n:10,med:[5],sp:[210,330],gap:[135,235],mix:['pkw','sport','lkw','transporter'],time:100},
+   {name:'Berufsverkehr',   text:'Zehn Spuren Stoßstange an Stoßstange, eine Insel.',n:10,med:[5],sp:[170,270],gap:[128,210],mix:['pkw','pkw','bus','transporter','lkw'],time:100},
+   {name:'Nachtbaustelle',  text:'Zehn Spuren bei Nacht, Laster ohne Ende, eine Insel.',n:10,med:[5],sp:[190,310],gap:[130,225],mix:['lkw','lkw','pkw','transporter','sport'],time:100,night:true}],
+  [{name:'Autobahnkreuz',   text:'Zwölf Spuren, eine Insel, Vollgas.',n:12,med:[6],sp:[240,370],gap:[125,215],mix:['pkw','sport','lkw','transporter'],time:120},
+   {name:'Stadtautobahn',   text:'Zwölf Spuren ohne Insel. Nirgends ist es sicher.',n:12,med:[],sp:[220,340],gap:[135,230],mix:['pkw','bus','transporter','sport','lkw'],time:120},
+   {name:'Nachtrennen',     text:'Zwölf Spuren bei Nacht, Sportwagen rasen durch.',n:12,med:[6],sp:[230,350],gap:[135,225],mix:['sport','sport','pkw','transporter'],time:120,night:true}],
 ];
 
 /* ---------- Aufbau einer Straße ---------- */
@@ -89,7 +89,7 @@ function build(def,R){
     const prim=R.pick(def.mix),slow=!VEH[prim].fast,dir=up?-1:1;
     let sp=R.range(def.sp[0],def.sp[1]);if(slow)sp=Math.min(sp,SLOW_MAX)*R.range(.75,1);
     const same=def.mix.filter(k=>!!VEH[k].fast===!slow),LL=W+640,cars=[];
-    const gmin=Math.max(def.gap[0],CW*2.4),gmax=Math.max(def.gap[1],gmin+40);
+    const gmin=Math.max(def.gap[0],CW*1.9),gmax=Math.max(def.gap[1],gmin+40);
     let x=R.range(0,gmax);
     while(true){const k=R()<.7?prim:R.pick(same.length?same:[prim]),len=VEH[k].len;if(x+len>LL-gmin)break;
       cars.push({k,x:x+len/2,len,col:R.pick(VEH[k].cols)});x+=len+R.range(gmin,gmax);}

@@ -217,11 +217,11 @@ Der eigene Avatar muss von unten nach oben auf die andere Straßenseite hüpfen,
 
   | Stufe | Spuren | Varianten |
   |---|---|---|
-  | 1 | 2 | Dorfstraße · Feldweg-Kreuzung · Spielstraße |
-  | 2 | 4 | Ortsdurchfahrt · Am Marktplatz · Schulweg |
-  | 3 | 6 | Landstraße · Bundesstraße · Erntezeit |
-  | 4 | 8 | Schnellstraße · Feierabendverkehr · Umleitung |
-  | 5 | 10 | Autobahnauffahrt · Großstadt · Nachtverkehr |
+  | 1 | 6 | Landstraße · Bundesstraße · Erntezeit |
+  | 2 | 8 | Schnellstraße · Feierabendverkehr · Umleitung |
+  | 3 | 10, zwei Inseln | Autobahnauffahrt · Großstadt · Nachtverkehr |
+  | 4 | 10, eine Insel | Autobahn · Berufsverkehr · Nachtbaustelle |
+  | 5 | 12, eine oder keine Insel | Autobahnkreuz · Stadtautobahn · Nachtrennen |
 
 - Rechtsverkehr: unten fahren alle nach rechts, oben nach links. Gehwege und Mittelinseln sind sicher.
 - Fahrzeuge: Autos, Sportwagen, Transporter, Busse, LKW, Traktoren, Fahrräder und Simsons. Langsame Fahrzeuge fahren auf eigenen, langsameren Spuren.
