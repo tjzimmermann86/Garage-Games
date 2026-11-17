@@ -243,8 +243,9 @@ Fünf Häuser sollen so schnell wie möglich sauber werden. Man läuft mit dem e
   | Bodenstaubsauger | Bodenstaubsauger (braucht Handsauger) → Langes Kabel, XXL-Beutel, Turbo-Saugkraft, Akkusauger → Zweitakku |
   | Saugroboter | Saugroboter → Kartierung, Schnelle Bürsten, Zweiter Roboter |
 
-- Jedes Gerät hat einen Haken: Sauger müssen am Mülleimer in der Küche geleert werden, der Bodensauger hängt am Kabel (an einer anderen Steckdose mit `E` umstecken), der Akkusauger lädt nur an der Ladestation.
-- Steuerung: WASD oder Pfeiltasten laufen, `1`–`5` oder `Q` Gerät wechseln, `E` umstecken, `Enter` Haus vorzeitig abgeben.
+- Jedes Gerät hat einen Haken: Sauger müssen am Mülleimer in der Küche geleert werden, der Bodensauger hängt am Kabel (mit `E` den Stecker ziehen, zur nächsten Steckdose gehen und mit `E` wieder einstecken), der Akkusauger lädt nur an der Ladestation.
+- Fehlt ein Gerät für eine Schmutzart, zeigen Laden und Fortschrittsbalken, wie viel Prozent höchstens möglich sind und was dafür fehlt.
+- Steuerung: WASD oder Pfeiltasten laufen, `1`–`5` oder `Q` Gerät wechseln, `E` Stecker ziehen oder einstecken, `Enter` Haus vorzeitig abgeben.
 - Punkte: sauberes Haus 1.000 plus bis zu 1.000 für die Restzeit, sonst anteilig nach Sauberkeit. Restgeld zählt am Ende 1 Punkt je 5 €. Das Geld reicht nicht für den ganzen Baum.
 
 **Starten:** im Menü unter Einzelspieler oder als Turnierspiel. Im Turnier bekommen alle dieselben Häuser mit demselben Schmutz.
